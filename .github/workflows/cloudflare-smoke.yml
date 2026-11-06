@@ -1,0 +1,41 @@
+# One-off smoke test for the Cloudflare secrets + scaffold + deploy path. Lives only on the
+# cf-smoke-test branch; not part of the template.
+name: cloudflare-smoke
+on:
+  push:
+    branches: [cf-smoke-test]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Scaffold a tiny app with the real cf_scaffold.py
+        run: |
+          mkdir -p smoke/scripts smoke/templates
+          cp scripts/cf_scaffold.py smoke/scripts/
+          cp templates/deploy-cloudflare.yml smoke/templates/
+          cp factory.json smoke/
+          cd smoke && python3 scripts/cf_scaffold.py --name danfactory-smoke
+          cat wrangler.jsonc
+      - name: Install and build
+        working-directory: smoke
+        run: npm ci --no-audit --no-fund && npm run build
+      - name: Deploy via wrangler-action (same as the template workflow)
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          workingDirectory: smoke
+          command: deploy --var GIT_SHA:${{ github.sha }}
+      - name: Verify the new version is live (bounded wait, same script as deploy-watcher)
+        run: |
+          URL="${{ steps.deploy.outputs.deployment-url }}"
+          echo "deployment-url: $URL"
+          bash scripts/wait-for-url.sh --url "$URL/version" --expect "${{ github.sha }}" --timeout 120
+          curl -fsS "$URL/health"; echo
+          echo "### Smoke test passed: $URL" >> "$GITHUB_STEP_SUMMARY"
