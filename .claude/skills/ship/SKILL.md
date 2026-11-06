@@ -22,7 +22,7 @@ description: Take software live on Cloudflare via git, without waiting on it. Pu
      - **Build cache**: on
      - Tests: GitHub CI runs them on the PR; make that check required in branch protection for `main`.
    - **B. GitHub Actions** when you want one pipeline in GitHub: copy `templates/deploy-cloudflare.yml` to `.github/workflows/`; user adds repo secrets `CLOUDFLARE_API_TOKEN` (least privilege) and `CLOUDFLARE_ACCOUNT_ID`; mark the `test` job required for `main`.
-4. Fill `factory.json` → `integrations.deploy` (`product`, `project_name`, `production_url`), `commands.build`, `commands.lint`, `commands.test_affected`. Leave `commands.deploy` empty (git is the deploy).
+4. Fill `factory.json` → `integrations.deploy` (`product`, `project_name`, `production_url`, `worker_name`, `workers_subdomain`), `commands.build`, `commands.lint`, `commands.test_affected`. Leave `commands.deploy` empty (git is the deploy).
 5. Speed basics: commit the lockfile, `npm ci`, keep dev tooling out of the production build, let wrangler bundle (esbuild). Target `budgets.deploy_seconds` (180s push-to-live).
 6. Secrets: `wrangler secret put NAME` or the dashboard; local `.dev.vars` (git-ignored). Never in `wrangler.jsonc`, docs or chat.
 
@@ -34,6 +34,10 @@ description: Take software live on Cloudflare via git, without waiting on it. Pu
    PUSHED_AT=$(date +%s); git push -u origin HEAD && echo "pushed_at=$PUSHED_AT sha=$(git rev-parse --short HEAD)"
    ```
    → launch `deploy-watcher` in the background with the preview `/version` URL, the short sha, `pushed_at`, env `preview`.
+   - **Preview URL**: `integrations.deploy.preview_url_pattern` with `{worker}`/`{subdomain}` from factory.json and `{alias}` =
+     route A: the branch name lower-cased with non-alphanumerics → `-` (Workers Builds preview alias; enable Preview URLs on the Worker),
+     route B: `pr-<PR number>` (set by `--preview-alias` in the workflow).
+     Confirm the real URL once from the first PR's Cloudflare comment/check or build log, then fix the pattern if it differs.
    - In cloud sessions with a PR: also subscribe to PR activity so CI results wake the session; don't poll.
 3. When reports arrive: CI red → fix (test-runner reads the logs); preview live → done for this step.
 4. Release: merge to the production branch (only after the PR's checks are green), capture `PUSHED_AT` the same way, launch `deploy-watcher` for `production_url/version` with env `prod`. It records push-to-live time in metrics/history.jsonl, which feeds the dashboard.

@@ -11,11 +11,11 @@ Don't skip ahead: no code before GOAL.md is confirmed and an operating model is 
 
 ## Token economy (docs/policies/token-economy.md)
 - Read docs/INDEX.md first, then targeted reads at `file:line`. Whole reads of files > 350 lines are blocked by a hook.
-- Delegate per docs/operating-model/AGENT-ROUTING.md (moment → agent, verification ladder by rigor). Always: big reads → `bulk-reader`, test runs → `test-runner`, deploy watch → `deploy-watcher` (background).
+- Delegate per docs/operating-model/AGENT-ROUTING.md (moment → agent, verification ladder by rigor). Always: big reads → `bulk-reader`, failing/long test output → `test-runner`, deploy watch → `deploy-watcher` (background).
 - Use codegraph for code navigation when `integrations.codegraph` is true.
 
 ## Definition of done (every task)
-- Tests via `python3 scripts/metrics.py test` (through `test-runner`) pass; nothing skipped to get green.
+- Tests via `python3 scripts/metrics.py test` pass (prints one line when green; hand failures or long output to `test-runner`); nothing skipped to get green.
 - Docs updated in the same change (`docs-sync`); decisions → ADR in docs/decisions/.
 - Backlog item ticked in docs/BACKLOG.md; deliberate shortcuts logged in docs/TECH-DEBT.md.
 - `bash scripts/check.sh` passes.

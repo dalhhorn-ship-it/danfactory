@@ -1,19 +1,32 @@
 #!/usr/bin/env python3
-"""SessionEnd: sum token usage from the session transcript into metrics/tokens.jsonl."""
+"""SessionEnd: record token usage (main session + its subagents) into metrics/tokens.jsonl.
+
+`weighted_tokens` is the cost-relevant number: input-token equivalents using the usual Claude
+price ratios (input 1, output 5, cache write 1.25, cache read 0.1). Raw totals are dominated by
+cheap cache reads, so budgets and the dashboard use the weighted figure.
+Skipped in the un-bootstrapped template itself (project.name empty) so template maintenance
+sessions don't pollute new projects' metrics.
+"""
 import datetime
+import glob
 import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ROOT, read_event  # noqa: E402
+from _common import ROOT, load_factory, read_event  # noqa: E402
 
 FIELDS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+WEIGHTS = {"input_tokens": 1.0, "output_tokens": 5.0, "cache_creation_input_tokens": 1.25,
+           "cache_read_input_tokens": 0.1}
+
+
+def weighted(usage):
+    return round(sum(WEIGHTS[f] * usage.get(f, 0) for f in FIELDS))
 
 
 def summarize(transcript_path):
-    per_msg = {}
-    models = {}
+    per_msg, models = {}, {}
     with open(transcript_path, encoding="utf-8") as fh:
         for line in fh:
             try:
@@ -38,22 +51,47 @@ def summarize(transcript_path):
     return totals, by_model, len(per_msg)
 
 
+def subagent_transcripts(transcript_path):
+    base = os.path.splitext(transcript_path)[0]  # <dir>/<session_id>.jsonl -> <dir>/<session_id>/subagents/
+    return sorted(glob.glob(os.path.join(base, "subagents", "*.jsonl")))
+
+
+def merge(into, extra):
+    for f in FIELDS:
+        into[f] = into.get(f, 0) + extra.get(f, 0)
+
+
 def main():
     ev = read_event()
     tp = ev.get("transcript_path")
     if not tp or not os.path.isfile(tp):
         return
+    if not (load_factory().get("project") or {}).get("name"):
+        return  # template repo itself, not a project
     totals, by_model, turns = summarize(tp)
-    if not turns:
+    sub_totals = {f: 0 for f in FIELDS}
+    subs = subagent_transcripts(tp)
+    for sp in subs:
+        t, bm, _ = summarize(sp)
+        merge(sub_totals, t)
+        for model, usage in bm.items():
+            merge(by_model.setdefault(model, {f: 0 for f in FIELDS}), usage)
+    if not turns and not subs:
         return
+    all_totals = dict(totals)
+    merge(all_totals, sub_totals)
     row = {
         "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "kind": "session",
         "session_id": ev.get("session_id"),
         "reason": ev.get("reason"),
         "assistant_messages": turns,
-        "total_tokens": sum(totals.values()),
-        **totals,
+        "subagents": len(subs),
+        "total_tokens": sum(all_totals.values()),
+        "weighted_tokens": weighted(all_totals),
+        "main_weighted_tokens": weighted(totals),
+        "subagent_weighted_tokens": weighted(sub_totals),
+        **all_totals,
         "by_model": by_model,
     }
     os.makedirs(os.path.join(ROOT, "metrics"), exist_ok=True)

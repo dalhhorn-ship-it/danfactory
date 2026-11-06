@@ -8,7 +8,7 @@
 3. Rollback written down before applying.
 
 ## Agents and skills
-Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Skills written as `name` + plugin names (xlsx, docx, pptx, pdf, dataviz, deep-research, engineering:*, product-management:*) are optional plugins: use them if installed, otherwise apply the same conventions directly. Path-specific uses:
 
 | Need | Use |
 |---|---|

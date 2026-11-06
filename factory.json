@@ -2,7 +2,7 @@
   "$comment": "Single source of project configuration for agents, hooks and scripts. Edit via /choose-path and /retro; humans may edit freely.",
   "template": {
     "name": "danfactory",
-    "decision_tree_version": "1.0.0"
+    "decision_tree_version": "1.1.0"
   },
   "project": {
     "name": "",
@@ -35,8 +35,8 @@
     "deploy_seconds": 180,
     "min_coverage_pct": 80,
     "max_coverage_drop_pct": 2,
-    "session_tokens_warn": 2000000,
-    "large_read_lines": 350
+    "large_read_lines": 350,
+    "session_weighted_tokens_warn": 750000
   },
   "integrations": {
     "codegraph": false,
@@ -46,20 +46,25 @@
       "production_branch": "main",
       "product": "",
       "project_name": "",
-      "production_url": ""
+      "production_url": "",
+      "worker_name": "",
+      "workers_subdomain": "",
+      "preview_url_pattern": "https://{alias}-{worker}.{subdomain}.workers.dev"
     },
     "skills": {
       "security-audit": {
         "repo": "https://github.com/cloudflare/security-audit-skill",
         "ref": "main",
         "path": "skills/security-audit",
-        "license": "MIT"
+        "license": "MIT",
+        "model_invocable": false
       },
       "cloudflare-deploy": {
         "repo": "https://github.com/davila7/claude-code-templates",
         "ref": "main",
         "path": "cli-tool/components/skills/development/cloudflare-deploy",
-        "license": "Apache-2.0"
+        "license": "Apache-2.0",
+        "model_invocable": false
       }
     },
     "dashboard_url": ""

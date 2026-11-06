@@ -21,7 +21,7 @@
 | Build: boilerplate from a pattern | reference file exists | `code-writer` | sonnet |
 | Build: workbook / data outputs | design exists | `data-builder` | sonnet |
 | Read big things | file > 350 lines, 3+ files, logs, long diffs | `bulk-reader` | haiku |
-| Run tests / builds | any run with long output | `test-runner` | haiku |
+| Run tests / builds | run `metrics.py test` directly (one line when green); delegate when it fails or output is long | `test-runner` | haiku |
 | Debug | first attempt by the main agent fails, or production incident | `ultrathink-debugger` | opus |
 | UI changed | user-facing screens or flows touched | `ui-comprehensive-tester` | sonnet |
 | Task done? | see ladder | `task-completion-validator` | sonnet |

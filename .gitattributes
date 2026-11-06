@@ -1,0 +1,2 @@
+# Append-only metrics logs: keep both sides on merge instead of conflicting
+metrics/*.jsonl merge=union

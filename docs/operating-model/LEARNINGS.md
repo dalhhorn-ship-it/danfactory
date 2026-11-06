@@ -14,7 +14,7 @@ Types: `[practice]` `[tree-gap]` `[budget]` `[tooling]` `[anti-pattern]` `[secur
 ## Entries
 
 ### 2026-11-06 — Don't wait on deploys  [software-product] [deploy] [upstream]
-Agents idled while git/CI/Cloudflare builds ran. Now: push → background deploy-watcher (Haiku, bounded wait) → continue; test once on PR; skip docs-only builds; build cache; fast pre-push gate. Budget push-to-live 180s.
+Design choice from the template build (not yet measured): agents would idle while git/CI/Cloudflare builds ran. Now: push → background deploy-watcher (Haiku, bounded wait) → continue; test once on PR; skip docs-only builds; build cache; fast pre-push gate. Budget push-to-live 180s.
 
 ### 2026-11-06 — Delegate big reads by default  [all] [tooling] [upstream]
-Large whole-file reads dominate token spend (shunt benchmarks: 82–94% saved by delegating). Guard hook + bulk-reader subagent added. Expect lower tokens/session in metrics/REPORT.md.
+Seeded from the template, not yet measured here: Spotify reports 82–94% token savings from delegating large reads (shunt README benchmarks). Guard hook + bulk-reader subagent added. Verify with weighted tokens/session in metrics/REPORT.md after a few sessions.

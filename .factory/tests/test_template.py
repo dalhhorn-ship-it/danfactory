@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 HOOKS = os.path.join(ROOT, ".claude", "hooks")
 
 
@@ -60,11 +60,68 @@ class GuardLargeRead(unittest.TestCase):
         self.assertEqual(self.bash("cat big.txt | grep x").returncode, 0)
         self.assertEqual(self.bash("cat big.txt > out.txt").returncode, 0)
         self.assertEqual(self.bash("head -20 big.txt").returncode, 0)
+        self.assertEqual(self.bash("head big.txt").returncode, 0)          # 10 lines
+        self.assertEqual(self.bash("tail -n +1 big.txt").returncode, 2)    # whole file
+        self.assertEqual(self.bash("head -n 5000 big.txt").returncode, 2)
+        self.assertEqual(self.bash("sed -n 1,9999p big.txt").returncode, 2)
+        self.assertEqual(self.bash("sed -n 10,40p big.txt").returncode, 0)
         self.assertEqual(self.bash("cat small.txt").returncode, 0)
         self.assertEqual(self.bash("git status").returncode, 0)
 
 
+class BashPolicy(unittest.TestCase):
+    def check(self, cmd):
+        return hook("guard_bash_policy.py", {"tool_name": "Bash", "tool_input": {"command": cmd}}).returncode
+
+    def test_blocks_deploy_bypasses(self):
+        w = "wrangler " + "deploy"
+        for cmd in ("npx " + w, "bunx " + w, "cd app && npx wrangler pages deploy dist",
+                    "git push origin main --no-verify", "git commit -n -m x"):
+            self.assertEqual(self.check(cmd), 2, cmd)
+
+    def test_ignores_text_being_written(self):
+        w = "wrangler " + "deploy"
+        self.assertEqual(self.check("cat > notes.md <<'EOF'\nnever run npx %s\nEOF" % w), 0)
+        self.assertEqual(self.check("git commit -m 'docs: explain why %s is denied'" % w), 0)
+        self.assertEqual(self.check("echo ok && npx %s" % w), 2)
+
+    def test_allows_normal_and_rollback(self):
+        for cmd in ("git push -u origin HEAD", "git push -n origin main", "npx wrangler rollback",
+                    "npx wrangler whoami", "git commit -m 'fix'"):
+            self.assertEqual(self.check(cmd), 0, cmd)
+
+
+class OneShotEscape(unittest.TestCase):
+    def test_marker_allows_one_read_then_is_consumed(self):
+        big = os.path.join(tempfile.mkdtemp(), "big.txt")
+        with open(big, "w") as fh:
+            fh.write("x\n" * 1000)
+        marker = os.path.join(ROOT, ".claude", ".allow-large-read")
+        open(marker, "w").close()
+        ev = {"tool_name": "Read", "tool_input": {"file_path": big}}
+        self.assertEqual(hook("guard_large_read.py", ev).returncode, 0)
+        self.assertFalse(os.path.exists(marker))
+        self.assertEqual(hook("guard_large_read.py", ev).returncode, 2)
+
+
 class RecordTokens(unittest.TestCase):
+    def test_weighted_includes_subagents_and_skips_template(self):
+        sys.path.insert(0, HOOKS)
+        import record_tokens
+        d = tempfile.mkdtemp()
+        main_t = os.path.join(d, "s1.jsonl")
+        os.makedirs(os.path.join(d, "s1", "subagents"))
+        u = {"input_tokens": 100, "output_tokens": 10, "cache_read_input_tokens": 1000, "cache_creation_input_tokens": 0}
+        for path in (main_t, os.path.join(d, "s1", "subagents", "agent-a.jsonl")):
+            with open(path, "w") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {"id": path, "model": "m", "usage": u}}) + "\n")
+        self.assertEqual(record_tokens.weighted(u), 100 + 50 + 100)
+        self.assertEqual(len(record_tokens.subagent_transcripts(main_t)), 1)
+        # the un-bootstrapped template (empty project.name) must not record anything
+        before = os.path.exists(os.path.join(ROOT, "metrics", "tokens.jsonl"))
+        hook("record_tokens.py", {"transcript_path": main_t, "session_id": "x"})
+        self.assertEqual(os.path.exists(os.path.join(ROOT, "metrics", "tokens.jsonl")), before)
+
     def test_dedupes_and_sums(self):
         tmp = tempfile.mkdtemp()
         tp = os.path.join(tmp, "t.jsonl")
@@ -175,6 +232,7 @@ class AsyncDelivery(unittest.TestCase):
                                   capture_output=True, text=True, env=env)
             self.assertEqual(late.returncode, 1)
             self.assertIn("TIMEOUT", late.stdout)
+            self.assertIn("--status fail", open(script).read())  # timeouts are recorded as failed deploys
         finally:
             srv.shutdown()
             srv.server_close()
@@ -202,6 +260,25 @@ class AsyncDelivery(unittest.TestCase):
         slow = self._pre_push({"lint": "", "test_affected": "sleep 5"}, cap=1)
         self.assertEqual(slow.returncode, 1)
         self.assertIn("exceeded", slow.stderr)
+
+
+class Bootstrap(unittest.TestCase):
+    def test_flag_anywhere_and_readme_swap(self):
+        d = os.path.join(tempfile.mkdtemp(), "proj")
+        subprocess.run(["cp", "-r", ROOT, d], check=True)
+        for extra in (".claude/skills/security-audit", ".claude/skills/cloudflare-deploy"):
+            subprocess.run(["rm", "-rf", os.path.join(d, extra)])
+        # --codegraph would install software; stub the installer so only parsing is tested
+        with open(os.path.join(d, "scripts", "install-codegraph.sh"), "w") as fh:
+            fh.write("echo stub-codegraph\n")
+        r = subprocess.run(["bash", "scripts/bootstrap.sh", "demo", "--codegraph", "A demo app"], cwd=d,
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("stub-codegraph", r.stdout)
+        f = json.load(open(os.path.join(d, "factory.json")))
+        self.assertEqual((f["project"]["name"], f["project"]["one_liner"]), ("demo", "A demo app"))
+        self.assertTrue(os.path.isfile(os.path.join(d, "docs", "TEMPLATE-GUIDE.md")))
+        self.assertIn("# demo", open(os.path.join(d, "README.md")).read())
 
 
 class Config(unittest.TestCase):

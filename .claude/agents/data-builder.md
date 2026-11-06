@@ -11,5 +11,5 @@ Procedure:
 1. Put the generator in `build/` (e.g. `build/make_workbook.py`); inputs in `data/`; outputs in `out/`.
 2. Use formulas, not pasted values, where the user will edit inputs. Named ranges for key inputs.
 3. Verify: recalculate (LibreOffice headless if available) and scan for `#REF!`, `#DIV/0!`, `#VALUE!`, `#NAME?`; write a small check script with expected totals.
-4. If the `xlsx` skill is available, follow it for formatting and recalculation conventions.
+4. If the `xlsx` skill is installed, follow it for formatting and recalculation conventions.
 5. Reply with: generator path, output path, verification result, open questions. No cell dumps.

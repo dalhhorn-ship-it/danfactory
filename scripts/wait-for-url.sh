@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bounded wait until a deployment is live, then (optionally) record push-to-live time.
+# Bounded wait until a deployment is live; with --record, logs push-to-live time (ok) or the timeout (fail).
 # Used by the deploy-watcher subagent in the background, so the main agent never waits.
 #
 #   bash scripts/wait-for-url.sh --url https://app.example.workers.dev/version \
@@ -37,6 +37,9 @@ while :; do
   elapsed=$(( $(date +%s) - start ))
   if [ $elapsed -ge "$TIMEOUT" ]; then
     echo "TIMEOUT after ${elapsed}s ($attempts checks) — $last"
+    if [ -n "$RECORD" ]; then  # count it, so the deploy failure rate is real
+      python3 "$ROOT/scripts/metrics.py" deploy --env "$RECORD" --seconds "$elapsed" --status fail >/dev/null
+    fi
     exit 1
   fi
   remaining=$((TIMEOUT - elapsed))

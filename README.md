@@ -10,7 +10,7 @@
    ```
 2. Bootstrap. Add `--codegraph` to install the local code graph:
    ```bash
-   bash scripts/bootstrap.sh "my-project" "one line description"
+   bash scripts/bootstrap.sh "my-project" "one line description"   # add --codegraph for the code graph
    ```
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 
@@ -85,4 +85,4 @@ Requirements: git and python3 (stdlib only). Node/npm are needed for codegraph a
 
 ## Feeding learnings back into the template
 
-`retro` tags learnings that apply to every project with `[upstream]`. Every so often, copy those entries (and any DECISION-TREE.md or paths/*.md changes) into this template repo via a PR and bump the tree version. New projects then start from the improved tree.
+`retro` tags learnings that apply to every project with `[upstream]`. From the project, run `python3 scripts/upstream_learnings.py --template ../danfactory`: it appends unsent entries to the template's LEARNINGS.md, marks them `[upstreamed]`, and lists which shared docs (tree, routing, paths) differ, for you to port. Then open a PR in the template and bump the tree version. New projects then start from the improved tree.

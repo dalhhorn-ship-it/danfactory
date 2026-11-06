@@ -9,7 +9,8 @@ Allowed through:
   * calls made inside a subagent (agent_id present) -- that context is disposable by design
   * targeted reads (offset/limit), small files, missing files
   * piped / redirected shell commands (already targeted or not read into context)
-  * FACTORY_ALLOW_LARGE_READ=1 escape hatch
+  * one-shot escape hatch: `touch .claude/.allow-large-read` (consumed by the next large read);
+    FACTORY_ALLOW_LARGE_READ=1 in the environment disables the guard for a whole session
 """
 import os
 import re
@@ -17,7 +18,7 @@ import shlex
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import block, count_lines, load_factory, read_event  # noqa: E402
+from _common import ROOT, block, count_lines, load_factory, read_event  # noqa: E402
 
 READ_CMDS = {"cat", "head", "tail", "less", "more", "bat", "nl"}
 HINT = (
@@ -26,6 +27,7 @@ HINT = (
     "  1. Need an answer about it -> delegate to the `bulk-reader` subagent with a precise question.\n"
     "  2. Need code structure    -> codegraph (`codegraph explore \"<question>\"`) if enabled.\n"
     "  3. Need exact text to edit -> Grep for the spot, then Read with offset/limit.\n"
+    "  4. Truly need it all (rare)  -> `touch .claude/.allow-large-read`, say why, retry once.\n"
     "See docs/policies/token-economy.md."
 )
 
@@ -45,25 +47,54 @@ def resolve(path, cwd):
     return path if os.path.isabs(path) else os.path.join(cwd or os.getcwd(), path)
 
 
-def bash_target(command):
-    """Return the file a plain `cat/head/tail file` command would dump, else ''."""
+def bash_target(command, limit):
+    """Return the file a shell command would dump into context (more than `limit` lines), else ''.
+
+    Catches cat/less/more/bat/nl, `tail -n +K`, head/tail with a count over the limit, and
+    `sed -n 'A,Bp'` ranges over the limit. Pipes/redirects are treated as targeted (known gap:
+    `cat big | cat`); this is a guard against accidents, not a sandbox.
+    """
     if re.search(r"[|>;&`]|\$\(", command):
         return ""
     try:
         parts = shlex.split(command)
     except ValueError:
         return ""
-    if not parts or os.path.basename(parts[0]) not in READ_CMDS:
+    if not parts:
         return ""
-    # head/tail with an explicit small count are targeted reads
-    if os.path.basename(parts[0]) in {"head", "tail"} and any(
-        re.fullmatch(r"-\d+|-n|--lines(=\d+)?", p) for p in parts[1:]
-    ):
+    prog, args = os.path.basename(parts[0]), parts[1:]
+    files = [a for a in args if not a.startswith(("-", "+")) and not re.fullmatch(r"\d+", a)]
+    if prog in {"cat", "less", "more", "bat", "nl"}:
+        return files[0] if files else ""
+    if prog in {"head", "tail"}:
+        joined = " ".join(args)
+        if re.search(r"(-n\s*\+|^\+|\s\+)\d+", joined) and prog == "tail":
+            return files[-1] if files else ""  # tail -n +K: everything from line K
+        m = re.search(r"(?:-n\s*|--lines[= ]|-)(\d+)", joined)
+        count = int(m.group(1)) if m else 10
+        return (files[-1] if files else "") if count > limit else ""
+    if prog == "sed" and "-n" in args:
+        m = re.search(r"(\d+)\s*,\s*(\d+|\$)\s*p", " ".join(args))
+        if m:
+            end = 10 ** 9 if m.group(2) == "$" else int(m.group(2))
+            if end - int(m.group(1)) > limit:
+                return files[-1] if len(files) > 1 else ""
         return ""
-    for arg in parts[1:]:
-        if not arg.startswith("-"):
-            return arg
     return ""
+
+
+ALLOW_ONCE = os.path.join(ROOT, ".claude", ".allow-large-read")
+
+
+def allowed_once():
+    """One-shot escape hatch: `touch .claude/.allow-large-read` (say why) allows the next large read."""
+    if os.path.exists(ALLOW_ONCE):
+        try:
+            os.remove(ALLOW_ONCE)
+        except OSError:
+            pass
+        return True
+    return False
 
 
 def main():
@@ -80,7 +111,7 @@ def main():
             return
         path = resolve(ti.get("file_path", ""), cwd)
     elif tool == "Bash":
-        path = resolve(bash_target(ti.get("command", "")), cwd)
+        path = resolve(bash_target(ti.get("command", ""), threshold()), cwd)
     else:
         return
     if not path or not os.path.isfile(path):
@@ -89,7 +120,7 @@ def main():
         return  # binary/visual reads are handled by Read itself
     limit = threshold()
     lines = count_lines(path, stop_after=limit)
-    if lines > limit:
+    if lines > limit and not allowed_once():
         block(HINT.format(path=os.path.relpath(path, cwd or os.getcwd()), lines=limit, limit=limit))
 
 

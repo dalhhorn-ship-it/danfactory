@@ -185,6 +185,14 @@ def cmd_deploy(a, f):
 
 # ---------- report ----------
 
+def wt(row):
+    """Cost-weighted tokens (input-equivalents); falls back for rows recorded before weighting existed."""
+    if "weighted_tokens" in row:
+        return row["weighted_tokens"]
+    return round(row.get("input_tokens", 0) + 5 * row.get("output_tokens", 0)
+                 + 1.25 * row.get("cache_creation_input_tokens", 0) + 0.1 * row.get("cache_read_input_tokens", 0))
+
+
 def med(xs):
     return statistics.median(xs) if xs else None
 
@@ -261,14 +269,17 @@ def analyse(f, hist, toks):
     if toks:
         last = toks[-1]
         recent = toks[-10:]
-        avg = sum(r["total_tokens"] for r in recent) / len(recent)
+        avg = sum(wt(r) for r in recent) / len(recent)
         cached = sum(r.get("cache_read_input_tokens", 0) for r in recent)
         inp = cached + sum(r.get("input_tokens", 0) + r.get("cache_creation_input_tokens", 0) for r in recent)
         hit = 100.0 * cached / inp if inp else 0
-        table.append(("Tokens / session (avg last %d)" % len(recent), "{:,.0f}".format(avg),
-                      "{:,}".format(b["session_tokens_warn"]), "cache hit %.0f%%" % hit))
-        if last["total_tokens"] > b["session_tokens_warn"]:
-            alerts.append("Last session used {:,} tokens.".format(last["total_tokens"]))
+        warn = b.get("session_weighted_tokens_warn", 750000)
+        sub = sum(r.get("subagent_weighted_tokens", 0) for r in recent)
+        table.append(("Weighted tokens / session (avg last %d)" % len(recent), "{:,.0f}".format(avg),
+                      "{:,}".format(warn), "cache hit %.0f%%, subagents %.0f%%" % (
+                          hit, 100.0 * sub / max(1, sum(wt(r) for r in recent)))))
+        if wt(last) > warn:
+            alerts.append("Last session cost {:,} weighted tokens (budget {:,}).".format(wt(last), warn))
             ideas += [
                 "Delegate exploration to `bulk-reader` / Explore subagents; keep the main context for decisions.",
                 "Use docs/INDEX.md + targeted reads; enable codegraph for code navigation.",

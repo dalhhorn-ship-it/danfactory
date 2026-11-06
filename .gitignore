@@ -1,6 +1,7 @@
 # local / generated
 .codegraph/
 .claude/settings.local.json
+.claude/.allow-large-read
 .claude/skills/security-audit/
 .claude/skills/cloudflare-deploy/
 __pycache__/

@@ -33,7 +33,7 @@ ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
 MILESTONE_RE = re.compile(r"^##\s+(?:Milestone:\s*)?(.+?)\s*(?:\(target:\s*([0-9-]*)\s*\))?\s*$")
 DEBT_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(TD-\d+)\s+(.*?)(?:\s+[—-]\s+(.*))?$")
 MARKER_RE = r"\b(TODO|FIXME|HACK|XXX)\b"
-SKIP_DIRS = ("docs/", ".claude/", "dashboard/", "metrics/", "templates/", "tests/test_template.py",
+SKIP_DIRS = ("docs/", ".claude/", ".factory/", "dashboard/", "metrics/", "templates/",
              "scripts/dashboard.py", "README.md", "CLAUDE.md")
 LARGE_FILE_LINES = 500
 
@@ -128,6 +128,8 @@ def debt_signals(f):
         try:
             p = subprocess.run(["codegraph", "cycles", "--json"], cwd=ROOT, capture_output=True, text=True,
                                timeout=60, check=False)
+            if p.returncode not in (0, 1):  # 1 = cycles found; anything else = unsupported/failed
+                raise ValueError(p.stderr[:200])
             data = json.loads(p.stdout or "[]")
             cycles = len(data if isinstance(data, list) else data.get("cycles", []))
         except (OSError, ValueError, subprocess.SubprocessError):
@@ -184,11 +186,11 @@ def metric_view(f):
         "deploy_fail_rate": round(100.0 * sum(not r["ok"] for r in recent_deps) / len(recent_deps)) if recent_deps else None,
         "deploy_seconds": deps[-1]["seconds"] if deps else None, "deploy_budget": b.get("deploy_seconds"),
         "last_deploy": deps[-1] if deps else None, "recent_deploys": list(reversed(deps[-6:])),
-        "tokens_avg": round(sum(r["total_tokens"] for r in tok_recent) / len(tok_recent)) if tok_recent else None,
-        "tokens_warn": b.get("session_tokens_warn"),
+        "tokens_avg": round(sum(metrics.wt(r) for r in tok_recent) / len(tok_recent)) if tok_recent else None,
+        "tokens_warn": b.get("session_weighted_tokens_warn"),
         "cache_hit": round(100.0 * cached / inp) if inp else None,
         "series": {"test_seconds": [r["seconds"] for r in full[-30:]], "coverage": cov[-30:],
-                   "tokens": [r["total_tokens"] for r in toks[-30:]]},
+                   "tokens": [metrics.wt(r) for r in toks[-30:]]},
         "alerts": alerts, "suggestions": ideas,
     }
 
@@ -271,6 +273,10 @@ def bar(pct, label):
             'aria-label="%s"><span style="width:%d%%"></span></div>' % (pct, e(label), pct))
 
 
+def f_codegraph():
+    return bool(metrics.factory().get("integrations", {}).get("codegraph"))
+
+
 def render(d):
     m, v, bl, debt = d["metrics"], d["versions"], d["backlog"], d["debt"]
     name = d["project"].get("name") or "Untitled project"
@@ -293,7 +299,7 @@ def render(d):
         tile("Deploys", fmt_num(m["deploys"]), "failure rate %s (last 10)" % fmt_num(m["deploy_fail_rate"], "%"),
              "na" if m["deploy_fail_rate"] is None else ("ok" if m["deploy_fail_rate"] <= 20 else "bad"),
              words=("healthy", "watch", "unstable")),
-        tile("Tokens / session", fmt_num(m["tokens_avg"]), "cache hit %s" % fmt_num(m["cache_hit"], "%"),
+        tile("Cost / session", fmt_num(m["tokens_avg"]), "weighted tokens · cache hit %s" % fmt_num(m["cache_hit"], "%"),
              status(m["tokens_avg"], m["tokens_warn"]), spark(m["series"]["tokens"], "Tokens per session")),
         tile("Open tech debt", str(len(debt["open"])), "%d high impact · %d markers" % (
             debt["by_impact"]["high"], debt["signals"]["marker_total"]),
@@ -330,7 +336,8 @@ def render(d):
                   '<li>Files over %d lines: %s</li><li>Import cycles: %s</li><li>Resolved items: %d</li></ul>'
                   % (e(markers), LARGE_FILE_LINES,
                      e(", ".join("%s (%d)" % (x["file"], x["lines"]) for x in sig["large_files"][:5]) or "none"),
-                     e("enable codegraph to track" if sig["import_cycles"] is None else sig["import_cycles"]),
+                     e(sig["import_cycles"] if sig["import_cycles"] is not None else
+                       "n/a (needs codegraph with the `cycles` command)" if f_codegraph() else "enable codegraph to track"),
                      debt["resolved"]))
 
     tag_rows = "".join("<tr><td class=\"mono\">%s</td><td>%s</td></tr>" % (e(t["tag"]), e(t["date"])) for t in v["tags"]) \
@@ -372,7 +379,7 @@ def summary(d):
                                                      fmt_num(m["pass_rate"], "%")),
         "| Coverage | %s (min %s%%) |" % (fmt_num(m["coverage"], "%", 1), m["coverage_min"]),
         "| Deploys | %s, failure rate %s |" % (m["deploys"], fmt_num(m["deploy_fail_rate"], "%")),
-        "| Tokens / session | %s, cache hit %s |" % (fmt_num(m["tokens_avg"]), fmt_num(m["cache_hit"], "%")),
+        "| Weighted tokens / session | %s, cache hit %s |" % (fmt_num(m["tokens_avg"]), fmt_num(m["cache_hit"], "%")),
         "| Tech debt | %d open (%d high), %d code markers |" % (
             len(debt["open"]), debt["by_impact"]["high"], debt["signals"]["marker_total"]),
     ]
