@@ -11,7 +11,7 @@
 6. Never skip, delete or weaken a test to get green. Flaky → reproduce and fix.
 
 ## Dashboard
-Every metrics run and every CI build regenerates `dashboard/` (scripts/dashboard.py) with versions, progress, backlog, tech debt and key metrics. See the `dashboard` skill.
+Every metrics run and every CI build regenerates `dashboard/` (scripts/dashboard.py) with versions, progress, backlog, delivery (CI pass rate and time from `scripts/ci_runs.py`, deploys and releases per week), tech debt and key metrics. See the `dashboard` skill.
 
 ## When a budget is breached
 Pick the top 1–3 suggestions from `metrics/REPORT.md` by saving/effort, do them, record the result as a learning. Change a budget only with a recorded reason.

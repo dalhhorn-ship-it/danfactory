@@ -21,3 +21,6 @@ Design choice from the template build (not yet measured): agents would idle whil
 
 ### 2026-11-06 — Delegate big reads by default  [all] [tooling] [upstream]
 Seeded from the template, not yet measured here: Spotify reports 82–94% token savings from delegating large reads (shunt README benchmarks). Guard hook + bulk-reader subagent added. Verify with weighted tokens/session in metrics/REPORT.md after a few sessions.
+
+### 2026-11-06 — Dashboard backflow from a release-based project  [software-product] [tooling] [upstream]
+A project grown from this template (small releases, ranked backlog table, PLAN task table, table-style tech debt) extended the dashboard. Generic parts flowed back: CI run history (`scripts/ci_runs.py` → metrics/ci-runs.json) with pass rates, CI minutes and weekly bars; deploys and release cadence per week; open ADR count; a Roadmap that also reads a ranked release table (Now/Then/Later, plan task chips, refactor rounds); lane overrides in `factory.json → dashboard`; pipe safe table parsing; fixed roadmap column widths and stacked tables on phones. Project-specific panels (learning modules, kid-facing copy, e2e spec counts) stayed behind.

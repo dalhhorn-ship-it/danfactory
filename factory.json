@@ -69,5 +69,15 @@
       }
     },
     "dashboard_url": ""
+  },
+  "dashboard": {
+    "$comment": "Optional dashboard config (scripts/dashboard.py, scripts/ci_runs.py). lane_overrides: {\"v4\": \"foundation\"} keyed by release id (first word of a Ranked backlog release) or exact item title. Empty values use the defaults.",
+    "plan_file": "docs/PLAN.md",
+    "changelog_file": "CHANGELOG.md",
+    "lane_overrides": {},
+    "foundation_tags": [],
+    "refactor_id_pattern": "R\\d+",
+    "deploys_since": "",
+    "github_repo": ""
   }
 }

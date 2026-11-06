@@ -239,6 +239,193 @@ class Dashboard(unittest.TestCase):
         self.assertIn("roadmap", d)
         self.assertIn('id="tab-roadmap"', page)
 
+    # ---- ported from a grown project dashboard (ranked releases, plan tasks, delivery metrics)
+    RANKED = """# Backlog
+
+## Notes
+
+| Rank | Release | Status |
+|---|---|---|
+| 9 | **not this table** | next |
+
+## Ranked backlog
+
+| Rank | Release | What users feel | Size | Plan tasks | Status |
+|---|---|---|---|---|---|
+| | **v1** | First version | | every v1 task | shipped (0.1.0) |
+| | **R1** (refactor, not a release) | Buttons work. | S | R1a | shipped |
+| 1 | **v3 Safe saves** | A backup file. | M | T18, T55 | next (0.3.0) |
+| 2 | **v6 Insights** | A parent's view with `a | b` in code. | M | T21 | candidate, after v3 |
+| 3 | **v12 Hats** | Hats. #foundation | S | about 3 | candidate |
+| 4 | **v4 Offline** | Starts without internet. | M | T52 | later (after v3) |
+| 5 | **v5 Smooth** | Safe and smooth. #value | M | T63 | candidate |
+| | **v7 Own words** | It&#39;s gone | | T40 | dropped (decision 79) |
+| | **v99 Odd** | Something. | S | | maybe one day |
+"""
+    PLAN = """| ID | Task | Depends on | Files | Milestone | Status |
+|---|---|---|---|---|---|
+| T18 | Backup file | none | src/a.ts | v3 | todo |
+| T55a | Settings | none | src/b.ts | v3 | doing |
+| T19 | Share helpers | none | src/c.ts | v3 | done |
+| T21 | Results queries | T67 | src/d.ts | M5 | todo |
+| T52 | Robust with a stray a | b pipe | T18 | src/e.ts | M5 | todo |
+| R3a | Split the shop | none | src/ui/shop.ts | R3 | todo |
+| R2a | Boot out of main | none | src/main.ts | R2 | done |
+"""
+    CONF = {"lane_overrides": {"v4": "foundation", "v5": "foundation"}, "foundation_tags": [],
+            "refactor_id_pattern": r"R\d+"}
+
+    def test_cells_are_pipe_safe(self):
+        self.assertEqual(self.d.cells("| a | `x | y` | c \\| d |"), ["a", "`x | y`", "c | d"])
+        self.assertIsNone(self.d.cells("not a row"))
+        row = self.d.map_row(["id", "task", "milestone", "status"], ["T1", "a", "b", "M1", "done"])
+        self.assertEqual(row, {"id": "T1", "task": "a | b", "milestone": "M1", "status": "done"})
+
+    def test_release_table_parser(self):
+        rows = self.d.parse_releases(self.RANKED)
+        self.assertEqual([r["id"] for r in rows], ["v1", "R1", "v3", "v6", "v12", "v4", "v5", "v7", "v99"])
+        self.assertEqual([r["chip"] for r in rows][:5], ["shipped", "shipped", "next", "candidate", "candidate"])
+        self.assertEqual(rows[-1]["chip"], "other")
+        self.assertEqual(rows[1]["note"], "(refactor, not a release)")
+        self.assertEqual((rows[2]["rank"], rows[2]["size"], rows[2]["tasks"]), ("1", "M", "T18, T55"))
+        self.assertEqual(rows[3]["status"], "candidate, after v3")      # code-span pipe did not shift Status
+        self.assertEqual(rows[4]["tags"], ["foundation"])
+        self.assertEqual(rows[7]["tags"], [])                            # &#39; is not a tag
+        self.assertEqual(self.d.parse_releases("# Backlog\n\n## Milestone: M1\n- [ ] x\n"), [])
+
+    def test_plan_tasks_pipe_safe(self):
+        plan = self.d.parse_plan_tasks(self.PLAN)
+        self.assertEqual([(t["id"], t["milestone"], t["status"]) for t in plan][:5], [
+            ("T18", "v3", "todo"), ("T55a", "v3", "doing"), ("T19", "v3", "done"),
+            ("T21", "M5", "todo"), ("T52", "M5", "todo")])
+        self.assertEqual(self.d.parse_plan_tasks(""), [])
+
+    def test_lane_rule_with_overrides(self):
+        rows = {r["id"]: r for r in self.d.parse_releases(self.RANKED)}
+        lane = lambda i: self.d.lane_of(rows[i]["tags"], i, rows[i]["note"], self.CONF)
+        self.assertEqual(lane("v3"), "value")
+        self.assertEqual(lane("R1"), "foundation")    # refactor round id
+        self.assertEqual(lane("v4"), "foundation")    # lane_overrides
+        self.assertEqual(lane("v12"), "foundation")   # #foundation tag
+        self.assertEqual(lane("v5"), "value")         # #value beats the override
+        self.assertEqual(self.d.lane_of(["perf"]), "foundation")
+        self.assertEqual(self.d.lane_of(["design"], conf={"foundation_tags": ["design"]}), "foundation")
+
+    def test_ranked_roadmap_with_milestones_and_debt(self):
+        ms = self.d.parse_backlog("## Milestone: M9\n- [ ] Export CSV\n- [ ] Cache layer #arch\n")
+        debt = [{"id": "TD-1", "title": "Low thing", "impact": "low", "effort": "S"},
+                {"id": "TD-2", "title": "Hot thing", "impact": "high", "effort": "M"}]
+        rm = self.d.roadmap(ms, debt, self.d.parse_releases(self.RANKED), self.d.parse_plan_tasks(self.PLAN), self.CONF)
+        cols = rm["columns"]
+        self.assertEqual([c["name"] for c in cols], ["Now", "Then", "Later", "M9", "Tech debt to schedule"])
+        lane = lambda i, k: [(x["title"], x["seq"]) for x in cols[i]["lanes"][k]]
+        self.assertEqual(lane(0, "value"), [("v3 Safe saves", 1)])
+        self.assertEqual(lane(0, "foundation"), [("R3 refactor round", 1)])   # open R3; done R2 left out
+        self.assertEqual(lane(1, "value"), [("v6 Insights", 2), ("v5 Smooth", 3)])
+        self.assertEqual(lane(1, "foundation"), [("v12 Hats", 2)])
+        self.assertEqual(lane(2, "foundation"), [("v4 Offline", 3)])
+        self.assertEqual(lane(3, "value"), [("Export CSV", 4)])
+        self.assertEqual(lane(3, "foundation"), [("Cache layer", 4)])
+        self.assertEqual([x["title"] for x in cols[4]["lanes"]["foundation"]], ["TD-2 Hot thing", "TD-1 Low thing"])
+        self.assertEqual((rm["open"], rm["shipped"], rm["ranked"]), ({"value": 4, "foundation": 6}, 2, True))
+        now = cols[0]["lanes"]["value"][0]
+        self.assertEqual([(t["id"], t["status"]) for t in now["tasks"]],
+                         [("T18", "todo"), ("T55a", "doing"), ("T19", "done")])  # milestone v3 + T55 finds T55a
+        html = self.d.render_roadmap(rm)
+        self.assertIn("chip id t-done", html)
+        self.assertIn("2 releases shipped", html)
+        self.assertNotIn("v7 Own words", html)
+        self.assertIn("No roadmap yet", self.d.render_roadmap(self.d.roadmap([], [], [], [])))
+
+    def test_debt_table_format(self):
+        items = self.d.parse_debt("""# Tech debt
+| Id | Severity | Item | Where | Size | Source | Status |
+|---|---|---|---|---|---|---|
+| TD1 | low | Tidy a file. | `a.ts` | S | review | open |
+| TD2 | major | A refresh can lose data. | `save.ts:62` | S | N2 | open |
+| TD3 | medium | Main was red. | `x.spec.ts` | S | N1 | done |
+""")
+        self.assertEqual([(i["id"], i["open"], i["impact"], i["effort"], i["area"]) for i in items], [
+            ("TD1", True, "low", "S", "a.ts"), ("TD2", True, "high", "S", "save.ts:62"),
+            ("TD3", False, "medium", "S", "x.spec.ts")])
+
+    @staticmethod
+    def run_row(i, day, concl, branch="feature", minutes=3):
+        start = "2026-11-%02dT10:00:00Z" % day
+        return {"id": i, "head_branch": branch, "conclusion": concl, "created_at": start, "run_started_at": start,
+                "updated_at": "2026-11-%02dT10:%02d:00Z" % (day, minutes), "html_url": "https://example.test/%d" % i}
+
+    def test_ci_metrics(self):
+        import datetime
+        today = datetime.date(2026, 11, 6)  # Friday, ISO week 45
+        runs = [self.run_row(1, 6, "success", "main", 2), self.run_row(2, 5, "failure", "main", 4),
+                self.run_row(3, 5, "cancelled"), self.run_row(4, 4, "skipped", minutes=0),
+                self.run_row(5, 3, "success", minutes=6), self.run_row(6, 2, "failure", minutes=8)]
+        m = self.d.ci_metrics(runs, today, "main")
+        self.assertEqual((m["runs"], m["decided_30"], m["pass_rate_30"], m["main_pass_rate"]), (6, 4, 50, 50))
+        self.assertEqual((m["median_min"], m["p90_min"]), (5.0, 8.0))
+        self.assertEqual(m["last_main_failure"]["url"], "https://example.test/2")
+        self.assertEqual((m["weeks"][-1], len(m["weeks"]), m["runs_per_week"][-1], m["runs_per_week"][-2]),
+                         ("2026-W45", 8, 6, 0))
+        self.assertEqual((m["pass_per_week"][-1], m["pass_per_week"][-2]), (50, None))
+        text = '{"source": "x", "runs": [%s]}' % ",".join(json.dumps(r) for r in runs)
+        self.assertEqual(len(self.d.parse_ci_runs(text)), 6)
+        self.assertIsNone(self.d.parse_ci_runs("not json"))
+        self.assertIsNone(self.d.ci_metrics(None, today))
+        dep = self.d.deploy_metrics(["2026-11-06", "2026-11-02T09:00:00+00:00", "2026-10-26", "bad"], today)
+        self.assertEqual((dep["total"], dep["last"], dep["per_week"][-1], dep["per_week"][-2]), (3, "2026-11-06", 2, 1))
+        html = self.d.bars(m["pass_per_week"], m["weeks"], "CI pass rate", "%")
+        self.assertIn("<svg", html)
+        self.assertIn("no data", html)
+
+    def test_changelog_and_release_metrics(self):
+        import datetime
+        cl = self.d.parse_changelog("# Changelog\n\n## [Unreleased]\n\n* a\n- b\n\n## [0.4.0] - 2026-10-24\n\n"
+                                    "## 0.3.0 (2026-10-22)\n\n## 0.2.0 (2026-10-19)\n\n## 0.1.0 (2026-10-19)\n")
+        self.assertEqual((cl["latest"], cl["latest_date"], cl["unreleased"]), ("0.4.0", "2026-10-24", 2))
+        rel = self.d.release_metrics(cl["releases"], datetime.date(2026, 11, 6))
+        self.assertEqual((rel["count"], rel["median_gap_days"], rel["days_since_last"], rel["last"]), (4, 2, 13, "0.4.0"))
+        self.assertIsNone(self.d.release_metrics([], datetime.date(2026, 11, 6)))
+        self.assertIsNone(self.d.parse_changelog("")["unreleased"])
+
+    def test_open_decisions_from_adrs(self):
+        self.assertEqual(self.d.parse_adr("# 0007 — Pick a DB\n\n> Status: proposed · Date: 2026-11-01\n"),
+                         {"title": "0007 — Pick a DB", "status": "proposed"})
+        self.assertEqual(self.d.parse_adr("# x\n\nStatus: **Accepted**\n")["status"], "accepted")
+        dec = self.d.collect_decisions()
+        self.assertTrue(all(r["status"] == "proposed" for r in dec["open"]))
+        self.assertFalse(any(r["file"].startswith("0000") for r in dec["open"]))
+
+    def test_render_ranked_delivery_and_escaping(self):
+        d = self.d.collect()
+        rows = self.d.parse_releases(self.RANKED.replace("A backup file.", "<script>alert(1)</script>"))
+        d["backlog"]["releases"], d["backlog"]["next_release"] = rows, "v3 Safe saves"
+        d["roadmap"] = self.d.roadmap([], [], rows, self.d.parse_plan_tasks(self.PLAN), self.CONF)
+        d["decisions"] = {"total": 1, "open": [{"file": "0007-db.md", "title": "Pick a DB", "status": "proposed"}]}
+        page = self.d.render(d)
+        self.assertNotIn("<script", page)
+        self.assertIn("&lt;script&gt;", page)
+        for needle in ("Ranked backlog", "Delivery", "Open decisions", "Pick a DB", 'class="stack"',
+                       "@media (max-width:720px)", "--col-w:240px", "position:sticky"):
+            self.assertIn(needle, page)
+        s = self.d.summary(d)
+        self.assertIn("| Next release | v3 Safe saves |", s)
+        self.assertIn("| Open decisions | 1 proposed ADRs |", s)
+
+    def test_ci_runs_script(self):
+        import ci_runs
+        self.assertEqual(ci_runs.parse_repo("https://github.com/acme/app.git"), "acme/app")
+        self.assertEqual(ci_runs.parse_repo("git@github.com:acme/app.git"), "acme/app")
+        self.assertEqual(ci_runs.parse_repo("http://proxy@127.0.0.1:1234/git/acme/app"), "acme/app")
+        self.assertEqual(ci_runs.parse_repo(""), "")
+        self.assertEqual(ci_runs.repo_name(["--repo", "o/n"]), "o/n")
+        path = os.path.join(tempfile.mkdtemp(), "ci-runs.json")
+        n = ci_runs.write([self.run_row(1, 5, "success"), dict(self.run_row(2, 6, "failure"), extra="dropped")],
+                          "test", path)
+        runs = self.d.parse_ci_runs(open(path, encoding="utf-8").read())
+        self.assertEqual((n, [r["id"] for r in runs]), (2, [2, 1]))   # newest first
+        self.assertNotIn("extra", runs[0])
+
 
 class AsyncDelivery(unittest.TestCase):
     def test_wait_for_url_live_and_timeout(self):

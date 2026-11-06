@@ -19,3 +19,5 @@ security-audit-output/
 .dev.vars
 .wrangler/
 /dashboard/
+# fetched by scripts/ci_runs.py; a cache, refresh any time
+metrics/ci-runs.json

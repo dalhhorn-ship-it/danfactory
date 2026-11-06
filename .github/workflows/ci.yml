@@ -6,6 +6,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read  # scripts/ci_runs.py reads the run history
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }  # tags + history for the dashboard
@@ -20,6 +23,12 @@ jobs:
           else
             echo "commands.test not set yet; skipping"
           fi
+      - name: Refresh CI run history for the dashboard
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci_runs.py --pages 2
       - name: Build dashboard
         if: always()
         run: |
