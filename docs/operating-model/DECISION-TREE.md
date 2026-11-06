@@ -36,6 +36,10 @@ Add a secondary path for every significant deliverable of another type (e.g. sof
 
 Software that must be reachable by users → deploy via git to Cloudflare using the `ship` skill (default for software-product; optional for automation-script and library-cli docs sites).
 
+## Q8: who does the work?
+
+Pick the roster and verification ladder in AGENT-ROUTING.md (docs/operating-model/AGENT-ROUTING.md) for the chosen path(s) and rigor.
+
 ## Path summary
 
 | Path | Heavy lifting by | Core practice | Default rigor | File |

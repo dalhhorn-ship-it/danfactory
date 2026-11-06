@@ -8,6 +8,8 @@
 3. Rollback written down before applying.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Cloudflare resources (DNS, WAF, Workers, R2...) | cloudflare-deploy reference skill (`references/terraform`, `references/api`) |

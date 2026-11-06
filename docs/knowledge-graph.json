@@ -8,6 +8,18 @@
    "summary": "Reads large files, many files, logs or long diffs in its own disposable context and returns only a compact answer. Use instead of reading files >350 lines or 3+ files into the main context. Give it a precise question and the paths."
   },
   {
+   "id": ".claude/agents/claude-md-compliance-checker.md",
+   "title": "claude-md-compliance-checker",
+   "lines": 80,
+   "summary": "Checks recent changes against CLAUDE.md, docs/OPERATING-MODEL.md and docs/policies/*. Use after process-relevant changes (new files/structure, deploy, docs, tests) or when drift is suspected; cheap."
+  },
+  {
+   "id": ".claude/agents/code-quality-pragmatist.md",
+   "title": "code-quality-pragmatist",
+   "lines": 71,
+   "summary": "Flags over-engineering, needless abstraction and premature optimisation relative to the project's rigor level. Use after a feature or design lands, especially at L0\u2013L2."
+  },
+  {
    "id": ".claude/agents/code-writer.md",
    "title": "code-writer",
    "lines": 15,
@@ -26,10 +38,34 @@
    "summary": "Watches a git-triggered Cloudflare build in the background until the new version is live (or a bounded timeout), smoke-checks it, records push-to-live time, and reports one line. Always launch with run_in_background so the main agent keeps working instead of waiting on git, CI or Cloudflare."
   },
   {
+   "id": ".claude/agents/developer.md",
+   "title": "developer",
+   "lines": 27,
+   "summary": "Implements a backlog item end to end (code + tests + docs touch-ups) following docs/OPERATING-MODEL.md, the design/ADRs and the spec. Use for well-specified feature work that can run in its own context (e.g. parallel slices, or to keep the main context free); the main agent stays the coordinator. For pure boilerplate use code-writer instead."
+  },
+  {
    "id": ".claude/agents/doc-keeper.md",
    "title": "doc-keeper",
    "lines": 19,
    "summary": "Updates project documentation after a change \u2014 docs/, ADRs, README, CLAUDE.md quick facts and the curated block of docs/INDEX.md. Use at the end of every task that changed behaviour, commands, structure or decisions."
+  },
+  {
+   "id": ".claude/agents/jenny.md",
+   "title": "jenny",
+   "lines": 76,
+   "summary": "Spec-vs-implementation auditor. Checks that what was built matches docs/GOAL.md, the spec and acceptance criteria. Use at milestone end or when you suspect requirement gaps; not for per-task checks."
+  },
+  {
+   "id": ".claude/agents/karen.md",
+   "title": "karen",
+   "lines": 53,
+   "summary": "Reality check on claimed completion: runs the thing and reports what actually works vs what is marked done (BACKLOG.md, dashboard). Use before declaring a milestone done or when progress claims smell optimistic."
+  },
+  {
+   "id": ".claude/agents/product-manager.md",
+   "title": "product-manager",
+   "lines": 21,
+   "summary": "Product owner for the project. Turns GOAL.md into a prioritised backlog, milestones, user stories with acceptance criteria and scope cuts; challenges value and scope. Use when planning milestones, refining the backlog, writing specs, or deciding what NOT to build. Does not write code."
   },
   {
    "id": ".claude/agents/reviewer.md",
@@ -38,10 +74,40 @@
    "summary": "Independent fresh-context review of a change against GOAL.md, OPERATING-MODEL.md and the active path's quality gates. Use before merging or declaring a milestone done. It did not write the code, so it is not anchored on the author's reasoning."
   },
   {
+   "id": ".claude/agents/software-architect.md",
+   "title": "software-architect",
+   "lines": 21,
+   "summary": "Designs the technical shape of software: components, boundaries, data model, APIs, Cloudflare products, testing strategy, and the trade-offs, recorded as ADRs. Use at the start of the software-product/library-cli/infra-ops paths, before a large or risky feature, or when a design is in question. Expensive; not for routine tasks."
+  },
+  {
+   "id": ".claude/agents/spreadsheet-architect.md",
+   "title": "spreadsheet-architect",
+   "lines": 21,
+   "summary": "Designs spreadsheet and data models before anything is built: sheets, inputs vs calculations vs outputs, formulas, named ranges, validation, checks and the generator layout that data-builder then implements. Use at the start of the data-spreadsheet path or before restructuring a workbook or financial/data model."
+  },
+  {
+   "id": ".claude/agents/task-completion-validator.md",
+   "title": "task-completion-validator",
+   "lines": 65,
+   "summary": "Verifies one claimed task is functionally complete (not stubbed, mocked or half-wired) against its acceptance criteria. Use at the end of a non-trivial task at rigor L2+, before ticking it in BACKLOG.md."
+  },
+  {
    "id": ".claude/agents/test-runner.md",
    "title": "test-runner",
    "lines": 17,
    "summary": "Runs tests/builds/linters and returns only the verdict, timing and the minimal failure detail. Use for any command whose output may be long, so logs never enter the main context."
+  },
+  {
+   "id": ".claude/agents/ui-comprehensive-tester.md",
+   "title": "ui-comprehensive-tester",
+   "lines": 81,
+   "summary": "End-to-end UI testing of web/mobile interfaces (Playwright preferred; it is pre-installed in cloud sessions). Use when a change touches user-facing UI or flows; tests against a preview URL or local server."
+  },
+  {
+   "id": ".claude/agents/ultrathink-debugger.md",
+   "title": "ultrathink-debugger",
+   "lines": 89,
+   "summary": "Deep root-cause debugging for hard bugs, production issues and mysterious failures. Expensive (Opus): use only after one normal debugging attempt failed or for production incidents."
   },
   {
    "id": ".claude/skills/brainstorm/SKILL.md",
@@ -76,7 +142,7 @@
   {
    "id": ".claude/skills/retro/SKILL.md",
    "title": "Retro \u2014 keep the factory learning",
-   "lines": 18,
+   "lines": 19,
    "summary": "Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens, and enriches the decision tree, path playbooks and LEARNINGS.md so the next project starts smarter. Use at milestones, after a painful session, or when the user says \"retro\" or \"what did we learn\"."
   },
   {
@@ -100,7 +166,7 @@
   {
    "id": "README.md",
    "title": "danfactory",
-   "lines": 74,
+   "lines": 88,
    "summary": "A template for starting Claude Code projects. It gives you a guided start (brainstorm \u2192 decision tree \u2192 operating model), saves tokens by design, keeps the docs indexed, tracks delivery metrics, runs security audits on request, and deploys to Cloudflare via git."
   },
   {
@@ -118,7 +184,7 @@
   {
    "id": "docs/OPERATING-MODEL.md",
    "title": "Operating model",
-   "lines": 32,
+   "lines": 34,
    "summary": "How this project is built: chosen path(s), rigor, agents, practices, gates, budgets. Written by the `choose-path` skill; revised by `retro`."
   },
   {
@@ -140,9 +206,15 @@
    "summary": "Status: accepted \u00b7 Date: 2026-11-06"
   },
   {
+   "id": "docs/operating-model/AGENT-ROUTING.md",
+   "title": "Agent routing",
+   "lines": 76,
+   "summary": "Which agent gets involved when. The main agent coordinates and decides; subagents are delegated to only when they save tokens or time, or add independence. Enriched by `retro`."
+  },
+  {
    "id": "docs/operating-model/DECISION-TREE.md",
    "title": "Decision tree",
-   "lines": 53,
+   "lines": 57,
    "summary": "Picks the operating model for a goal. Version 1.0.0. Keep this file short: details live in paths/*.md. Enriched by `retro` from LEARNINGS.md."
   },
   {
@@ -154,49 +226,49 @@
   {
    "id": "docs/operating-model/paths/automation-script.md",
    "title": "Path: automation-script",
-   "lines": 23,
+   "lines": 25,
    "summary": "Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1."
   },
   {
    "id": "docs/operating-model/paths/data-spreadsheet.md",
    "title": "Path: data-spreadsheet",
-   "lines": 30,
+   "lines": 32,
    "summary": "Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default rigor L1 (L2 if decisions/money depend on it). **Heavy lifting by scripts and agents, never cell-by-cell in chat.**"
   },
   {
    "id": "docs/operating-model/paths/documents-content.md",
    "title": "Path: documents-content",
-   "lines": 23,
+   "lines": 25,
    "summary": "Documents, decks, handbooks, proposals, long-form writing. Default rigor L1."
   },
   {
    "id": "docs/operating-model/paths/infra-ops.md",
    "title": "Path: infra-ops",
-   "lines": 24,
+   "lines": 26,
    "summary": "Infrastructure as code, CI/CD pipelines, cloud config, DNS, access. Default rigor L3 (blast radius)."
   },
   {
    "id": "docs/operating-model/paths/library-cli.md",
    "title": "Path: library-cli",
-   "lines": 28,
+   "lines": 30,
    "summary": "Packages, SDKs, CLIs that others import or invoke. Default rigor L2."
   },
   {
    "id": "docs/operating-model/paths/prototype-spike.md",
    "title": "Path: prototype-spike",
-   "lines": 18,
+   "lines": 20,
    "summary": "Throwaway code to learn or prove feasibility. Rigor L0. Speed over polish \u2014 but time-boxed."
   },
   {
    "id": "docs/operating-model/paths/research-analysis.md",
    "title": "Path: research-analysis",
-   "lines": 23,
+   "lines": 25,
    "summary": "Questions answered from sources or data: market scans, technical comparisons, data analysis. Default rigor L1."
   },
   {
    "id": "docs/operating-model/paths/software-product.md",
    "title": "Path: software-product",
-   "lines": 38,
+   "lines": 40,
    "summary": "Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git \u2192 Cloudflare (`ship`)."
   },
   {

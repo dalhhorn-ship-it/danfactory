@@ -12,6 +12,7 @@ description: Milestone retrospective. Reviews metrics (test time, coverage, depl
    - wrong path chosen / missing branch -> edit DECISION-TREE.md and bump its version + changelog line (also `template.decision_tree_version` in factory.json)
    - a path default was wrong -> edit that `paths/*.md`
    - a budget is unrealistic -> edit `factory.json` budgets with the reason in the learning
+   - an agent was over/under-used or mis-picked -> edit docs/operating-model/AGENT-ROUTING.md (bump its changelog)
    - a recurring manual step -> propose a hook, script or subagent
 5. Update `docs/TECH-DEBT.md`: add debt found (use `engineering:tech-debt` for a fuller audit), move paid-down items to Resolved. Close or re-plan milestones in `docs/BACKLOG.md`.
 6. Mark learnings that are general (useful for every future project) with `[upstream]`. Tell the user: "N learnings are marked [upstream]; copy them to the template repo (see README → Feeding learnings back)".

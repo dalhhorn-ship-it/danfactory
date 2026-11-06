@@ -11,12 +11,12 @@ description: Phase 2. Walk the decision tree with the agreed goal, pick the oper
 2. Walk the tree **with the user**: state each answer you inferred from GOAL.md and ask only about the ones you can't infer. Mixed goals get a **primary** path plus **secondary** paths (e.g. software-product + data-spreadsheet for an app that also ships an Excel export).
 3. Check `docs/operating-model/LEARNINGS.md` for entries tagged with the candidate paths — apply them.
 4. Read only the chosen path file(s) in `docs/operating-model/paths/`.
-5. Propose the operating model in ≤15 bullets: path(s), rigor level, agents, key practices, quality gates, budgets. Get a yes.
+5. Pick the agent roster from docs/operating-model/AGENT-ROUTING.md (path rosters + verification ladder for the rigor level). Propose the operating model in ≤15 bullets: path(s), rigor level, roster, key practices, quality gates, budgets. Get a yes.
 6. Write `docs/OPERATING-MODEL.md` from its headings. Be concrete: real commands, real thresholds, which subagents/skills are used when. Where a path default doesn't fit, override it and say why.
-7. Update `factory.json`: `paths.primary`, `paths.secondary`, `commands.*` (once the stack is known — leave blank rather than guess), `budgets` overrides, `"phase": "build"`.
+7. Update `factory.json`: `paths.primary`, `paths.secondary`, `agents.roster`, `commands.*` (once the stack is known — leave blank rather than guess), `budgets` overrides, `"phase": "build"`.
 8. Record the choice as an ADR: `docs/decisions/0002-operating-model.md` (copy 0000-template.md).
 9. If no path fits well, pick the closest, note the gap in LEARNINGS.md tagged `[tree-gap]` — `retro` will turn it into a new branch.
-10. Seed `docs/BACKLOG.md`: tick the M0 items now done; break the first milestone into items sized S/M/L.
+10. Seed `docs/BACKLOG.md` with `product-manager` (tick M0 items done; first milestone as S/M/L slices). For L2+ software or data paths, run the architect (`software-architect` / `spreadsheet-architect`) before building.
 11. Run `python3 scripts/docs_index.py` and `python3 scripts/dashboard.py`. Offer to scaffold the first milestone.
 
 ## Rigor dial (state it explicitly)

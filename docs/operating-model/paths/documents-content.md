@@ -8,6 +8,8 @@
 3. Fresh-context review pass (reviewer) for clarity, claims without sources, and audience fit.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Word / PowerPoint / PDF output | `docx`, `pptx`, `pdf` skills |

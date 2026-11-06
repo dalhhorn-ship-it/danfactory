@@ -23,6 +23,9 @@ def main():
         "[danfactory] next: " + NEXT.get(phase, NEXT["build"]),
         "[danfactory] docs: read docs/INDEX.md first, then targeted reads (offset/limit). Never read whole large files.",
     ]
+    roster = (f.get("agents") or {}).get("roster") or []
+    if roster:
+        out.append("[danfactory] agents: %s (routing: docs/operating-model/AGENT-ROUTING.md)" % ", ".join(roster))
     report = os.path.join(ROOT, "metrics", "REPORT.md")
     if os.path.isfile(report):
         with open(report, encoding="utf-8") as fh:

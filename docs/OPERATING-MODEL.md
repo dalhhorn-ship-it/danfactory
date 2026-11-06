@@ -6,6 +6,8 @@
 _Primary path, secondary paths, rigor level (L0–L3) and why — link the ADR._
 
 ## Agents and skills
+_Roster and verification ladder from docs/operating-model/AGENT-ROUTING.md; list overrides here._
+
 | When | Use |
 |---|---|
 | _e.g. reading >350-line files_ | _bulk-reader subagent_ |

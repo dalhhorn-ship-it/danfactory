@@ -9,6 +9,8 @@
 4. Promote → re-run `choose-path` for the real path; the spike code is a reference, not a foundation.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 Main agent mostly; bulk-reader for unfamiliar libraries; preview deploy via `ship` if it must be shown to someone.
 
 ## Quality gates

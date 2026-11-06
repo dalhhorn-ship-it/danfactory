@@ -16,6 +16,7 @@
 | What's planned / in progress? | docs/BACKLOG.md |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
 | Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
+| Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
 <!-- curated:end -->
 
 ## Documents
@@ -23,38 +24,50 @@
 | File | Lines | Title | Summary |
 |---|---:|---|---|
 | .claude/agents/bulk-reader.md | 16 | bulk-reader | Reads large files, many files, logs or long diffs in its own disposable context and returns only a compact answer. Use… |
+| .claude/agents/claude-md-compliance-checker.md | 80 | claude-md-compliance-checker | Checks recent changes against CLAUDE.md, docs/OPERATING-MODEL.md and docs/policies/*. Use after process-relevant… |
+| .claude/agents/code-quality-pragmatist.md | 71 | code-quality-pragmatist | Flags over-engineering, needless abstraction and premature optimisation relative to the project's rigor level. Use… |
 | .claude/agents/code-writer.md | 15 | code-writer | Generates boilerplate (tests, CRUD, config, fixtures, migrations, repetitive variants) that follows an existing… |
 | .claude/agents/data-builder.md | 15 | data-builder | Heavy-lifting builder for spreadsheets, workbooks, CSV/data pipelines and generated reports. Builds them with scripts… |
 | .claude/agents/deploy-watcher.md | 19 | deploy-watcher | Watches a git-triggered Cloudflare build in the background until the new version is live (or a bounded timeout),… |
+| .claude/agents/developer.md | 27 | developer | Implements a backlog item end to end (code + tests + docs touch-ups) following docs/OPERATING-MODEL.md, the… |
 | .claude/agents/doc-keeper.md | 19 | doc-keeper | Updates project documentation after a change — docs/, ADRs, README, CLAUDE.md quick facts and the curated block of… |
+| .claude/agents/jenny.md | 76 | jenny | Spec-vs-implementation auditor. Checks that what was built matches docs/GOAL.md, the spec and acceptance criteria. Use… |
+| .claude/agents/karen.md | 53 | karen | Reality check on claimed completion: runs the thing and reports what actually works vs what is marked done… |
+| .claude/agents/product-manager.md | 21 | product-manager | Product owner for the project. Turns GOAL.md into a prioritised backlog, milestones, user stories with acceptance… |
 | .claude/agents/reviewer.md | 15 | reviewer | Independent fresh-context review of a change against GOAL.md, OPERATING-MODEL.md and the active path's quality gates.… |
+| .claude/agents/software-architect.md | 21 | software-architect | Designs the technical shape of software: components, boundaries, data model, APIs, Cloudflare products, testing… |
+| .claude/agents/spreadsheet-architect.md | 21 | spreadsheet-architect | Designs spreadsheet and data models before anything is built: sheets, inputs vs calculations vs outputs, formulas,… |
+| .claude/agents/task-completion-validator.md | 65 | task-completion-validator | Verifies one claimed task is functionally complete (not stubbed, mocked or half-wired) against its acceptance… |
 | .claude/agents/test-runner.md | 17 | test-runner | Runs tests/builds/linters and returns only the verdict, timing and the minimal failure detail. Use for any command… |
+| .claude/agents/ui-comprehensive-tester.md | 81 | ui-comprehensive-tester | End-to-end UI testing of web/mobile interfaces (Playwright preferred; it is pre-installed in cloud sessions). Use when… |
+| .claude/agents/ultrathink-debugger.md | 89 | ultrathink-debugger | Deep root-cause debugging for hard bugs, production issues and mysterious failures. Expensive (Opus): use only after… |
 | .claude/skills/brainstorm/SKILL.md | 31 | Brainstorm — agree the goal | Phase 1. Interview the user about what they want to build, sharpen it into an agreed goal, and write docs/GOAL.md. Use… |
 | .claude/skills/choose-path/SKILL.md | 29 | Choose path — pick the operating model | Phase 2. Walk the decision tree with the agreed goal, pick the operating model (primary + optional secondary path),… |
 | .claude/skills/dashboard/SKILL.md | 32 | Dashboard | Build and show the project dashboard — versions, phase and progress, backlog state, tech debt, key metrics (tests,… |
 | .claude/skills/docs-sync/SKILL.md | 13 | Docs sync | Bring documentation up to date with the code after a change, and regenerate the docs index and knowledge graph. Use at… |
 | .claude/skills/metrics/SKILL.md | 13 | Metrics | Record and review delivery metrics — test time, coverage, deploy duration/failures, token spend per session — and… |
-| .claude/skills/retro/SKILL.md | 18 | Retro — keep the factory learning | Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens,… |
+| .claude/skills/retro/SKILL.md | 19 | Retro — keep the factory learning | Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens,… |
 | .claude/skills/security-audit-run/SKILL.md | 15 | Security audit (on request) | On-request security audit using Cloudflare's security-audit skill (installed on demand). Use only when the user… |
 | .claude/skills/ship/SKILL.md | 54 | Ship — git-based, asynchronous deploys to Cloudflare | Take software live on Cloudflare via git, without waiting on it. Push to the production branch -> Cloudflare builds… |
 | CLAUDE.md | 30 | CLAUDE.md | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live in docs/ — find them via… |
-| README.md | 74 | danfactory | A template for starting Claude Code projects. It gives you a guided start (brainstorm → decision tree → operating… |
+| README.md | 88 | danfactory | A template for starting Claude Code projects. It gives you a guided start (brainstorm → decision tree → operating… |
 | docs/BACKLOG.md | 13 | Backlog | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`, ticked off as part of every task's… |
 | docs/GOAL.md | 30 | Goal | The agreed goal for this project. Written by the `brainstorm` skill after the user confirms. Keep under ~80 lines. |
-| docs/OPERATING-MODEL.md | 32 | Operating model | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets. Written by the `choose-path`… |
+| docs/OPERATING-MODEL.md | 34 | Operating model | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets. Written by the `choose-path`… |
 | docs/TECH-DEBT.md | 9 | Tech debt register | Known shortcuts and their cost; the dashboard reads this file plus automated signals (TODO/FIXME markers, oversized… |
 | docs/decisions/0000-template.md | 15 | NNNN — Title | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD |
 | docs/decisions/0001-use-danfactory-template.md | 12 | 0001 — Start from the danfactory template | Status: accepted · Date: 2026-11-06 |
-| docs/operating-model/DECISION-TREE.md | 53 | Decision tree | Picks the operating model for a goal. Version 1.0.0. Keep this file short: details live in paths/*.md. Enriched by… |
+| docs/operating-model/AGENT-ROUTING.md | 76 | Agent routing | Which agent gets involved when. The main agent coordinates and decides; subagents are delegated to only when they save… |
+| docs/operating-model/DECISION-TREE.md | 57 | Decision tree | Picks the operating model for a goal. Version 1.0.0. Keep this file short: details live in paths/*.md. Enriched by… |
 | docs/operating-model/LEARNINGS.md | 20 | Learnings | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]` entries should be copied back to… |
-| docs/operating-model/paths/automation-script.md | 23 | Path: automation-script | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
-| docs/operating-model/paths/data-spreadsheet.md | 30 | Path: data-spreadsheet | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default rigor L1 (L2 if… |
-| docs/operating-model/paths/documents-content.md | 23 | Path: documents-content | Documents, decks, handbooks, proposals, long-form writing. Default rigor L1. |
-| docs/operating-model/paths/infra-ops.md | 24 | Path: infra-ops | Infrastructure as code, CI/CD pipelines, cloud config, DNS, access. Default rigor L3 (blast radius). |
-| docs/operating-model/paths/library-cli.md | 28 | Path: library-cli | Packages, SDKs, CLIs that others import or invoke. Default rigor L2. |
-| docs/operating-model/paths/prototype-spike.md | 18 | Path: prototype-spike | Throwaway code to learn or prove feasibility. Rigor L0. Speed over polish — but time-boxed. |
-| docs/operating-model/paths/research-analysis.md | 23 | Path: research-analysis | Questions answered from sources or data: market scans, technical comparisons, data analysis. Default rigor L1. |
-| docs/operating-model/paths/software-product.md | 38 | Path: software-product | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git → Cloudflare (`ship`). |
+| docs/operating-model/paths/automation-script.md | 25 | Path: automation-script | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
+| docs/operating-model/paths/data-spreadsheet.md | 32 | Path: data-spreadsheet | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default rigor L1 (L2 if… |
+| docs/operating-model/paths/documents-content.md | 25 | Path: documents-content | Documents, decks, handbooks, proposals, long-form writing. Default rigor L1. |
+| docs/operating-model/paths/infra-ops.md | 26 | Path: infra-ops | Infrastructure as code, CI/CD pipelines, cloud config, DNS, access. Default rigor L3 (blast radius). |
+| docs/operating-model/paths/library-cli.md | 30 | Path: library-cli | Packages, SDKs, CLIs that others import or invoke. Default rigor L2. |
+| docs/operating-model/paths/prototype-spike.md | 20 | Path: prototype-spike | Throwaway code to learn or prove feasibility. Rigor L0. Speed over polish — but time-boxed. |
+| docs/operating-model/paths/research-analysis.md | 25 | Path: research-analysis | Questions answered from sources or data: market scans, technical comparisons, data analysis. Default rigor L1. |
+| docs/operating-model/paths/software-product.md | 40 | Path: software-product | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git → Cloudflare (`ship`). |
 | docs/policies/async-delivery.md | 23 | Policy: asynchronous delivery (no waiting on git, CI or Cloudflare) | The agent's time is the most expensive part of a deploy. Push, hand off, keep working; builds are made short by design… |
 | docs/policies/documentation.md | 11 | Policy: documentation | Docs are part of done. Small, true, linked — and indexed so agents never read more than they need. |
 | docs/policies/security.md | 13 | Policy: security | Secure defaults always; full audits on request or before L3 releases. |
@@ -65,6 +78,17 @@
 
 | Section | Location |
 |---|---|
+| danfactory notes | .claude/agents/claude-md-compliance-checker.md:76 |
+| danfactory notes | .claude/agents/code-quality-pragmatist.md:67 |
+| danfactory notes | .claude/agents/jenny.md:72 |
+| How you work | .claude/agents/karen.md:10 |
+| What you're looking for | .claude/agents/karen.md:25 |
+| Voice | .claude/agents/karen.md:35 |
+| When you do write a structured report (only when the work warrants it) | .claude/agents/karen.md:39 |
+| danfactory notes | .claude/agents/karen.md:49 |
+| danfactory notes | .claude/agents/task-completion-validator.md:61 |
+| danfactory notes | .claude/agents/ui-comprehensive-tester.md:77 |
+| danfactory notes | .claude/agents/ultrathink-debugger.md:85 |
 | How to run it | .claude/skills/brainstorm/SKILL.md:10 |
 | Don't | .claude/skills/brainstorm/SKILL.md:27 |
 | Steps | .claude/skills/choose-path/SKILL.md:8 |
@@ -83,10 +107,11 @@
 | Deploy and security | CLAUDE.md:26 |
 | Start a new project | README.md:5 |
 | The flow | README.md:17 |
-|   Paths (docs/operating-model/paths/) | README.md:28 |
-| What's inside | README.md:43 |
-| Commands | README.md:58 |
-| Feeding learnings back into the template | README.md:72 |
+|   Agents (docs/operating-model/AGENT-ROUTING.md) | README.md:28 |
+|   Paths (docs/operating-model/paths/) | README.md:42 |
+| What's inside | README.md:57 |
+| Commands | README.md:72 |
+| Feeding learnings back into the template | README.md:86 |
 | Milestone: M0 — Project set up (target: ) | docs/BACKLOG.md:8 |
 | Unplanned | docs/BACKLOG.md:13 |
 | Outcome | docs/GOAL.md:5 |
@@ -100,13 +125,13 @@
 | Open questions | docs/GOAL.md:29 |
 | Path and rigor | docs/OPERATING-MODEL.md:5 |
 | Agents and skills | docs/OPERATING-MODEL.md:8 |
-| Practices and habits | docs/OPERATING-MODEL.md:13 |
-| Policies | docs/OPERATING-MODEL.md:16 |
-| Commands | docs/OPERATING-MODEL.md:19 |
-| Quality gates | docs/OPERATING-MODEL.md:22 |
-| Deploy | docs/OPERATING-MODEL.md:25 |
-| Budgets | docs/OPERATING-MODEL.md:28 |
-| Deviations from path defaults | docs/OPERATING-MODEL.md:31 |
+| Practices and habits | docs/OPERATING-MODEL.md:15 |
+| Policies | docs/OPERATING-MODEL.md:18 |
+| Commands | docs/OPERATING-MODEL.md:21 |
+| Quality gates | docs/OPERATING-MODEL.md:24 |
+| Deploy | docs/OPERATING-MODEL.md:27 |
+| Budgets | docs/OPERATING-MODEL.md:30 |
+| Deviations from path defaults | docs/OPERATING-MODEL.md:33 |
 | Open | docs/TECH-DEBT.md:7 |
 | Resolved | docs/TECH-DEBT.md:9 |
 | Context | docs/decisions/0000-template.md:5 |
@@ -116,50 +141,57 @@
 | Context | docs/decisions/0001-use-danfactory-template.md:5 |
 | Decision | docs/decisions/0001-use-danfactory-template.md:8 |
 | Consequences | docs/decisions/0001-use-danfactory-template.md:11 |
+| Principles | docs/operating-model/AGENT-ROUTING.md:5 |
+| By moment | docs/operating-model/AGENT-ROUTING.md:11 |
+| Verification ladder (per task, by rigor in OPERATING-MODEL.md) | docs/operating-model/AGENT-ROUTING.md:36 |
+| Tie-breakers (overlapping verifiers) | docs/operating-model/AGENT-ROUTING.md:47 |
+| Path rosters (defaults; choose-path writes the project's roster into OPERATING-MODEL.md and factory.json `agents.roster`) | docs/operating-model/AGENT-ROUTING.md:60 |
+| Changelog | docs/operating-model/AGENT-ROUTING.md:75 |
 | Q1–Q4: what is the main artifact? | docs/operating-model/DECISION-TREE.md:5 |
 | Q5: rigor level (applies to every path) | docs/operating-model/DECISION-TREE.md:20 |
 | Q6: secondary paths | docs/operating-model/DECISION-TREE.md:31 |
 | Q7: going live? | docs/operating-model/DECISION-TREE.md:35 |
-| Path summary | docs/operating-model/DECISION-TREE.md:39 |
-| Changelog | docs/operating-model/DECISION-TREE.md:52 |
+| Q8: who does the work? | docs/operating-model/DECISION-TREE.md:39 |
+| Path summary | docs/operating-model/DECISION-TREE.md:43 |
+| Changelog | docs/operating-model/DECISION-TREE.md:56 |
 | Entries | docs/operating-model/LEARNINGS.md:14 |
 |   2026-11-06 — Don't wait on deploys  [software-product] [deploy] [upstream] | docs/operating-model/LEARNINGS.md:16 |
 |   2026-11-06 — Delegate big reads by default  [all] [tooling] [upstream] | docs/operating-model/LEARNINGS.md:19 |
 | Operating model | docs/operating-model/paths/automation-script.md:5 |
 | Agents and skills | docs/operating-model/paths/automation-script.md:11 |
-| Quality gates | docs/operating-model/paths/automation-script.md:18 |
-| Anti-patterns | docs/operating-model/paths/automation-script.md:22 |
+| Quality gates | docs/operating-model/paths/automation-script.md:20 |
+| Anti-patterns | docs/operating-model/paths/automation-script.md:24 |
 | Operating model | docs/operating-model/paths/data-spreadsheet.md:5 |
 | Agents and skills | docs/operating-model/paths/data-spreadsheet.md:12 |
-| Defaults | docs/operating-model/paths/data-spreadsheet.md:20 |
-| Quality gates | docs/operating-model/paths/data-spreadsheet.md:24 |
-| Anti-patterns | docs/operating-model/paths/data-spreadsheet.md:29 |
+| Defaults | docs/operating-model/paths/data-spreadsheet.md:22 |
+| Quality gates | docs/operating-model/paths/data-spreadsheet.md:26 |
+| Anti-patterns | docs/operating-model/paths/data-spreadsheet.md:31 |
 | Operating model | docs/operating-model/paths/documents-content.md:5 |
 | Agents and skills | docs/operating-model/paths/documents-content.md:10 |
-| Quality gates | docs/operating-model/paths/documents-content.md:18 |
-| Anti-patterns | docs/operating-model/paths/documents-content.md:22 |
+| Quality gates | docs/operating-model/paths/documents-content.md:20 |
+| Anti-patterns | docs/operating-model/paths/documents-content.md:24 |
 | Operating model | docs/operating-model/paths/infra-ops.md:5 |
 | Agents and skills | docs/operating-model/paths/infra-ops.md:10 |
-| Quality gates | docs/operating-model/paths/infra-ops.md:18 |
-| Anti-patterns | docs/operating-model/paths/infra-ops.md:23 |
+| Quality gates | docs/operating-model/paths/infra-ops.md:20 |
+| Anti-patterns | docs/operating-model/paths/infra-ops.md:25 |
 | Operating model | docs/operating-model/paths/library-cli.md:5 |
 | Agents and skills | docs/operating-model/paths/library-cli.md:10 |
-| Defaults | docs/operating-model/paths/library-cli.md:18 |
-| Quality gates | docs/operating-model/paths/library-cli.md:22 |
-| Anti-patterns | docs/operating-model/paths/library-cli.md:27 |
+| Defaults | docs/operating-model/paths/library-cli.md:20 |
+| Quality gates | docs/operating-model/paths/library-cli.md:24 |
+| Anti-patterns | docs/operating-model/paths/library-cli.md:29 |
 | Operating model | docs/operating-model/paths/prototype-spike.md:5 |
 | Agents and skills | docs/operating-model/paths/prototype-spike.md:11 |
-| Quality gates | docs/operating-model/paths/prototype-spike.md:14 |
-| Anti-patterns | docs/operating-model/paths/prototype-spike.md:17 |
+| Quality gates | docs/operating-model/paths/prototype-spike.md:16 |
+| Anti-patterns | docs/operating-model/paths/prototype-spike.md:19 |
 | Operating model | docs/operating-model/paths/research-analysis.md:5 |
 | Agents and skills | docs/operating-model/paths/research-analysis.md:11 |
-| Quality gates | docs/operating-model/paths/research-analysis.md:18 |
-| Anti-patterns | docs/operating-model/paths/research-analysis.md:22 |
+| Quality gates | docs/operating-model/paths/research-analysis.md:20 |
+| Anti-patterns | docs/operating-model/paths/research-analysis.md:24 |
 | Operating model | docs/operating-model/paths/software-product.md:5 |
 | Agents and skills | docs/operating-model/paths/software-product.md:11 |
-| Defaults | docs/operating-model/paths/software-product.md:22 |
-| Quality gates | docs/operating-model/paths/software-product.md:28 |
-| Anti-patterns | docs/operating-model/paths/software-product.md:35 |
+| Defaults | docs/operating-model/paths/software-product.md:24 |
+| Quality gates | docs/operating-model/paths/software-product.md:30 |
+| Anti-patterns | docs/operating-model/paths/software-product.md:37 |
 | Never wait | docs/policies/async-delivery.md:5 |
 | Keep builds short | docs/policies/async-delivery.md:12 |
 | Measure | docs/policies/async-delivery.md:22 |

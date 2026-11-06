@@ -13,6 +13,10 @@
     "primary": "",
     "secondary": []
   },
+  "agents": {
+    "roster": [],
+    "routing": "docs/operating-model/AGENT-ROUTING.md"
+  },
   "commands": {
     "test": "",
     "test_affected": "",

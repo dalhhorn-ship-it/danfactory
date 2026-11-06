@@ -9,6 +9,8 @@
 4. Scheduled/hosted? Cloudflare Workers Cron Triggers via `ship`, otherwise document where it runs.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Script scaffolding from an example | code-writer |

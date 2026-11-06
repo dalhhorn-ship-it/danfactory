@@ -218,6 +218,35 @@ class Config(unittest.TestCase):
         for p in os.listdir(os.path.join(ROOT, "docs", "operating-model", "paths")):
             self.assertIn("paths/" + p, tree)
 
+    def test_agents_are_consistent_with_routing(self):
+        import re
+        d = os.path.join(ROOT, ".claude", "agents")
+        names = set()
+        for fn in os.listdir(d):
+            if not fn.endswith(".md"):
+                continue
+            with open(os.path.join(d, fn), encoding="utf-8") as fh:
+                head = fh.read().split("---")[1]
+            meta = dict(l.split(":", 1) for l in head.strip().splitlines() if ":" in l)
+            name = meta["name"].strip()
+            self.assertEqual(name + ".md", fn)
+            self.assertIn(meta.get("model", " inherit").strip(), {"haiku", "sonnet", "opus", "inherit"}, fn)
+            self.assertLess(len(meta["description"]), 400, "keep descriptions short (loaded every session): " + fn)
+            names.add(name)
+        with open(os.path.join(ROOT, "docs", "operating-model", "AGENT-ROUTING.md"), encoding="utf-8") as fh:
+            routing = fh.read()
+        for n in names:
+            self.assertIn(n, routing, "agent missing from AGENT-ROUTING.md: " + n)
+        for n in set(re.findall(r"`([a-z][a-z-]+)`", routing)):
+            if n.endswith("-run") or n in {"brainstorm", "retro"}:
+                continue  # skills
+            self.assertIn(n, names, "routing names unknown agent: " + n)
+        rosters = routing.split("## Path rosters")[1].split("##")[0]
+        for row in rosters.splitlines():
+            if row.startswith("| ") and not row.startswith("| Path") and "," in row:
+                for n in row.split("|")[2].split(","):
+                    self.assertIn(n.strip(), names, "roster names unknown agent: " + n)
+
     def test_skills_have_frontmatter(self):
         d = os.path.join(ROOT, ".claude", "skills")
         tracked = subprocess.run(["git", "ls-files", "--", ".claude/skills"], cwd=ROOT,

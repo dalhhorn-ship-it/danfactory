@@ -10,6 +10,8 @@
 5. Use the `xlsx` skill conventions (formatting, recalculation) when available.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Build / rebuild workbook | data-builder (+ `xlsx` skill) |

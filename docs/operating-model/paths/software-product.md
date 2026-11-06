@@ -9,6 +9,8 @@
 4. Every slice: tests green → docs-sync → reviewer → merge → Cloudflare deploys from git.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Understand big/unknown code | codegraph explore, bulk-reader |

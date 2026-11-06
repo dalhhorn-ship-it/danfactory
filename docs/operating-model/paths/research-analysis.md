@@ -9,6 +9,8 @@
 4. Synthesis: answer first, evidence second, confidence and open questions last.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Multi-source web research | `anthropic-skills:deep-research` |

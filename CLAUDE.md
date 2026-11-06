@@ -11,7 +11,7 @@ Don't skip ahead: no code before GOAL.md is confirmed and an operating model is 
 
 ## Token economy (docs/policies/token-economy.md)
 - Read docs/INDEX.md first, then targeted reads at `file:line`. Whole reads of files > 350 lines are blocked by a hook.
-- Delegate: big/multi-file reading → `bulk-reader`; boilerplate → `code-writer`; test/build runs → `test-runner`; doc updates → `doc-keeper`; review → `reviewer`; spreadsheets/data → `data-builder`.
+- Delegate per docs/operating-model/AGENT-ROUTING.md (moment → agent, verification ladder by rigor). Always: big reads → `bulk-reader`, test runs → `test-runner`, deploy watch → `deploy-watcher` (background).
 - Use codegraph for code navigation when `integrations.codegraph` is true.
 
 ## Definition of done (every task)

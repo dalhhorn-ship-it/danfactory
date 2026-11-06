@@ -25,6 +25,20 @@
 | Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics |
 | On request | `security-audit-run`, `ship` | audit report, live deploy |
 
+### Agents (docs/operating-model/AGENT-ROUTING.md)
+
+The 18 agents are routed by moment and rigor, not all run every time. A verification ladder decides how many checkers a task gets (none at L0, up to five at L3).
+
+| Role | Agents |
+|---|---|
+| Plan & design | product-manager, software-architect (Opus), spreadsheet-architect |
+| Build | developer, code-writer, data-builder |
+| Cheap helpers (Haiku) | bulk-reader, test-runner, doc-keeper, deploy-watcher, claude-md-compliance-checker |
+| Verify | reviewer, task-completion-validator, code-quality-pragmatist, karen, jenny, ui-comprehensive-tester |
+| Debug | ultrathink-debugger (Opus, only after a failed first attempt) |
+
+The verifiers and debugger are adapted from [darcyegb/ClaudeCodeAgents](https://github.com/darcyegb/ClaudeCodeAgents) (MIT).
+
 ### Paths (docs/operating-model/paths/)
 
 The paths are deliberately different, so a spreadsheet isn't run like a SaaS app.

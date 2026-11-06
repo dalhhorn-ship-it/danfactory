@@ -8,6 +8,8 @@
 3. Semver; CHANGELOG.md updated in every user-visible PR; deprecate before removing.
 
 ## Agents and skills
+Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. Path-specific uses:
+
 | Need | Use |
 |---|---|
 | Implementation boilerplate, test matrices | code-writer |
