@@ -17,6 +17,7 @@
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
 | Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
+| How do I bring an existing (Lovable) build in? | docs/operating-model/paths/adopt-existing.md |
 <!-- curated:end -->
 
 ## Documents
@@ -30,9 +31,10 @@
 | docs/TECH-DEBT.md | 9 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
-| docs/operating-model/AGENT-ROUTING.md | 76 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
+| docs/operating-model/AGENT-ROUTING.md | 79 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 68 | Picks the operating model for a goal. Version 1.1.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 20 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
+| docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
 | docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
 | docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default… |
 | docs/operating-model/paths/documents-content.md | 25 | Documents, decks, handbooks, proposals, long-form writing. Default rigor L1. |

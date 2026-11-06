@@ -1,0 +1,10 @@
+{
+  "name": "danfactory",
+  "version": "1.1.0",
+  "description": "Adopt an existing build into danfactory: scan, smart indexing, dashboard, next-build advice. Run /danfactory:adopt inside the other repo.",
+  "author": { "name": "dalhhorn-ship-it" },
+  "repository": "https://github.com/dalhhorn-ship-it/danfactory",
+  "license": "MIT",
+  "keywords": ["template", "adoption", "lovable", "migration", "cloudflare", "token-economy"],
+  "skills": "./plugin/skills/"
+}

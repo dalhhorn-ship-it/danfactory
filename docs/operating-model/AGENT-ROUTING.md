@@ -12,6 +12,7 @@
 
 | Moment | Trigger | Agent | Model |
 |---|---|---|---|
+| Adopt an existing build | in the other repo: `/danfactory:adopt` | bulk-reader (scan questions), karen (does it run?), product-manager (as-built backlog), software-architect (L2+) | mixed |
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
 | Plan | after choose-path; milestone start; backlog messy | `product-manager` | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
@@ -69,8 +70,10 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 | automation-script | developer, code-writer, test-runner, code-quality-pragmatist, deploy-watcher |
 | infra-ops | software-architect, developer, reviewer, claude-md-compliance-checker, deploy-watcher |
 | prototype-spike | developer, bulk-reader |
+| adopt-existing | bulk-reader, karen, product-manager, software-architect, developer, ui-comprehensive-tester, doc-keeper |
 
 `bulk-reader`, `test-runner` and `ultrathink-debugger` are available on every path when their trigger fires.
 
 ## Changelog
+- 1.1.0 — adopt-existing moment and roster.
 - 1.0.0 — 18 agents, ladder by rigor, tie-breakers, path rosters. Verifiers adapted from darcyegb/ClaudeCodeAgents (MIT).

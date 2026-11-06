@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "danfactory",
+  "description": "danfactory: start or adopt Claude Code projects with a decision tree, token economy, docs index, metrics dashboard and git-based Cloudflare deploys.",
+  "owner": { "name": "dalhhorn-ship-it" },
+  "plugins": [
+    {
+      "name": "danfactory",
+      "description": "Adopt an existing build (e.g. a Lovable/Bolt/v0 app) into the danfactory way of working: scan, index, dashboard, next-build advice, then continue in Claude Code.",
+      "version": "1.1.0",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}

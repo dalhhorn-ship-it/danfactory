@@ -14,6 +14,26 @@
    ```
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 
+## Adopt an existing build (e.g. migrate a Lovable app)
+
+Install danfactory once as a Claude Code plugin. Then, inside the other repo, run the `adopt` skill:
+
+```bash
+/plugin install danfactory --marketplace dalhhorn-ship-it/danfactory
+```
+
+```bash
+/danfactory:adopt
+```
+
+It works on a `danfactory/adopt` branch and never overwrites your files:
+1. Scans what was built (origin, stack, tests, CI, hosting, security and quality findings) into `docs/ADOPTION-REPORT.md`.
+2. Uses the decision tree (Q0 → adopt-existing → the path to continue on) to choose the operating model.
+3. Installs hooks, agents, skills, scripts, the docs index and CI, and merges settings, `CLAUDE.md` and `.gitignore`.
+4. Drafts GOAL.md from the as-built state, seeds BACKLOG.md and TECH-DEBT.md, builds the dashboard, and writes `docs/NEXT-BUILDS.md`.
+
+Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are in docs/operating-model/paths/adopt-existing.md. Without plugins, run `bash scripts/install-adopt-skill.sh` from a danfactory clone; it installs `/danfactory-adopt` for your user.
+
 ## The flow
 
 | Phase | Skill | Output |

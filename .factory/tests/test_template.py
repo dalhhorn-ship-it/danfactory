@@ -8,6 +8,9 @@ import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 HOOKS = os.path.join(ROOT, ".claude", "hooks")
+with open(os.path.join(ROOT, "factory.json"), encoding="utf-8") as _fh:
+    IS_TEMPLATE = not json.load(_fh).get("project", {}).get("name")
+template_only = unittest.skipUnless(IS_TEMPLATE, "only meaningful in the un-bootstrapped template repo")
 
 
 def hook(name, event, env=None):
@@ -117,6 +120,8 @@ class RecordTokens(unittest.TestCase):
                 fh.write(json.dumps({"type": "assistant", "message": {"id": path, "model": "m", "usage": u}}) + "\n")
         self.assertEqual(record_tokens.weighted(u), 100 + 50 + 100)
         self.assertEqual(len(record_tokens.subagent_transcripts(main_t)), 1)
+        if not IS_TEMPLATE:
+            return
         # the un-bootstrapped template (empty project.name) must not record anything
         before = os.path.exists(os.path.join(ROOT, "metrics", "tokens.jsonl"))
         hook("record_tokens.py", {"transcript_path": main_t, "session_id": "x"})
@@ -262,6 +267,7 @@ class AsyncDelivery(unittest.TestCase):
         self.assertIn("exceeded", slow.stderr)
 
 
+@template_only
 class Bootstrap(unittest.TestCase):
     def test_flag_anywhere_and_readme_swap(self):
         d = os.path.join(tempfile.mkdtemp(), "proj")
@@ -279,6 +285,63 @@ class Bootstrap(unittest.TestCase):
         self.assertEqual((f["project"]["name"], f["project"]["one_liner"]), ("demo", "A demo app"))
         self.assertTrue(os.path.isfile(os.path.join(d, "docs", "TEMPLATE-GUIDE.md")))
         self.assertIn("# demo", open(os.path.join(d, "README.md")).read())
+
+
+@template_only
+class Adopt(unittest.TestCase):
+    """Scan + install into a tiny Lovable-style repo; nothing of the project may be overwritten."""
+
+    def make_repo(self):
+        d = tempfile.mkdtemp()
+        files = {
+            "package.json": json.dumps({"name": "lovable-demo", "scripts": {"dev": "vite", "build": "vite build"},
+                                        "dependencies": {"react": "18", "@supabase/supabase-js": "2"},
+                                        "devDependencies": {"vite": "5", "lovable-tagger": "1"}}),
+            "README.md": "# My Lovable app\n",
+            "CLAUDE.md": "# Project rules\n- keep it simple\n",
+            ".gitignore": "node_modules\n",
+            "src/App.tsx": "export const App = () => null;\n",
+            "supabase/migrations/1.sql": "create table a (id int);\n",
+        }
+        for rel, body in files.items():
+            os.makedirs(os.path.dirname(os.path.join(d, rel)) or d, exist_ok=True)
+            with open(os.path.join(d, rel), "w") as fh:
+                fh.write(body)
+        subprocess.run(["git", "init", "-q"], cwd=d, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=d, check=True)
+        subprocess.run(["git", "-c", "user.name=gpt-engineer-app[bot]", "-c", "user.email=b@x", "commit", "-qm", "init"],
+                       cwd=d, check=True)
+        return d
+
+    def test_scan_then_apply(self):
+        d = self.make_repo()
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "adopt_scan.py"), "--target", d],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        scan = json.load(open(os.path.join(d, "docs", "adoption-scan.json")))
+        self.assertEqual(scan["origin"], "lovable")
+        titles = " ".join(f["title"] for f in scan["findings"])
+        self.assertIn("Row Level Security", titles)
+        self.assertIn("No automated tests", titles)
+        dry = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "adopt.py"), "--target", d],
+                             capture_output=True, text=True)
+        self.assertIn("DRY RUN", dry.stdout)
+        self.assertFalse(os.path.exists(os.path.join(d, "factory.json")))  # dry run writes nothing
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "adopt.py"), "--target", d, "--apply"],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(open(os.path.join(d, "README.md")).read(), "# My Lovable app\n")
+        claude_md = open(os.path.join(d, "CLAUDE.md")).read()
+        self.assertTrue(claude_md.startswith("# Project rules"))
+        self.assertIn("danfactory:start", claude_md)
+        f = json.load(open(os.path.join(d, "factory.json")))
+        self.assertEqual((f["project"]["name"], f["adopted"]["from"], f["commands"]["build"]),
+                         ("lovable-demo", "lovable", "npm run build"))
+        self.assertIn("Row Level Security", open(os.path.join(d, "docs", "TECH-DEBT.md")).read())
+        self.assertIn("node_modules", open(os.path.join(d, ".gitignore")).read())
+        subprocess.run([sys.executable, "scripts/docs_index.py", "--quiet"], cwd=d, check=True)
+        chk = subprocess.run(["bash", "scripts/check.sh"], cwd=d, capture_output=True, text=True)
+        self.assertEqual(chk.returncode, 0, chk.stdout[-800:] + chk.stderr[-800:])
 
 
 class Config(unittest.TestCase):

@@ -17,6 +17,13 @@ def main():
     f = load_factory()
     phase = f.get("phase", "brainstorm")
     paths = f.get("paths", {})
+    adopted = f.get("adopted")
+    if adopted and phase == "brainstorm" and not os.path.exists(os.path.join(ROOT, "docs", "NEXT-BUILDS.md")):
+        NEXT["brainstorm"] = ("Adopted from %s but adoption isn't finished: continue the danfactory `adopt` skill "
+                              "(docs/ADOPTION-REPORT.md exists)." % adopted.get("from", "?"))
+    elif adopted and phase == "brainstorm":
+        NEXT["brainstorm"] = ("Adopted build: confirm the DRAFT docs/GOAL.md with the user (brainstorm skill), "
+                              "using docs/ADOPTION-REPORT.md and docs/NEXT-BUILDS.md.")
     out = [
         "[danfactory] phase=%s primary_path=%s secondary=%s"
         % (phase, paths.get("primary") or "-", ",".join(paths.get("secondary") or []) or "-"),

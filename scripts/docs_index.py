@@ -93,7 +93,7 @@ def parse(path):
                 continue
             base = ROOT if lm.group(3) or target.startswith(("docs/", ".claude/")) else os.path.dirname(path)
             full = os.path.normpath(os.path.join(base, target))
-            if os.path.isfile(full) and full != path:
+            if (os.path.isfile(full) or full == INDEX) and full != path:  # INDEX may not exist yet on a first run
                 links.add(rel(full))
     return {"file": rel(path), "title": title, "summary": summary, "lines": len(lines),
             "headings": heads, "links": sorted(links)}
@@ -136,8 +136,10 @@ def graph(docs):
     """Compact JSON (one node/edge per line) so it stays small and grep-able."""
     nodes = [json.dumps({"id": d["file"], "title": d["title"], "lines": d["lines"]}) for d in docs]
     edges = [json.dumps({"from": d["file"], "to": t}) for d in docs for t in d["links"]]
-    return ('{"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",\n "nodes": [\n  '
-            + ",\n  ".join(nodes) + '\n ],\n "edges": [\n  ' + ",\n  ".join(edges) + "\n ]\n}\n")
+    def block(items):
+        return "[\n  " + ",\n  ".join(items) + "\n ]" if items else "[]"
+    return ('{"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",\n "nodes": '
+            + block(nodes) + ',\n "edges": ' + block(edges) + "\n}\n")
 
 
 def main():
