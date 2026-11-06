@@ -25,5 +25,6 @@ Don't skip ahead: no code before GOAL.md is confirmed and an operating model is 
 
 ## Deploy and security
 - Production deploys only via git → Cloudflare (`ship` skill). Direct `wrangler deploy` is denied.
+- Never wait on builds: push, launch `deploy-watcher` in the background, keep working (docs/policies/async-delivery.md).
 - Security audits only on request or before an L3 release (`security-audit-run`).
 - Never commit secrets; `.env*` and `.dev.vars` are off limits.

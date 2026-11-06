@@ -150,6 +150,60 @@ class Dashboard(unittest.TestCase):
         self.assertIn("progress", d)
 
 
+class AsyncDelivery(unittest.TestCase):
+    def test_wait_for_url_live_and_timeout(self):
+        import http.server
+        import socketserver
+        import threading
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "version"), "w") as fh:
+            fh.write("abc1234")
+        handler_cls = type("Quiet", (http.server.SimpleHTTPRequestHandler,), {
+            "log_message": lambda *a: None, "__init__": lambda self, *a, **k:
+            http.server.SimpleHTTPRequestHandler.__init__(self, *a, directory=d, **k)})
+        srv = socketserver.TCPServer(("127.0.0.1", 0), handler_cls)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        url = "http://127.0.0.1:%d/version" % srv.server_address[1]
+        script = os.path.join(ROOT, "scripts", "wait-for-url.sh")
+        env = {k: v for k, v in os.environ.items() if not k.lower().endswith("_proxy")}
+        try:
+            ok = subprocess.run(["bash", script, "--url", url, "--expect", "abc1234", "--timeout", "10"],
+                                capture_output=True, text=True, env=env)
+            self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
+            self.assertIn("LIVE", ok.stdout)
+            late = subprocess.run(["bash", script, "--url", url, "--expect", "zzz", "--timeout", "2"],
+                                  capture_output=True, text=True, env=env)
+            self.assertEqual(late.returncode, 1)
+            self.assertIn("TIMEOUT", late.stdout)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def _pre_push(self, commands, cap=1):
+        repo = tempfile.mkdtemp()
+        os.makedirs(os.path.join(repo, ".githooks"))
+        subprocess.run(["cp", os.path.join(ROOT, ".githooks", "pre-push"), os.path.join(repo, ".githooks")])
+        f = json.load(open(os.path.join(ROOT, "factory.json")))
+        f["commands"].update(commands)
+        f["budgets"]["affected_test_seconds"] = cap
+        with open(os.path.join(repo, "factory.json"), "w") as fh:
+            json.dump(f, fh)
+        env = {k: v for k, v in os.environ.items() if k != "CI"}
+        return subprocess.run(["bash", os.path.join(repo, ".githooks", "pre-push")], capture_output=True,
+                              text=True, env=env)
+
+    def test_pre_push_skips_when_unconfigured(self):
+        self.assertEqual(self._pre_push({"lint": "", "test_affected": ""}).returncode, 0)
+
+    def test_pre_push_runs_and_caps(self):
+        self.assertEqual(self._pre_push({"lint": "true", "test_affected": "echo 2 passed"}).returncode, 0)
+        failed = self._pre_push({"lint": "false"})
+        self.assertEqual(failed.returncode, 1)
+        slow = self._pre_push({"lint": "", "test_affected": "sleep 5"}, cap=1)
+        self.assertEqual(slow.returncode, 1)
+        self.assertIn("exceeded", slow.stderr)
+
+
 class Config(unittest.TestCase):
     def test_settings_reference_existing_hooks(self):
         s = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))

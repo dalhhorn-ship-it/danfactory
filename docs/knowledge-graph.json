@@ -20,6 +20,12 @@
    "summary": "Heavy-lifting builder for spreadsheets, workbooks, CSV/data pipelines and generated reports. Builds them with scripts (Python openpyxl/pandas) so the output is reproducible, verifiable and cheap to regenerate. Use for the data-spreadsheet path."
   },
   {
+   "id": ".claude/agents/deploy-watcher.md",
+   "title": "deploy-watcher",
+   "lines": 19,
+   "summary": "Watches a git-triggered Cloudflare build in the background until the new version is live (or a bounded timeout), smoke-checks it, records push-to-live time, and reports one line. Always launch with run_in_background so the main agent keeps working instead of waiting on git, CI or Cloudflare."
+  },
+  {
    "id": ".claude/agents/doc-keeper.md",
    "title": "doc-keeper",
    "lines": 19,
@@ -81,20 +87,20 @@
   },
   {
    "id": ".claude/skills/ship/SKILL.md",
-   "title": "Ship \u2014 git-based deploys to Cloudflare",
-   "lines": 37,
-   "summary": "Take software live on Cloudflare via git (push to the production branch -> Cloudflare builds and deploys; other branches -> preview URLs). Use when software needs to go live, for first-time Cloudflare setup, for preview deployments, or when a deploy failed. Loads the cloudflare-deploy reference skill on demand for product choice and wrangler details."
+   "title": "Ship \u2014 git-based, asynchronous deploys to Cloudflare",
+   "lines": 54,
+   "summary": "Take software live on Cloudflare via git, without waiting on it. Push to the production branch -> Cloudflare builds and deploys; PR branches -> preview URLs; a background deploy-watcher confirms and records it. Use when software needs to go live, for first-time Cloudflare setup, previews, slow deploys, or a failed deploy. Loads the cloudflare-deploy reference skill on demand."
   },
   {
    "id": "CLAUDE.md",
    "title": "CLAUDE.md",
-   "lines": 29,
+   "lines": 30,
    "summary": "Always-loaded instructions. Keep short and stable (it is paid every turn). Details live in docs/ \u2014 find them via docs/INDEX.md."
   },
   {
    "id": "README.md",
    "title": "danfactory",
-   "lines": 73,
+   "lines": 74,
    "summary": "A template for starting Claude Code projects. It gives you a guided start (brainstorm \u2192 decision tree \u2192 operating model), saves tokens by design, keeps the docs indexed, tracks delivery metrics, runs security audits on request, and deploys to Cloudflare via git."
   },
   {
@@ -142,7 +148,7 @@
   {
    "id": "docs/operating-model/LEARNINGS.md",
    "title": "Learnings",
-   "lines": 17,
+   "lines": 20,
    "summary": "Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]` entries should be copied back to the template repo."
   },
   {
@@ -190,8 +196,14 @@
   {
    "id": "docs/operating-model/paths/software-product.md",
    "title": "Path: software-product",
-   "lines": 37,
+   "lines": 38,
    "summary": "Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git \u2192 Cloudflare (`ship`)."
+  },
+  {
+   "id": "docs/policies/async-delivery.md",
+   "title": "Policy: asynchronous delivery (no waiting on git, CI or Cloudflare)",
+   "lines": 23,
+   "summary": "The agent's time is the most expensive part of a deploy. Push, hand off, keep working; builds are made short by design and every wait is bounded."
   },
   {
    "id": "docs/policies/documentation.md",
@@ -277,11 +289,6 @@
   {
    "from": ".claude/skills/security-audit-run/SKILL.md",
    "to": ".claude/skills/security-audit/SKILL.md",
-   "type": "references"
-  },
-  {
-   "from": ".claude/skills/ship/SKILL.md",
-   "to": ".claude/skills/cloudflare-deploy/SKILL.md",
    "type": "references"
   },
   {

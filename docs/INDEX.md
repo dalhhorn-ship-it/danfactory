@@ -15,6 +15,7 @@
 | Where are we / project status? | `python3 scripts/dashboard.py --print` |
 | What's planned / in progress? | docs/BACKLOG.md |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
+| Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
 <!-- curated:end -->
 
 ## Documents
@@ -24,6 +25,7 @@
 | .claude/agents/bulk-reader.md | 16 | bulk-reader | Reads large files, many files, logs or long diffs in its own disposable context and returns only a compact answer. Use… |
 | .claude/agents/code-writer.md | 15 | code-writer | Generates boilerplate (tests, CRUD, config, fixtures, migrations, repetitive variants) that follows an existing… |
 | .claude/agents/data-builder.md | 15 | data-builder | Heavy-lifting builder for spreadsheets, workbooks, CSV/data pipelines and generated reports. Builds them with scripts… |
+| .claude/agents/deploy-watcher.md | 19 | deploy-watcher | Watches a git-triggered Cloudflare build in the background until the new version is live (or a bounded timeout),… |
 | .claude/agents/doc-keeper.md | 19 | doc-keeper | Updates project documentation after a change — docs/, ADRs, README, CLAUDE.md quick facts and the curated block of… |
 | .claude/agents/reviewer.md | 15 | reviewer | Independent fresh-context review of a change against GOAL.md, OPERATING-MODEL.md and the active path's quality gates.… |
 | .claude/agents/test-runner.md | 17 | test-runner | Runs tests/builds/linters and returns only the verdict, timing and the minimal failure detail. Use for any command… |
@@ -34,9 +36,9 @@
 | .claude/skills/metrics/SKILL.md | 13 | Metrics | Record and review delivery metrics — test time, coverage, deploy duration/failures, token spend per session — and… |
 | .claude/skills/retro/SKILL.md | 18 | Retro — keep the factory learning | Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens,… |
 | .claude/skills/security-audit-run/SKILL.md | 15 | Security audit (on request) | On-request security audit using Cloudflare's security-audit skill (installed on demand). Use only when the user… |
-| .claude/skills/ship/SKILL.md | 37 | Ship — git-based deploys to Cloudflare | Take software live on Cloudflare via git (push to the production branch -> Cloudflare builds and deploys; other… |
-| CLAUDE.md | 29 | CLAUDE.md | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live in docs/ — find them via… |
-| README.md | 73 | danfactory | A template for starting Claude Code projects. It gives you a guided start (brainstorm → decision tree → operating… |
+| .claude/skills/ship/SKILL.md | 54 | Ship — git-based, asynchronous deploys to Cloudflare | Take software live on Cloudflare via git, without waiting on it. Push to the production branch -> Cloudflare builds… |
+| CLAUDE.md | 30 | CLAUDE.md | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live in docs/ — find them via… |
+| README.md | 74 | danfactory | A template for starting Claude Code projects. It gives you a guided start (brainstorm → decision tree → operating… |
 | docs/BACKLOG.md | 13 | Backlog | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`, ticked off as part of every task's… |
 | docs/GOAL.md | 30 | Goal | The agreed goal for this project. Written by the `brainstorm` skill after the user confirms. Keep under ~80 lines. |
 | docs/OPERATING-MODEL.md | 32 | Operating model | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets. Written by the `choose-path`… |
@@ -44,7 +46,7 @@
 | docs/decisions/0000-template.md | 15 | NNNN — Title | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD |
 | docs/decisions/0001-use-danfactory-template.md | 12 | 0001 — Start from the danfactory template | Status: accepted · Date: 2026-11-06 |
 | docs/operating-model/DECISION-TREE.md | 53 | Decision tree | Picks the operating model for a goal. Version 1.0.0. Keep this file short: details live in paths/*.md. Enriched by… |
-| docs/operating-model/LEARNINGS.md | 17 | Learnings | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]` entries should be copied back to… |
+| docs/operating-model/LEARNINGS.md | 20 | Learnings | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]` entries should be copied back to… |
 | docs/operating-model/paths/automation-script.md | 23 | Path: automation-script | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
 | docs/operating-model/paths/data-spreadsheet.md | 30 | Path: data-spreadsheet | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default rigor L1 (L2 if… |
 | docs/operating-model/paths/documents-content.md | 23 | Path: documents-content | Documents, decks, handbooks, proposals, long-form writing. Default rigor L1. |
@@ -52,7 +54,8 @@
 | docs/operating-model/paths/library-cli.md | 28 | Path: library-cli | Packages, SDKs, CLIs that others import or invoke. Default rigor L2. |
 | docs/operating-model/paths/prototype-spike.md | 18 | Path: prototype-spike | Throwaway code to learn or prove feasibility. Rigor L0. Speed over polish — but time-boxed. |
 | docs/operating-model/paths/research-analysis.md | 23 | Path: research-analysis | Questions answered from sources or data: market scans, technical comparisons, data analysis. Default rigor L1. |
-| docs/operating-model/paths/software-product.md | 37 | Path: software-product | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git → Cloudflare (`ship`). |
+| docs/operating-model/paths/software-product.md | 38 | Path: software-product | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git → Cloudflare (`ship`). |
+| docs/policies/async-delivery.md | 23 | Policy: asynchronous delivery (no waiting on git, CI or Cloudflare) | The agent's time is the most expensive part of a deploy. Push, hand off, keep working; builds are made short by design… |
 | docs/policies/documentation.md | 11 | Policy: documentation | Docs are part of done. Small, true, linked — and indexed so agents never read more than they need. |
 | docs/policies/security.md | 13 | Policy: security | Secure defaults always; full audits on request or before L3 releases. |
 | docs/policies/testing-and-metrics.md | 17 | Policy: testing and delivery metrics | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the trend. |
@@ -69,10 +72,10 @@
 | Answering "where are we?" | .claude/skills/dashboard/SKILL.md:15 |
 | Showing it | .claude/skills/dashboard/SKILL.md:18 |
 | Keeping it truthful (the dashboard is only as good as its sources) | .claude/skills/dashboard/SKILL.md:23 |
-| 1. Before the first deploy (once per project) | .claude/skills/ship/SKILL.md:10 |
-| 2. Every release | .claude/skills/ship/SKILL.md:21 |
-| 3. Rollback | .claude/skills/ship/SKILL.md:29 |
-| Gotchas | .claude/skills/ship/SKILL.md:33 |
+| 1. First-time setup (once per project) | .claude/skills/ship/SKILL.md:13 |
+| 2. Every change | .claude/skills/ship/SKILL.md:29 |
+| 3. Rollback | .claude/skills/ship/SKILL.md:41 |
+| When deploys are slow (dashboard / metrics alert) | .claude/skills/ship/SKILL.md:45 |
 | Workflow (state in factory.json → `phase`) | CLAUDE.md:5 |
 | Token economy (docs/policies/token-economy.md) | CLAUDE.md:12 |
 | Definition of done (every task) | CLAUDE.md:17 |
@@ -82,8 +85,8 @@
 | The flow | README.md:17 |
 |   Paths (docs/operating-model/paths/) | README.md:28 |
 | What's inside | README.md:43 |
-| Commands | README.md:57 |
-| Feeding learnings back into the template | README.md:71 |
+| Commands | README.md:58 |
+| Feeding learnings back into the template | README.md:72 |
 | Milestone: M0 — Project set up (target: ) | docs/BACKLOG.md:8 |
 | Unplanned | docs/BACKLOG.md:13 |
 | Outcome | docs/GOAL.md:5 |
@@ -120,7 +123,8 @@
 | Path summary | docs/operating-model/DECISION-TREE.md:39 |
 | Changelog | docs/operating-model/DECISION-TREE.md:52 |
 | Entries | docs/operating-model/LEARNINGS.md:14 |
-|   2026-11-06 — Delegate big reads by default  [all] [tooling] [upstream] | docs/operating-model/LEARNINGS.md:16 |
+|   2026-11-06 — Don't wait on deploys  [software-product] [deploy] [upstream] | docs/operating-model/LEARNINGS.md:16 |
+|   2026-11-06 — Delegate big reads by default  [all] [tooling] [upstream] | docs/operating-model/LEARNINGS.md:19 |
 | Operating model | docs/operating-model/paths/automation-script.md:5 |
 | Agents and skills | docs/operating-model/paths/automation-script.md:11 |
 | Quality gates | docs/operating-model/paths/automation-script.md:18 |
@@ -154,8 +158,11 @@
 | Operating model | docs/operating-model/paths/software-product.md:5 |
 | Agents and skills | docs/operating-model/paths/software-product.md:11 |
 | Defaults | docs/operating-model/paths/software-product.md:22 |
-| Quality gates | docs/operating-model/paths/software-product.md:27 |
-| Anti-patterns | docs/operating-model/paths/software-product.md:34 |
+| Quality gates | docs/operating-model/paths/software-product.md:28 |
+| Anti-patterns | docs/operating-model/paths/software-product.md:35 |
+| Never wait | docs/policies/async-delivery.md:5 |
+| Keep builds short | docs/policies/async-delivery.md:12 |
+| Measure | docs/policies/async-delivery.md:22 |
 | Rules | docs/policies/documentation.md:5 |
 | Always | docs/policies/security.md:5 |
 | On request / L3 | docs/policies/security.md:11 |
@@ -175,6 +182,5 @@ Full graph: docs/knowledge-graph.json. Code graph: codegraph (if enabled).
 - .claude/skills/docs-sync/SKILL.md -> docs/INDEX.md
 - .claude/skills/retro/SKILL.md -> docs/BACKLOG.md, docs/TECH-DEBT.md, docs/operating-model/LEARNINGS.md
 - .claude/skills/security-audit-run/SKILL.md -> .claude/skills/security-audit/SKILL.md
-- .claude/skills/ship/SKILL.md -> .claude/skills/cloudflare-deploy/SKILL.md
 - docs/policies/documentation.md -> docs/INDEX.md
 - docs/policies/token-economy.md -> docs/INDEX.md

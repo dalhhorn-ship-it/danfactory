@@ -16,13 +16,14 @@
 | Run tests, read logs | test-runner (`metrics.py test --affected` in the inner loop) |
 | Independent review | reviewer, `/code-review` |
 | Test design | `engineering:testing-strategy` |
-| Go live | `ship` (+ cloudflare-deploy reference) |
+| Go live | `ship` (+ cloudflare-deploy reference), `deploy-watcher` in the background |
 | Before L3 release | `security-audit-run`, `engineering:deploy-checklist` |
 
 ## Defaults
 - Stack: whatever GOAL.md constrains; otherwise TypeScript on Cloudflare Workers (+ D1/KV/R2 as needed) keeps deploy-via-git trivial.
 - Commands to set in factory.json: test, test_affected, coverage, lint, build.
-- Budgets: full tests ≤ 120s, affected ≤ 30s, coverage ≥ 80% on domain code, deploy ≤ 600s.
+- Budgets: full tests ≤ 120s, affected ≤ 30s, coverage ≥ 80% on domain code, push-to-live ≤ 180s.
+- Deploys are asynchronous: push → background `deploy-watcher` → keep working (docs/policies/async-delivery.md).
 
 ## Quality gates
 - [ ] tests + lint green in CI; no skipped tests added

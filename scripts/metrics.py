@@ -250,7 +250,11 @@ def analyse(f, hist, toks):
                       "%d deploys, %.0f%% failed (last 10)" % (len(deps), fail)))
         if last["seconds"] > b["deploy_seconds"]:
             alerts.append("Deploy takes %.0fs (budget %ss)." % (last["seconds"], b["deploy_seconds"]))
-            ideas.append("Cache dependencies/build layers, build once and promote the artifact, deploy in parallel.")
+            ideas += [
+                "Skip docs/metrics-only builds (Workers Builds watch paths / paths-ignore) and turn on the build cache.",
+                "Test once: run tests on the PR; let main only build + deploy (see templates/deploy-cloudflare.yml).",
+                "Never wait on the build: push, launch deploy-watcher in the background (docs/policies/async-delivery.md).",
+            ]
         if fail > 20:
             alerts.append("Deploy failure rate %.0f%% over last %d." % (fail, len(recent)))
             ideas.append("Add a pre-deploy smoke check (engineering:deploy-checklist) and make deploys idempotent.")

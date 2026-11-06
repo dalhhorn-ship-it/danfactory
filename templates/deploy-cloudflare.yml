@@ -1,36 +1,64 @@
-# Route B (see .claude/skills/ship/SKILL.md): tests gate the deploy, GitHub Actions deploys to Cloudflare.
-# Copy to .github/workflows/deploy-cloudflare.yml. Needs repo secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+# Route B (see .claude/skills/ship/SKILL.md): GitHub Actions → Cloudflare, tuned for short waits.
+#  - test once: tests + preview run in parallel on the PR; merging to main only builds and deploys
+#  - docs/metrics-only changes don't build; superseded runs are cancelled; npm cache on
+# Copy to .github/workflows/deploy-cloudflare.yml. Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+# Branch protection on main: require the "test" check, so only tested code is merged.
 name: deploy-cloudflare
 on:
+  pull_request:
+    paths-ignore: ["docs/**", "**/*.md", "metrics/**", ".claude/**"]
   push:
     branches: [main]
-  pull_request:
+    paths-ignore: ["docs/**", "**/*.md", "metrics/**", ".claude/**"]
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
+env:
+  NODE_VERSION: 22
 jobs:
-  deploy:
+  test:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      deployments: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - run: npm test --if-present
+
+  preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, deployments: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: versions upload --var GIT_SHA:${{ github.event.pull_request.head.sha }}
+
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, deployments: write }
     steps:
       - run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
-      - run: npm ci
-      - run: npm test --if-present
-      - name: Deploy (production on main, preview version otherwise)
-        id: deploy
-        uses: cloudflare/wrangler-action@v3
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: ${{ github.ref == 'refs/heads/main' && 'deploy' || 'versions upload' }}
+          command: deploy --var GIT_SHA:${{ github.sha }}
       - name: Record duration
         if: always()
-        run: |
-          secs=$(( $(date +%s) - T0 ))
-          echo "deploy ${{ job.status }} in ~${secs}s (record with: python3 scripts/metrics.py deploy --seconds $secs --status ok|fail)" >> "$GITHUB_STEP_SUMMARY"
+        run: echo "deploy ${{ job.status }} in $(( $(date +%s) - T0 ))s (push-to-live is recorded by deploy-watcher)" >> "$GITHUB_STEP_SUMMARY"

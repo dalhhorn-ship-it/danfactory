@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Fast pre-push gate: lint + affected tests only, hard-capped. The full suite runs in CI.
+# Enabled by scripts/bootstrap.sh (git config core.hooksPath .githooks).
+# Agents must not bypass it with --no-verify unless the user says so.
+set -uo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+[ -n "${CI:-}" ] && exit 0
+read -r LINT AFFECTED CAP < <(python3 - <<'PY'
+import json
+f = json.load(open("factory.json"))
+c, b = f.get("commands", {}), f.get("budgets", {})
+q = lambda s: (s or "-").replace(" ", "\x1f")
+print(q(c.get("lint")), q(c.get("test_affected")), int(b.get("affected_test_seconds", 30)) * 2)
+PY
+)
+run() {  # run a configured command under the time cap
+  local name="$1" cmd="${2//$'\x1f'/ }"
+  [ "$cmd" = "-" ] && return 0
+  local t0=$(date +%s)
+  timeout "$CAP" bash -c "$cmd" >"/tmp/pre-push-$name.log" 2>&1
+  local code=$?
+  if [ $code -ne 0 ]; then
+    [ $code -eq 124 ] && echo "pre-push: $name exceeded ${CAP}s — speed it up (see metrics/REPORT.md) or narrow commands.test_affected" >&2 \
+                      || { echo "pre-push: $name failed:" >&2; tail -20 "/tmp/pre-push-$name.log" >&2; }
+    return 1
+  fi
+  echo "pre-push: $name ok ($(( $(date +%s) - t0 ))s)"
+}
+run lint "$LINT" && run affected-tests "$AFFECTED"

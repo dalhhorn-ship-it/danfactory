@@ -28,7 +28,7 @@
   "budgets": {
     "test_seconds": 120,
     "affected_test_seconds": 30,
-    "deploy_seconds": 600,
+    "deploy_seconds": 180,
     "min_coverage_pct": 80,
     "max_coverage_drop_pct": 2,
     "session_tokens_warn": 2000000,

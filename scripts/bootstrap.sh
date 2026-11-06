@@ -16,7 +16,9 @@ open("factory.json", "a").write("\n")
 PY
 # fresh metrics for the new project
 rm -f metrics/history.jsonl metrics/tokens.jsonl metrics/REPORT.md
-chmod +x .claude/hooks/*.py scripts/*.py scripts/*.sh
+chmod +x .claude/hooks/*.py scripts/*.py scripts/*.sh .githooks/*
+# fast local gate (lint + affected tests); the full suite runs in CI
+git config core.hooksPath .githooks 2>/dev/null || true
 for arg in "$@"; do [ "$arg" = "--codegraph" ] && bash scripts/install-codegraph.sh; done
 python3 scripts/docs_index.py
 echo
