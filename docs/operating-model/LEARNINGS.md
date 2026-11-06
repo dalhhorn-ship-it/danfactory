@@ -13,6 +13,9 @@ Types: `[practice]` `[tree-gap]` `[budget]` `[tooling]` `[anti-pattern]` `[secur
 
 ## Entries
 
+### 2026-11-06 — Cloudflare credential mix-ups  [software-product] [deploy] [upstream]
+Smoke test deployed and verified /version in 5s, after two credential mix-ups: an R2 access key instead of an API token (code 9109), then a Zone ID as CLOUDFLARE_ACCOUNT_ID (code 10000). Docs now say: API token from the "Edit Cloudflare Workers" template; account ID optional, never a Zone ID. Clue for next time: in the log, a correct secret is masked as *** everywhere, and an unmasked account ID means the secret differs.
+
 ### 2026-11-06 — Don't wait on deploys  [software-product] [deploy] [upstream]
 Design choice from the template build (not yet measured): agents would idle while git/CI/Cloudflare builds ran. Now: push → background deploy-watcher (Haiku, bounded wait) → continue; test once on PR; skip docs-only builds; build cache; fast pre-push gate. Budget push-to-live 180s.
 

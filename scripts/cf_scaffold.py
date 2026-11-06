@@ -135,7 +135,9 @@ def main():
     print("\n".join(done))
     print("""
 Worker '{name}' is scaffolded ({kind}). Next:
-  1. GitHub repo -> Settings -> Secrets and variables -> Actions: add CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+  1. GitHub repo -> Settings -> Secrets and variables -> Actions: add CLOUDFLARE_API_TOKEN
+     ("Edit Cloudflare Workers" API token, not R2 keys). CLOUDFLARE_ACCOUNT_ID is optional; if set, use the
+     Account ID, never a Zone ID.
   2. Branch protection on main: require the "test" check
   3. Commit, open a PR (preview: https://pr-<n>-{name}.<subdomain>.workers.dev), merge -> Worker created
   4. Put the URL from the deploy log into factory.json integrations.deploy (workers_subdomain, production_url)

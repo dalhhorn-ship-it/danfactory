@@ -4,7 +4,8 @@
 #  - docs-only PRs skip the work but still report a green "test" check, so a required check
 #    never blocks the merge (paths-ignore on pull_request would leave it "Expected" forever)
 #  - superseded runs are cancelled; npm cache when a lockfile exists
-# Secrets (repo Settings → Secrets and variables → Actions): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+# Secrets (repo Settings → Secrets and variables → Actions): CLOUDFLARE_API_TOKEN (required);
+# CLOUDFLARE_ACCOUNT_ID optional (inferred for single-account tokens; if set: Account ID, NOT a Zone ID).
 # PRs from forks get no secrets, so they can't deploy. Branch protection on main: require "test".
 name: deploy-cloudflare
 on:
