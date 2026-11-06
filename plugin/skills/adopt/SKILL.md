@@ -64,7 +64,7 @@ Write `docs/NEXT-BUILDS.md`, max ~80 lines, as three horizons ranked by value ÷
    - CI on PRs
    - secrets out of git
 2. **Own the delivery pipeline:**
-   - git-only deploys to Cloudflare (the `ship` skill)
+   - git-only deploys to Cloudflare: `python3 scripts/cf_scaffold.py` sets up the Worker (SPA mode for Vite/Lovable), then the `ship` skill
    - preview URLs
    - metrics
 3. **Grow the product:** the next features from GOAL.md, each a thin vertical slice.

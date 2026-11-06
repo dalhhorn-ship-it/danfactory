@@ -14,14 +14,14 @@ description: Take software live on Cloudflare via git, without waiting on it. Pu
 
 1. `bash scripts/install-skill.sh cloudflare-deploy` if missing. Read only its `SKILL.md`, then only the chosen `references/<product>/README.md` (+ `gotchas.md`). Default for web apps/APIs: **Workers with static assets**.
 2. Add a tiny `GET /version` route returning the build's git sha (from a `GIT_SHA` var). This lets the watcher prove the *new* version is live, not the old one.
-3. Choose the route and write it into docs/OPERATING-MODEL.md → Deploy:
+3. Choose the route (B is the default: zero dashboard clicks) and write it into docs/OPERATING-MODEL.md → Deploy:
    - **A. Workers Builds (default).** User connects the repo in the dashboard (Workers & Pages → Create → Import a repository), then in the Worker's Settings → Build:
      - Deploy command: `npx wrangler deploy --var GIT_SHA:$WORKERS_CI_COMMIT_SHA`
      - Non-production branch deploy command: `npx wrangler versions upload --var GIT_SHA:$WORKERS_CI_COMMIT_SHA` (preview URLs)
      - **Build watch paths**: include `src/**`, `public/**`, `package.json`, `package-lock.json`, `wrangler.jsonc`; exclude `docs/**`, `**/*.md`, `metrics/**` (docs-only pushes don't build)
      - **Build cache**: on
      - Tests: GitHub CI runs them on the PR; make that check required in branch protection for `main`.
-   - **B. GitHub Actions** when you want one pipeline in GitHub: copy `templates/deploy-cloudflare.yml` to `.github/workflows/`; user adds repo secrets `CLOUDFLARE_API_TOKEN` (least privilege) and `CLOUDFLARE_ACCOUNT_ID`; mark the `test` job required for `main`.
+   - **B. GitHub Actions: fully automatic, the default for new projects.** Run `python3 scripts/cf_scaffold.py` (or bootstrap with `--cloudflare`). It writes `wrangler.jsonc`, `worker/index.ts` (with `/version` and `/health`) and the workflow, and fills factory.json. The user adds repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (see docs/policies/security.md) and marks `test` as required for `main`. **The first merge to main creates the Worker**; no dashboard step. PR previews work from then on.
 4. Fill `factory.json` → `integrations.deploy` (`product`, `project_name`, `production_url`, `worker_name`, `workers_subdomain`), `commands.build`, `commands.lint`, `commands.test_affected`. Leave `commands.deploy` empty (git is the deploy).
 5. Speed basics: commit the lockfile, `npm ci`, keep dev tooling out of the production build, let wrangler bundle (esbuild). Target `budgets.deploy_seconds` (180s push-to-live).
 6. Secrets: `wrangler secret put NAME` or the dashboard; local `.dev.vars` (git-ignored). Never in `wrangler.jsonc`, docs or chat.

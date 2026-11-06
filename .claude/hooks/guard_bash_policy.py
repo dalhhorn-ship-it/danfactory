@@ -41,7 +41,7 @@ def main():
     if ev.get("tool_name") != "Bash":
         return
     cmd = executable_text((ev.get("tool_input") or {}).get("command", ""))
-    if DEPLOY.search(cmd):
+    if DEPLOY.search(cmd) and not re.search(r"\s--dry-run\b", cmd):  # dry runs build locally, upload nothing
         block("Direct `wrangler deploy` is not allowed: production deploys go through git "
               "(push/merge to the production branch). See the `ship` skill. Rollback: `npx wrangler rollback`.")
     scripts = package_scripts()

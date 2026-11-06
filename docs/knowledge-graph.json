@@ -21,7 +21,7 @@
   {"id": "docs/operating-model/paths/software-product.md", "title": "Path: software-product", "lines": 40},
   {"id": "docs/policies/async-delivery.md", "title": "Policy: asynchronous delivery (no waiting on git, CI or Cloudflare)", "lines": 23},
   {"id": "docs/policies/documentation.md", "title": "Policy: documentation", "lines": 11},
-  {"id": "docs/policies/security.md", "title": "Policy: security", "lines": 13},
+  {"id": "docs/policies/security.md", "title": "Policy: security", "lines": 20},
   {"id": "docs/policies/testing-and-metrics.md", "title": "Policy: testing and delivery metrics", "lines": 17},
   {"id": "docs/policies/token-economy.md", "title": "Policy: token economy", "lines": 28}
  ],

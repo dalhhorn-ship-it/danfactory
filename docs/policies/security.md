@@ -8,6 +8,13 @@
 - Dependencies: lockfiles committed; add dependencies deliberately.
 - Production changes only via git (see `ship`).
 
+## Cloudflare deploy credentials
+- **Token:** Cloudflare → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" template, limited to your account (and only the zones you need), with an expiry. Never use the Global API Key.
+- **Where it lives:** GitHub → repo Settings → Secrets and variables → Actions: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`. An organization can share them across selected repos with org-level secrets. `gh secret set CLOUDFLARE_API_TOKEN` prompts for the value, so it stays out of shell history.
+- **Never:** in chat, in commits or `.env` files, in Claude settings or docs. Claude doesn't need it; GitHub Actions deploys.
+- **Local:** `npx wrangler login` (browser OAuth), not a token.
+- **Exposure:** PRs from forks get no secrets. The deploy job runs in the `production` environment (add required reviewers there if you want a manual gate). Rotate on expiry or on any suspicion: revoke in Cloudflare, then set the new value in GitHub.
+
 ## On request / L3
 - `security-audit-run` installs and runs Cloudflare's security-audit skill (guidance or full audit). Full-audit artifacts are written outside the repo.
 - Confirmed High/Critical findings block an L3 release.

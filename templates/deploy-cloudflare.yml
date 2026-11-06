@@ -1,10 +1,11 @@
 # Route B (see .claude/skills/ship/SKILL.md): GitHub Actions → Cloudflare, tuned for short waits.
+# The first merge to main CREATES the Worker (scaffold: python3 scripts/cf_scaffold.py).
 #  - test once: tests + preview run in parallel on the PR; merging to main only builds and deploys
 #  - docs-only PRs skip the work but still report a green "test" check, so a required check
 #    never blocks the merge (paths-ignore on pull_request would leave it "Expected" forever)
-#  - superseded runs are cancelled; npm cache on
-# Copy to .github/workflows/deploy-cloudflare.yml. Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
-# Branch protection on main: require the "test" check.
+#  - superseded runs are cancelled; npm cache when a lockfile exists
+# Secrets (repo Settings → Secrets and variables → Actions): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+# PRs from forks get no secrets, so they can't deploy. Branch protection on main: require "test".
 name: deploy-cloudflare
 on:
   pull_request:
@@ -16,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 env:
   NODE_VERSION: 22
+  WRANGLER_VERSION: "4"
 jobs:
   changes:
     if: github.event_name == 'pull_request'
@@ -43,9 +45,9 @@ jobs:
         uses: actions/checkout@v4
       - if: needs.changes.outputs.code == 'true'
         uses: actions/setup-node@v4
-        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: "${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}" }
       - if: needs.changes.outputs.code == 'true'
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --no-audit --no-fund; fi
       - if: needs.changes.outputs.code == 'true'
         run: npm test --if-present
 
@@ -54,38 +56,46 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true  # not a merge gate; fails until the first merge has created the Worker
     permissions: { contents: read, deployments: write }
     steps:
       - if: needs.changes.outputs.code == 'true'
         uses: actions/checkout@v4
       - if: needs.changes.outputs.code == 'true'
         uses: actions/setup-node@v4
-        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: "${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}" }
       - if: needs.changes.outputs.code == 'true'
-        run: npm ci --prefer-offline --no-audit --no-fund
-      # Stable preview URL: https://pr-<number>-<worker>.<subdomain>.workers.dev (needs wrangler with --preview-alias)
+        run: if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+      - if: needs.changes.outputs.code == 'true'
+        run: npm run build --if-present
+      # Stable preview URL: https://pr-<number>-<worker>.<subdomain>.workers.dev
+      # (preview versions need the Worker to exist: merge once to main first)
       - if: needs.changes.outputs.code == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
           command: versions upload --preview-alias pr-${{ github.event.number }} --var GIT_SHA:${{ github.event.pull_request.head.sha }}
 
   deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: production
     permissions: { contents: read, deployments: write }
     steps:
       - run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm }
-      - run: npm ci --prefer-offline --no-audit --no-fund
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: "${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}" }
+      - run: if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+      - run: npm run build --if-present
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
           command: deploy --var GIT_SHA:${{ github.sha }}
       - name: Record duration
         if: always()

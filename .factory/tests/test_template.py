@@ -89,6 +89,7 @@ class BashPolicy(unittest.TestCase):
         self.assertEqual(self.check("echo ok && npx %s" % w), 2)
 
     def test_allows_normal_and_rollback(self):
+        self.assertEqual(self.check("npx wrangler " + "deploy --dry-run --outdir /tmp/x"), 0)
         for cmd in ("git push -u origin HEAD", "git push -n origin main", "npx wrangler rollback",
                     "npx wrangler whoami", "git commit -m 'fix'"):
             self.assertEqual(self.check(cmd), 0, cmd)
@@ -381,6 +382,47 @@ class ShortContexts(unittest.TestCase):
                              text=True, capture_output=True, env=env).stdout
         self.assertIn("loaded on clear", out)
         self.assertIn("Ship the login page", out)
+
+
+class CloudflareScaffold(unittest.TestCase):
+    def scaffold(self, files):
+        d = os.path.join(tempfile.mkdtemp(), "proj")
+        os.makedirs(os.path.join(d, "scripts"))
+        os.makedirs(os.path.join(d, "templates"))
+        subprocess.run(["cp", os.path.join(ROOT, "scripts", "cf_scaffold.py"), os.path.join(d, "scripts")], check=True)
+        subprocess.run(["cp", os.path.join(ROOT, "templates", "deploy-cloudflare.yml"), os.path.join(d, "templates")], check=True)
+        f = json.load(open(os.path.join(ROOT, "factory.json")))
+        f["project"]["name"] = "My Cool App"
+        files = dict(files, **{"factory.json": json.dumps(f)})
+        for rel, body in files.items():
+            with open(os.path.join(d, rel), "w") as fh:
+                fh.write(body)
+        r = subprocess.run([sys.executable, "scripts/cf_scaffold.py", "--no-lock"], cwd=d, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return d
+
+    def config(self, d):
+        text = open(os.path.join(d, "wrangler.jsonc")).read()
+        return json.loads(text[text.index("{"):])
+
+    def test_vite_spa(self):
+        d = self.scaffold({"package.json": json.dumps({"name": "x", "devDependencies": {"vite": "5"}})})
+        c = self.config(d)
+        self.assertEqual(c["name"], "my-cool-app")
+        self.assertEqual(c["assets"]["directory"], "./dist")
+        self.assertEqual(c["assets"]["not_found_handling"], "single-page-application")
+        self.assertIn("/version", c["assets"]["run_worker_first"])
+        self.assertIn("/version", open(os.path.join(d, "worker", "index.ts")).read())
+        self.assertTrue(os.path.isfile(os.path.join(d, ".github", "workflows", "deploy-cloudflare.yml")))
+        self.assertEqual(json.load(open(os.path.join(d, "factory.json")))["integrations"]["deploy"]["worker_name"], "my-cool-app")
+
+    def test_bare_project_and_idempotent(self):
+        d = self.scaffold({})
+        self.assertEqual(self.config(d)["assets"]["directory"], "./public")
+        self.assertTrue(os.path.isfile(os.path.join(d, "public", "index.html")))
+        self.assertIn("wrangler", open(os.path.join(d, "package.json")).read())
+        r = subprocess.run([sys.executable, "scripts/cf_scaffold.py", "--no-lock"], cwd=d, capture_output=True, text=True)
+        self.assertIn("keep    wrangler.jsonc", r.stdout)  # second run never overwrites
 
 
 class Config(unittest.TestCase):
