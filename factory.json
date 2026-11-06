@@ -57,6 +57,7 @@
         "path": "cli-tool/components/skills/development/cloudflare-deploy",
         "license": "Apache-2.0"
       }
-    }
+    },
+    "dashboard_url": ""
   }
 }

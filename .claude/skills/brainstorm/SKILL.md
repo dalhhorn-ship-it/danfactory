@@ -20,8 +20,9 @@ You are a sharp thinking partner, not a form. Goal: leave with a GOAL.md the use
 3. Push back where useful: challenge scope creep, name the riskiest assumption, offer a smaller first milestone.
 4. Summarise back in ≤10 bullets and ask "is this right?" before writing.
 5. Write `docs/GOAL.md` using its existing headings. Keep it under ~80 lines.
-6. Set `"phase": "operating-model"` and fill `project.name` / `project.one_liner` in factory.json.
-7. Tell the user the next step is `choose-path` and offer to start it now.
+6. Put the first milestone into `docs/BACKLOG.md` as `## Milestone: M1 — <name>` with its known items.
+7. Set `"phase": "operating-model"` and fill `project.name` / `project.one_liner` in factory.json.
+8. Tell the user the next step is `choose-path` and offer to start it now.
 
 ## Don't
 

@@ -13,5 +13,6 @@ description: Milestone retrospective. Reviews metrics (test time, coverage, depl
    - a path default was wrong -> edit that `paths/*.md`
    - a budget is unrealistic -> edit `factory.json` budgets with the reason in the learning
    - a recurring manual step -> propose a hook, script or subagent
-5. Mark learnings that are general (useful for every future project) with `[upstream]`. Tell the user: "N learnings are marked [upstream]; copy them to the template repo (see README → Feeding learnings back)".
-6. `python3 scripts/docs_index.py`. Summarise in ≤8 bullets.
+5. Update `docs/TECH-DEBT.md`: add debt found (use `engineering:tech-debt` for a fuller audit), move paid-down items to Resolved. Close or re-plan milestones in `docs/BACKLOG.md`.
+6. Mark learnings that are general (useful for every future project) with `[upstream]`. Tell the user: "N learnings are marked [upstream]; copy them to the template repo (see README → Feeding learnings back)".
+7. `python3 scripts/docs_index.py` and `python3 scripts/dashboard.py` (publish it per the `dashboard` skill if the user follows it there). Summarise in ≤8 bullets.

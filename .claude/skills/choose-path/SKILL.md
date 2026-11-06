@@ -16,7 +16,8 @@ description: Phase 2. Walk the decision tree with the agreed goal, pick the oper
 7. Update `factory.json`: `paths.primary`, `paths.secondary`, `commands.*` (once the stack is known — leave blank rather than guess), `budgets` overrides, `"phase": "build"`.
 8. Record the choice as an ADR: `docs/decisions/0002-operating-model.md` (copy 0000-template.md).
 9. If no path fits well, pick the closest, note the gap in LEARNINGS.md tagged `[tree-gap]` — `retro` will turn it into a new branch.
-10. Run `python3 scripts/docs_index.py`. Offer to scaffold the first milestone.
+10. Seed `docs/BACKLOG.md`: tick the M0 items now done; break the first milestone into items sized S/M/L.
+11. Run `python3 scripts/docs_index.py` and `python3 scripts/dashboard.py`. Offer to scaffold the first milestone.
 
 ## Rigor dial (state it explicitly)
 

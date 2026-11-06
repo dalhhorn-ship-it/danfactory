@@ -105,6 +105,51 @@ class Metrics(unittest.TestCase):
         self.assertEqual(metrics._lcov(p), 50.0)
 
 
+class Dashboard(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(ROOT, "scripts"))
+        import dashboard
+        cls.d = dashboard
+
+    def test_backlog_parser(self):
+        ms = self.d.parse_backlog("""# Backlog
+```
+- [x] example inside code fence is ignored
+```
+## Milestone: M1 — Skeleton (target: 2026-12-01)
+- [x] done item (S) #infra
+- [~] doing item
+- [!] blocked item
+- [-] dropped item
+- [ ] todo item
+""")
+        self.assertEqual(len(ms), 1)
+        m = ms[0]
+        self.assertEqual((m["name"], m["target"], m["done"], m["total"], m["pct"]), ("M1 — Skeleton", "2026-12-01", 1, 4, 25))
+        self.assertEqual(m["items"][0]["size"], "S")
+        self.assertEqual(m["items"][0]["tags"], ["infra"])
+        self.assertEqual(m["items"][0]["title"], "done item")
+
+    def test_debt_parser(self):
+        items = self.d.parse_debt("""## Open
+- [ ] TD-001 Buffering uploads — impact: high · effort: M · area: api
+## Resolved
+- [x] TD-000 No CI cache — impact: low · effort: S · area: ci
+""")
+        self.assertEqual([(i["id"], i["open"], i["impact"], i["effort"], i["area"]) for i in items],
+                         [("TD-001", True, "high", "M", "api"), ("TD-000", False, "low", "S", "ci")])
+
+    def test_build_writes_artefacts(self):
+        d = self.d.build()
+        for name in ("index.html", "data.json", "SUMMARY.md"):
+            self.assertTrue(os.path.isfile(os.path.join(ROOT, "dashboard", name)), name)
+        page = open(os.path.join(ROOT, "dashboard", "index.html"), encoding="utf-8").read()
+        self.assertIn("<title>", page)
+        self.assertIn("prefers-color-scheme: dark", page)
+        self.assertIn("progress", d)
+
+
 class Config(unittest.TestCase):
     def test_settings_reference_existing_hooks(self):
         s = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))

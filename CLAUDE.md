@@ -17,7 +17,11 @@ Don't skip ahead: no code before GOAL.md is confirmed and an operating model is 
 ## Definition of done (every task)
 - Tests via `python3 scripts/metrics.py test` (through `test-runner`) pass; nothing skipped to get green.
 - Docs updated in the same change (`docs-sync`); decisions → ADR in docs/decisions/.
+- Backlog item ticked in docs/BACKLOG.md; deliberate shortcuts logged in docs/TECH-DEBT.md.
 - `bash scripts/check.sh` passes.
+
+## Status
+`python3 scripts/dashboard.py --print` for a cheap status; `dashboard` skill to show the full page.
 
 ## Deploy and security
 - Production deploys only via git → Cloudflare (`ship` skill). Direct `wrangler deploy` is denied.

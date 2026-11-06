@@ -6,6 +6,8 @@
   python3 scripts/metrics.py deploy --seconds 312 --status ok   record an external deploy (CI)
   python3 scripts/metrics.py report                     write metrics/REPORT.md (alerts + suggestions)
 
+Each command also regenerates dashboard/ (scripts/dashboard.py) unless --no-dashboard.
+
 Commands and budgets live in factory.json. History is append-only JSONL in metrics/ and is
 committed, so trends survive ephemeral (cloud) sessions. Test output is truncated to the tail
 on failure so the agent's context isn't flooded.
@@ -307,9 +309,22 @@ def main():
     d.add_argument("--seconds", type=float)
     d.add_argument("--status", choices=["ok", "fail"], default="ok")
     sub.add_parser("report")
+    ap.add_argument("--no-dashboard", action="store_true", help="skip regenerating dashboard/")
     a = ap.parse_args()
     f = factory()
-    return {"test": cmd_test, "deploy": cmd_deploy, "report": cmd_report}[a.cmd](a, f)
+    code = {"test": cmd_test, "deploy": cmd_deploy, "report": cmd_report}[a.cmd](a, f)
+    if not a.no_dashboard:
+        refresh_dashboard()
+    return code
+
+
+def refresh_dashboard():
+    """Every recorded build refreshes dashboard/ so it never lags the metrics."""
+    try:
+        import dashboard
+        dashboard.build()
+    except Exception as exc:  # noqa: BLE001 - the dashboard must never fail a test/deploy run
+        print("dashboard not refreshed: %s" % exc, file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }  # tags + history for the dashboard
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Template checks (docs index fresh, hooks, metrics)
@@ -19,3 +20,15 @@ jobs:
           else
             echo "commands.test not set yet; skipping"
           fi
+      - name: Build dashboard
+        if: always()
+        run: |
+          python3 scripts/dashboard.py
+          cat dashboard/SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: dashboard/
+          retention-days: 30

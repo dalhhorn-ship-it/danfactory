@@ -22,7 +22,7 @@
   {
    "id": ".claude/agents/doc-keeper.md",
    "title": "doc-keeper",
-   "lines": 18,
+   "lines": 19,
    "summary": "Updates project documentation after a change \u2014 docs/, ADRs, README, CLAUDE.md quick facts and the curated block of docs/INDEX.md. Use at the end of every task that changed behaviour, commands, structure or decisions."
   },
   {
@@ -40,14 +40,20 @@
   {
    "id": ".claude/skills/brainstorm/SKILL.md",
    "title": "Brainstorm \u2014 agree the goal",
-   "lines": 30,
+   "lines": 31,
    "summary": "Phase 1. Interview the user about what they want to build, sharpen it into an agreed goal, and write docs/GOAL.md. Use at the start of a new project (factory.json phase \"brainstorm\"), when the user says \"let's start\", or when the goal changes materially."
   },
   {
    "id": ".claude/skills/choose-path/SKILL.md",
    "title": "Choose path \u2014 pick the operating model",
-   "lines": 28,
+   "lines": 29,
    "summary": "Phase 2. Walk the decision tree with the agreed goal, pick the operating model (primary + optional secondary path), and write docs/OPERATING-MODEL.md with the agents, practices, habits, policies, commands and budgets for this project. Use after brainstorm, or when the project's nature changes."
+  },
+  {
+   "id": ".claude/skills/dashboard/SKILL.md",
+   "title": "Dashboard",
+   "lines": 32,
+   "summary": "Build and show the project dashboard \u2014 versions, phase and progress, backlog state, tech debt, key metrics (tests, coverage, deploys, tokens), alerts. Use when the user asks for status, progress, a dashboard, \"where are we\", or after a milestone, release or retro."
   },
   {
    "id": ".claude/skills/docs-sync/SKILL.md",
@@ -64,7 +70,7 @@
   {
    "id": ".claude/skills/retro/SKILL.md",
    "title": "Retro \u2014 keep the factory learning",
-   "lines": 17,
+   "lines": 18,
    "summary": "Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens, and enriches the decision tree, path playbooks and LEARNINGS.md so the next project starts smarter. Use at milestones, after a painful session, or when the user says \"retro\" or \"what did we learn\"."
   },
   {
@@ -82,14 +88,20 @@
   {
    "id": "CLAUDE.md",
    "title": "CLAUDE.md",
-   "lines": 25,
+   "lines": 29,
    "summary": "Always-loaded instructions. Keep short and stable (it is paid every turn). Details live in docs/ \u2014 find them via docs/INDEX.md."
   },
   {
    "id": "README.md",
    "title": "danfactory",
-   "lines": 70,
+   "lines": 73,
    "summary": "A template for starting Claude Code projects. It gives you a guided start (brainstorm \u2192 decision tree \u2192 operating model), saves tokens by design, keeps the docs indexed, tracks delivery metrics, runs security audits on request, and deploys to Cloudflare via git."
+  },
+  {
+   "id": "docs/BACKLOG.md",
+   "title": "Backlog",
+   "lines": 13,
+   "summary": "Milestones and work items; the dashboard reads this file. Seeded by `choose-path`, ticked off as part of every task's definition of done."
   },
   {
    "id": "docs/GOAL.md",
@@ -102,6 +114,12 @@
    "title": "Operating model",
    "lines": 32,
    "summary": "How this project is built: chosen path(s), rigor, agents, practices, gates, budgets. Written by the `choose-path` skill; revised by `retro`."
+  },
+  {
+   "id": "docs/TECH-DEBT.md",
+   "title": "Tech debt register",
+   "lines": 9,
+   "summary": "Known shortcuts and their cost; the dashboard reads this file plus automated signals (TODO/FIXME markers, oversized files, import cycles). Updated by `retro` and `engineering:tech-debt` audits."
   },
   {
    "id": "docs/decisions/0000-template.md",
@@ -190,7 +208,7 @@
   {
    "id": "docs/policies/testing-and-metrics.md",
    "title": "Policy: testing and delivery metrics",
-   "lines": 14,
+   "lines": 17,
    "summary": "Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the trend."
   },
   {
@@ -203,7 +221,17 @@
  "edges": [
   {
    "from": ".claude/skills/brainstorm/SKILL.md",
+   "to": "docs/BACKLOG.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/brainstorm/SKILL.md",
    "to": "docs/GOAL.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/choose-path/SKILL.md",
+   "to": "docs/BACKLOG.md",
    "type": "references"
   },
   {
@@ -229,6 +257,16 @@
   {
    "from": ".claude/skills/docs-sync/SKILL.md",
    "to": "docs/INDEX.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/retro/SKILL.md",
+   "to": "docs/BACKLOG.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/retro/SKILL.md",
+   "to": "docs/TECH-DEBT.md",
    "type": "references"
   },
   {
