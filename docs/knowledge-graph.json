@@ -1,13 +1,14 @@
 {"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",
  "nodes": [
-  {"id": "CLAUDE.md", "title": "CLAUDE.md", "lines": 37},
+  {"id": "CLAUDE.md", "title": "CLAUDE.md", "lines": 39},
   {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 14},
   {"id": "docs/GOAL.md", "title": "Goal", "lines": 30},
   {"id": "docs/OPERATING-MODEL.md", "title": "Operating model", "lines": 34},
   {"id": "docs/TECH-DEBT.md", "title": "Tech debt register", "lines": 9},
   {"id": "docs/decisions/0000-template.md", "title": "NNNN \u2014 Title", "lines": 15},
   {"id": "docs/decisions/0001-use-danfactory-template.md", "title": "0001 \u2014 Start from the danfactory template", "lines": 12},
-  {"id": "docs/operating-model/AGENT-ROUTING.md", "title": "Agent routing", "lines": 80},
+  {"id": "docs/decisions/0002-prd-approval-gate.md", "title": "0002 \u2014 PRD approval gate before any build", "lines": 16},
+  {"id": "docs/operating-model/AGENT-ROUTING.md", "title": "Agent routing", "lines": 81},
   {"id": "docs/operating-model/DECISION-TREE.md", "title": "Decision tree", "lines": 68},
   {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 23},
   {"id": "docs/operating-model/paths/adopt-existing.md", "title": "Path: adopt-existing", "lines": 59},
@@ -21,12 +22,15 @@
   {"id": "docs/operating-model/paths/software-product.md", "title": "Path: software-product", "lines": 40},
   {"id": "docs/policies/async-delivery.md", "title": "Policy: asynchronous delivery (no waiting on git, CI or Cloudflare)", "lines": 23},
   {"id": "docs/policies/documentation.md", "title": "Policy: documentation", "lines": 11},
+  {"id": "docs/policies/prd-approval.md", "title": "Policy: PRD before build", "lines": 25},
   {"id": "docs/policies/security.md", "title": "Policy: security", "lines": 20},
   {"id": "docs/policies/testing-and-metrics.md", "title": "Policy: testing and delivery metrics", "lines": 17},
-  {"id": "docs/policies/token-economy.md", "title": "Policy: token economy", "lines": 28}
+  {"id": "docs/policies/token-economy.md", "title": "Policy: token economy", "lines": 28},
+  {"id": "docs/specs/_TEMPLATE.md", "title": "PRD: <feature name>", "lines": 33}
  ],
  "edges": [
   {"from": "docs/policies/documentation.md", "to": "docs/INDEX.md"},
+  {"from": "docs/policies/prd-approval.md", "to": "docs/specs/_TEMPLATE.md"},
   {"from": "docs/policies/token-economy.md", "to": "docs/INDEX.md"}
  ]
 }

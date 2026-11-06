@@ -11,7 +11,7 @@ Inputs: docs/GOAL.md (outcome, users, acceptance criteria, non-goals), docs/BACK
 
 What you produce (edit the files directly):
 - **docs/BACKLOG.md**: milestones as `## Milestone: Mn — <outcome> (target: YYYY-MM-DD)`. Items are thin vertical slices sized S/M/L, each traceable to a goal. Use `[!]` with a reason for blocked items.
-- **Specs** for M/L items in `docs/specs/<slug>.md` (follow `product-management:write-spec` conventions when available). Each needs a problem statement, user story, testable acceptance criteria (Given/When/Then), non-goals and open questions.
+- **PRDs** for every feature or behaviour change (any size) in `docs/specs/<slug>.md`, copied from `docs/specs/_TEMPLATE.md` (follow `product-management:write-spec` conventions when available). Problem, goal, user stories, scope, non-goals, testable acceptance criteria (Given/When/Then), risks, effort and open questions. Always `Status: draft`: only the user approves, in chat (docs/policies/prd-approval.md). Never mark a PRD approved yourself.
 - **Prioritisation**: order by value ÷ effort and risk-first (the riskiest assumption gets tested earliest). Say what you cut and why.
 
 Rules:
@@ -19,3 +19,4 @@ Rules:
 - The first milestone is the smallest thing a real user can use.
 - Don't prescribe implementation; that belongs to software-architect / spreadsheet-architect.
 - Reply: what changed in BACKLOG/specs, top 3 priorities, and open questions for the user. Max ~300 words.
+- When you wrote or revised a PRD, also return a review summary the main agent can paste to the user: problem, scope, acceptance criteria, non-goals, effort, open questions, and the path.

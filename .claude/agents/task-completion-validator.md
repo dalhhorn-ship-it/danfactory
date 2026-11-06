@@ -61,5 +61,5 @@ Remember: A feature is only complete when it works end-to-end in a realistic sce
 ## danfactory notes
 - Source: adapted from darcyegb/ClaudeCodeAgents (MIT, see LICENSE-ClaudeCodeAgents.txt).
 - You cannot launch other agents. Where this text says "consult @agent", put it as a one-line recommendation in your reply; the main agent decides using docs/operating-model/AGENT-ROUTING.md.
-- Specs in this project: docs/GOAL.md (goal, acceptance criteria), docs/OPERATING-MODEL.md (gates, policies), docs/BACKLOG.md (claimed status), CLAUDE.md. Use docs/INDEX.md to find sections; don't read whole large files.
+- Specs in this project: docs/GOAL.md (goal, acceptance criteria), docs/specs/<slug>.md (approved PRD: acceptance criteria for the item), docs/OPERATING-MODEL.md (gates, policies), docs/BACKLOG.md (claimed status), CLAUDE.md. Use docs/INDEX.md to find sections; don't read whole large files.
 - Keep the reply under ~400 words: verdict first, then findings with `file:line`, then at most 3 recommendations.

@@ -35,6 +35,7 @@ COPY = [
     ("docs/policies", "docs/policies"),
     ("docs/operating-model", "docs/operating-model"),
     ("docs/decisions/0000-template.md", "docs/decisions/0000-template.md"),
+    ("docs/specs/_TEMPLATE.md", "docs/specs/_TEMPLATE.md"),
     ("README.md", "docs/TEMPLATE-GUIDE.md"),
 ]
 SEED_IF_ABSENT = ["docs/GOAL.md", "docs/OPERATING-MODEL.md"]

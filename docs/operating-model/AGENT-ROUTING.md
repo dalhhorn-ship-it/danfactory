@@ -15,10 +15,11 @@
 | Adopt an existing build | in the other repo: `/danfactory:adopt` | bulk-reader (scan questions), karen (does it run?), product-manager (as-built backlog), software-architect (L2+) | mixed |
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
 | Plan | after choose-path; milestone start; backlog messy | `product-manager` | sonnet |
+| PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
 | Design (spreadsheet/data) | data-spreadsheet path; restructuring a model | `spreadsheet-architect` | sonnet |
 | Build: small change (< ~50 lines, one area) | – | main agent | – |
-| Build: specified backlog item | spec + acceptance criteria exist; can run in its own context; parallel slices | `developer` | sonnet |
+| Build: specified backlog item | approved PRD exists; can run in its own context; parallel slices | `developer` | sonnet |
 | Build: boilerplate from a pattern | reference file exists | `code-writer` | sonnet |
 | Build: workbook / data outputs | design exists | `data-builder` | sonnet |
 | Read big things | file > 350 lines, 3+ files, logs, long diffs | `bulk-reader` | haiku |

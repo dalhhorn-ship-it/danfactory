@@ -453,6 +453,11 @@ class CloudflareScaffold(unittest.TestCase):
 
 
 class Config(unittest.TestCase):
+    def test_prd_gate_is_wired(self):
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, "docs/specs/_TEMPLATE.md")))
+        for path in ("CLAUDE.md", ".claude/agents/developer.md", "docs/operating-model/AGENT-ROUTING.md"):
+            self.assertIn("prd-approval.md", open(os.path.join(ROOT, path), encoding="utf-8").read(), path)
+
     def test_settings_reference_existing_hooks(self):
         s = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))
         for groups in s["hooks"].values():
