@@ -12,6 +12,15 @@
 7. **Keep CLAUDE.md small and stable** — it is paid on every turn and is the prompt-cache prefix.
 8. **On-demand skills** (security-audit, cloudflare-deploy) are installed only when needed; their big reference files are read selectively.
 
+## Short contexts and handoff notes
+Long contexts cost more per token and rarely buy accuracy: NVIDIA's "You don't need long context" kept agents within ~2 points of full history by compacting often. In one setting, compacting after every action kept Claude Opus 4.5 at 70.2% on SWE-bench Verified versus 70.0% with full history. How the factory applies it:
+1. **Handoff note** (`handoff` skill → `.factory/HANDOFF.md`, 40 lines or fewer): task, state, decisions, next steps, gotchas, pointers. Written at logical boundaries, never mid-debug.
+2. **Fresh restart:** `/clear` after a handoff. The SessionStart hook reloads the note, so the new context holds only the task and the note.
+3. **Nudge, don't nag:** `context_watch.py` (UserPromptSubmit) reads the live context size and reminds once per 50k band above `budgets.context_handoff_tokens` (120k).
+4. **Safety net:** `pre_compact.py` adds a mechanical snapshot (branch, uncommitted files, in-progress items) before any compaction. CLAUDE.md "Compact instructions" says what a summary must keep.
+5. **Search, don't load:** subagents work in fresh contexts and return short answers; files are grepped and read in slices (rules 1–5 above).
+6. **Measured:** compactions per session are recorded in metrics/tokens.jsonl.
+
 ## What stays in the main agent
 Debugging, edits that need exact text, architecture and trade-off decisions, anything the user is discussing live.
 

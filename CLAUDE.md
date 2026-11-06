@@ -14,6 +14,13 @@ Don't skip ahead: no code before GOAL.md is confirmed and an operating model is 
 - Delegate per docs/operating-model/AGENT-ROUTING.md (moment → agent, verification ladder by rigor). Always: big reads → `bulk-reader`, failing/long test output → `test-runner`, deploy watch → `deploy-watcher` (background).
 - Use codegraph for code navigation when `integrations.codegraph` is true.
 
+## Short contexts (docs/policies/token-economy.md)
+- At logical boundaries (task done, milestone, topic switch), or when the context-watch hook says so, run the `handoff` skill and suggest `/clear`. The note in .factory/HANDOFF.md reloads at session start.
+- Don't hand off mid-debug or with half-applied changes.
+
+## Compact instructions
+When compacting, keep: the user's goal and open questions; decisions and their reasons; files changed and commit shas; current step and next steps; failed approaches not to retry. Drop: file contents, tool output, logs (they can be re-read).
+
 ## Definition of done (every task)
 - Tests via `python3 scripts/metrics.py test` pass (prints one line when green; hand failures or long output to `test-runner`); nothing skipped to get green.
 - Docs updated in the same change (`docs-sync`); decisions → ADR in docs/decisions/.

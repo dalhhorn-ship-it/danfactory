@@ -36,7 +36,8 @@
     "min_coverage_pct": 80,
     "max_coverage_drop_pct": 2,
     "large_read_lines": 350,
-    "session_weighted_tokens_warn": 750000
+    "session_weighted_tokens_warn": 750000,
+    "context_handoff_tokens": 120000
   },
   "integrations": {
     "codegraph": false,

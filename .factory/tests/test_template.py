@@ -344,6 +344,45 @@ class Adopt(unittest.TestCase):
         self.assertEqual(chk.returncode, 0, chk.stdout[-800:] + chk.stderr[-800:])
 
 
+class ShortContexts(unittest.TestCase):
+    def transcript(self, ctx_tokens):
+        path = os.path.join(tempfile.mkdtemp(), "t.jsonl")
+        with open(path, "w") as fh:
+            fh.write(json.dumps({"type": "assistant", "message": {"id": "1", "usage": {
+                "input_tokens": 10, "cache_read_input_tokens": ctx_tokens - 10, "cache_creation_input_tokens": 0,
+                "output_tokens": 5}}}) + "\n")
+        return path
+
+    def test_context_watch_nudges_once_per_band(self):
+        sid = "test-%d" % os.getpid()
+        big = {"transcript_path": self.transcript(200000), "session_id": sid}
+        first = hook("context_watch.py", big)
+        self.assertIn("handoff", first.stdout)
+        self.assertEqual(hook("context_watch.py", big).stdout, "")  # same band: no nagging
+        small = {"transcript_path": self.transcript(30000), "session_id": sid + "x"}
+        self.assertEqual(hook("context_watch.py", small).stdout, "")
+        os.remove(os.path.join(tempfile.gettempdir(), "danfactory-ctx-%s" % sid))
+
+    def test_pre_compact_snapshot_and_session_reload(self):
+        d = os.path.join(tempfile.mkdtemp(), "proj")
+        subprocess.run(["cp", "-r", ROOT, d], check=True)
+        hooks = os.path.join(d, ".claude", "hooks")
+        env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
+        note = os.path.join(d, ".factory", "HANDOFF.md")
+        with open(note, "w") as fh:
+            fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
+        for _ in range(2):  # second run must replace, not append, the snapshot
+            subprocess.run([sys.executable, os.path.join(hooks, "pre_compact.py")], input='{"trigger":"auto"}',
+                           text=True, env=env, check=True)
+        text = open(note).read()
+        self.assertEqual(text.count("auto-snapshot:start"), 1)
+        self.assertIn("Ship the login page", text)
+        out = subprocess.run([sys.executable, os.path.join(hooks, "session_start.py")], input='{"source":"clear"}',
+                             text=True, capture_output=True, env=env).stdout
+        self.assertIn("loaded on clear", out)
+        self.assertIn("Ship the login page", out)
+
+
 class Config(unittest.TestCase):
     def test_settings_reference_existing_hooks(self):
         s = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))
@@ -378,8 +417,11 @@ class Config(unittest.TestCase):
         for n in names:
             self.assertIn(n, routing, "agent missing from AGENT-ROUTING.md: " + n)
         for n in set(re.findall(r"`([a-z][a-z-]+)`", routing)):
-            if n.endswith("-run") or n in {"brainstorm", "retro"}:
-                continue  # skills
+            skills = set(os.listdir(os.path.join(ROOT, ".claude", "skills")))
+            if os.path.isdir(os.path.join(ROOT, "plugin", "skills")):
+                skills |= set(os.listdir(os.path.join(ROOT, "plugin", "skills")))
+            if n in skills:
+                continue
             self.assertIn(n, names, "routing names unknown agent: " + n)
         rosters = routing.split("## Path rosters")[1].split("##")[0]
         for row in rosters.splitlines():

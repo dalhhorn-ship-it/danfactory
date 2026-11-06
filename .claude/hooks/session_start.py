@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ROOT, load_factory  # noqa: E402
+from _common import ROOT, load_factory, read_event  # noqa: E402
 
 NEXT = {
     "brainstorm": "No agreed goal yet. Run the `brainstorm` skill: interview the user, then write docs/GOAL.md.",
@@ -13,7 +13,24 @@ NEXT = {
 }
 
 
+HANDOFF = os.path.join(ROOT, ".factory", "HANDOFF.md")
+HANDOFF_MAX_LINES = 60
+
+
+def handoff_note(source):
+    """After /clear or a compaction (and on startup/resume) restart from task + note, not full history."""
+    if not os.path.isfile(HANDOFF):
+        return []
+    with open(HANDOFF, encoding="utf-8") as fh:
+        lines = fh.read().splitlines()
+    if len(lines) > HANDOFF_MAX_LINES:
+        lines = lines[:HANDOFF_MAX_LINES] + ["… (truncated: keep the note under 40 lines)"]
+    return ["", "[danfactory] Handoff note (.factory/HANDOFF.md, loaded on %s). Continue from it; "
+            "verify facts against the repo before relying on them:" % source] + lines
+
+
 def main():
+    ev = read_event()
     f = load_factory()
     phase = f.get("phase", "brainstorm")
     paths = f.get("paths", {})
@@ -39,6 +56,7 @@ def main():
             alerts = [l.strip() for l in fh if l.startswith("- ALERT")]
         if alerts:
             out.append("[danfactory] metric alerts (%d): %s" % (len(alerts), " | ".join(a[8:] for a in alerts[:3])))
+    out += handoff_note(ev.get("source", "startup"))
     print("\n".join(out))
 
 

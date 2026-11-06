@@ -51,6 +51,21 @@ def summarize(transcript_path):
     return totals, by_model, len(per_msg)
 
 
+def count_compactions(transcript_path):
+    n = 0
+    with open(transcript_path, encoding="utf-8") as fh:
+        for line in fh:
+            if "compact" not in line:
+                continue
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            if rec.get("subtype") == "compact_boundary" or rec.get("isCompactSummary"):
+                n += 1
+    return n
+
+
 def subagent_transcripts(transcript_path):
     base = os.path.splitext(transcript_path)[0]  # <dir>/<session_id>.jsonl -> <dir>/<session_id>/subagents/
     return sorted(glob.glob(os.path.join(base, "subagents", "*.jsonl")))
@@ -87,6 +102,7 @@ def main():
         "reason": ev.get("reason"),
         "assistant_messages": turns,
         "subagents": len(subs),
+        "compactions": count_compactions(tp),
         "total_tokens": sum(all_totals.values()),
         "weighted_tokens": weighted(all_totals),
         "main_weighted_tokens": weighted(totals),
