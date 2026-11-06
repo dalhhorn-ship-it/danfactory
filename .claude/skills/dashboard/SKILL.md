@@ -6,7 +6,7 @@ description: Build and show the project dashboard — versions, phase and progre
 # Dashboard
 
 The dashboard is a generated artefact, so never write it by hand. `python3 scripts/dashboard.py` writes:
-- `dashboard/index.html`: self-contained page (no JS, no network) that works in light and dark mode and on phones
+- `dashboard/index.html`: self-contained page (no JS, no network) that works in light and dark mode and on phones. Two tabs: **Overview** (metrics, backlog, debt, versions) and **Roadmap** (proposed sequence in two swimlanes: value-driven features vs technical foundation)
 - `dashboard/data.json`: the same data for tools
 - `dashboard/SUMMARY.md`: a 12-line status table
 
@@ -25,6 +25,7 @@ Run `python3 scripts/dashboard.py --print` and answer from the summary (cheap). 
 |---|---|---|
 | Phase, paths | factory.json | brainstorm, choose-path |
 | Progress, backlog | docs/BACKLOG.md (`[ ] [~] [x] [!] [-]` items under milestones) | every task (definition of done), choose-path seeds it |
+| Roadmap | docs/BACKLOG.md order (milestones = columns, file order = sequence) + tags for the lane (`#foundation`, `#arch`, `#infra`, `#runway`, `#debt`, `#quality`, `#ci`, `#security`, `#process`… → foundation; untagged, `#value` or `#feature` → value) + open TECH-DEBT.md items (foundation, sorted by impact) | choose-path, product-manager when (re)sequencing: reorder items in BACKLOG.md to change the proposal |
 | Tech debt | docs/TECH-DEBT.md register + automated markers/large files/cycles | retro, `engineering:tech-debt`, any shortcut taken on purpose |
 | Versions | git tags (`git tag vX.Y.Z`), VERSION / package.json / pyproject.toml | releases |
 | Deploys | metrics/history.jsonl | `metrics.py deploy`, ship |

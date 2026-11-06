@@ -8,7 +8,8 @@
 Sources (all in the repo, so every build can regenerate it):
   factory.json, docs/BACKLOG.md, docs/TECH-DEBT.md, metrics/*.jsonl, git tags/log,
   plus automated debt signals (TODO/FIXME markers, oversized files, codegraph import cycles).
-Output is a self-contained HTML file (no JS, no network). dashboard/ is git-ignored;
+Output is a self-contained HTML file (no JS, no network) with two tabs: Overview and Roadmap
+(two swimlanes, value vs technical foundation, in proposed sequence). dashboard/ is git-ignored;
 CI uploads it as a build artifact and writes SUMMARY.md to the job summary.
 """
 import argparse
@@ -36,6 +37,12 @@ MARKER_RE = r"\b(TODO|FIXME|HACK|XXX)\b"
 SKIP_DIRS = ("docs/", ".claude/", ".factory/", "dashboard/", "metrics/", "templates/",
              "scripts/dashboard.py", "README.md", "CLAUDE.md")
 LARGE_FILE_LINES = 500
+# Roadmap swimlanes: backlog items whose tags hit FOUNDATION_TAGS (or #foundation) go to the
+# technical-foundation lane; everything else is user value. Open tech-debt items always go to foundation.
+FOUNDATION_TAGS = {"foundation", "tech", "arch", "architecture", "infra", "runway", "debt", "tech-debt",
+                   "refactor", "quality", "ci", "process", "security", "perf", "ops", "platform"}
+LANES = (("value", "Value-driven features", "value for users"),
+         ("foundation", "Technical foundation", "architecture, runway, tech debt"))
 
 
 # ---------------------------------------------------------------- sources
@@ -195,6 +202,40 @@ def metric_view(f):
     }
 
 
+def lane_of(tags):
+    tags = {t.lower() for t in tags}
+    if "value" in tags or "feature" in tags:
+        return "value"
+    return "foundation" if tags & FOUNDATION_TAGS else "value"
+
+
+def roadmap(backlog, open_debt):
+    """Proposed sequence: milestones in BACKLOG.md order become columns, items keep their file order,
+    and open items are numbered per lane (1 = next up). Open debt not yet scheduled is a final column."""
+    columns, seq = [], {"value": 0, "foundation": 0}
+    debt_cards = [{"title": "%s %s" % (x["id"], x["title"]), "state": "todo", "size": x["effort"],
+                   "lane": "foundation", "impact": x["impact"], "debt": True}
+                  for x in sorted(open_debt, key=lambda x: {"high": 0, "medium": 1, "low": 2}.get(x["impact"], 3))]
+    groups = [(ms["name"], ms["target"], ms["items"]) for ms in backlog]
+    if debt_cards:
+        groups.append(("Tech debt to schedule", "", debt_cards))
+    for name, target, items in groups:
+        cards = {"value": [], "foundation": []}
+        for it in items:
+            if it["state"] == "dropped":
+                continue
+            lane = it.get("lane") or lane_of(it.get("tags", []))
+            card = {"title": it["title"], "state": it["state"], "size": it.get("size", ""),
+                    "impact": it.get("impact", ""), "debt": it.get("debt", False), "seq": None}
+            if it["state"] != "done":
+                seq[lane] += 1
+                card["seq"] = seq[lane]
+            cards[lane].append(card)
+        if cards["value"] or cards["foundation"]:
+            columns.append({"name": name, "target": target, "lanes": cards})
+    return {"columns": columns, "open": dict(seq)}
+
+
 def collect():
     f = metrics.factory()
     backlog = parse_backlog(read("docs/BACKLOG.md"))
@@ -217,6 +258,7 @@ def collect():
         "debt": {"open": open_debt, "resolved": len(debt) - len(open_debt),
                  "by_impact": {k: sum(d["impact"] == k for d in open_debt) for k in ("high", "medium", "low")},
                  "signals": debt_signals(f)},
+        "roadmap": roadmap(backlog, open_debt),
         "metrics": metric_view(f),
     }
 
@@ -275,6 +317,37 @@ def bar(pct, label):
 
 def f_codegraph():
     return bool(metrics.factory().get("integrations", {}).get("codegraph"))
+
+
+def render_roadmap(rm):
+    cols = rm["columns"]
+    if not cols:
+        return ('<div class="card"><p class="muted">No roadmap yet. Add milestones and items to docs/BACKLOG.md; '
+                'tag foundation work with #foundation (or #arch, #infra, #runway, #debt, #quality...).</p></div>')
+
+    def card(c):
+        badges = "".join([
+            '<span class="imp %s">%s</span>' % (e(c["impact"]), e(c["impact"])) if c["impact"] else "",
+            '<span class="size">%s</span>' % e(c["size"]) if c["size"] else "",
+            '<span class="state">%s</span>' % e(c["state"]) if c["state"] in ("doing", "blocked") else ""])
+        num = '<span class="seq">%d</span>' % c["seq"] if c["seq"] else '<span class="seq">&#10003;</span>'
+        return '<li class="rm-card %s">%s<span class="t">%s</span>%s</li>' % (
+            e(c["state"]), num, e(c["title"]), '<span class="b">%s</span>' % badges if badges else "")
+
+    head = "".join('<div class="rm-col-h"><b>%s</b>%s</div>' % (
+        e(c["name"]), '<span class="muted small">target %s</span>' % e(c["target"]) if c["target"] else "")
+        for c in cols)
+    rows = ""
+    for key, label, sub in LANES:
+        rows += '<div class="rm-lane-h %s"><b>%s</b><span class="muted small">%s · %d open</span></div>' % (
+            key, e(label), e(sub), rm["open"][key])
+        rows += "".join('<ul class="rm-cell %s">%s</ul>' % (
+            key, "".join(card(x) for x in c["lanes"][key]) or '<li class="muted small">–</li>') for c in cols)
+    return ('<div class="card"><h2>Roadmap: proposed sequence</h2>'
+            '<p class="muted small">Columns follow milestone order in docs/BACKLOG.md; numbers are the suggested order '
+            'within each lane. Lanes come from tags; open items in docs/TECH-DEBT.md land in the foundation lane.</p>'
+            '<div class="scroll"><div class="rm" style="--cols:%d">'
+            '<div class="rm-corner"></div>%s%s</div></div></div>' % (len(cols), head, rows))
 
 
 def render(d):
@@ -362,7 +435,7 @@ def render(d):
         tree=e(d["template"].get("decision_tree_version", "")), tiles=tiles, milestones=ms_rows,
         backlog=backlog, debt=debt_html, tags=tag_rows, deploys=dep_rows,
         commits=commits or '<li class="muted">No commits yet.</li>', alerts=alerts, ideas=ideas,
-        commit_count=v["commit_count"])
+        commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]))
 
 
 def summary(d):
@@ -463,7 +536,30 @@ td {{ padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top
 .imp.low {{ background:var(--ok-bg); color:var(--ok); }}
 li.alert {{ color:var(--bad); }}
 footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
-@media (max-width:520px) {{ .meta {{ text-align:left; }} .grid {{ grid-template-columns:1fr; }} }}
+.tabs {{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; }}
+.tabs label {{ padding:8px 14px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:600; font-size:14px; }}
+.tab-input {{ position:absolute; opacity:0; pointer-events:none; }}
+.panel {{ display:none; }}
+#tab-overview:checked ~ .panel-overview, #tab-roadmap:checked ~ .panel-roadmap {{ display:block; }}
+#tab-overview:checked ~ .tabs label[for="tab-overview"], #tab-roadmap:checked ~ .tabs label[for="tab-roadmap"] {{ color:var(--text); border-bottom-color:var(--accent); }}
+#tab-overview:focus-visible ~ .tabs label[for="tab-overview"], #tab-roadmap:focus-visible ~ .tabs label[for="tab-roadmap"] {{ outline:2px solid var(--accent); outline-offset:2px; }}
+.rm {{ --lane-w:minmax(150px,180px); --col-w:minmax(220px,1fr); display:grid; gap:8px; min-width:max-content;
+  grid-template-columns:var(--lane-w) repeat(var(--cols),var(--col-w)); }}
+.rm-col-h {{ display:flex; flex-direction:column; font-size:14px; padding:4px 2px; border-bottom:2px solid var(--border); }}
+.rm-lane-h {{ display:flex; flex-direction:column; justify-content:flex-start; font-size:14px; padding:10px; border-radius:8px; border-left:4px solid var(--accent); background:var(--track);
+  position:sticky; left:0; z-index:1; box-shadow:8px 0 0 var(--surface); }}
+.rm-lane-h.foundation {{ border-left-color:var(--warn); }}
+.rm-cell {{ list-style:none; margin:0; padding:8px; border-radius:8px; background:var(--bg); border:1px dashed var(--border); display:flex; flex-direction:column; gap:6px; }}
+.rm-card {{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:6px; padding:6px 8px; font-size:13px; }}
+.rm-cell.foundation .rm-card {{ border-left-color:var(--warn); }}
+.rm-card .t {{ flex:1 1 120px; }}
+.rm-card .b {{ display:flex; gap:4px; }}
+.rm-card .seq {{ font-variant-numeric:tabular-nums; font-weight:650; color:var(--muted); min-width:1.4em; }}
+.rm-card .size, .rm-card .state {{ font-size:11px; padding:0 6px; border-radius:999px; background:var(--track); color:var(--muted); }}
+.rm-card.doing {{ box-shadow:inset 0 0 0 1px var(--accent); }} .rm-card.doing .state {{ color:var(--accent); }}
+.rm-card.blocked .state {{ background:var(--bad-bg); color:var(--bad); }}
+.rm-card.done {{ opacity:.55; }} .rm-card.done .t {{ text-decoration:line-through; }} .rm-card.done .seq {{ color:var(--ok); }}
+@media (max-width:520px) {{ .rm {{ --lane-w:104px; --col-w:minmax(200px,1fr); }} .rm-lane-h {{ padding:8px; }} .meta {{ text-align:left; }} .grid {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body>
@@ -482,6 +578,13 @@ footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
   </div>
 </header>
 
+<input type="radio" name="tab" id="tab-overview" class="tab-input" checked>
+<input type="radio" name="tab" id="tab-roadmap" class="tab-input">
+<nav class="tabs" aria-label="Dashboard views"><label for="tab-overview">Overview</label><label for="tab-roadmap">Roadmap</label></nav>
+
+<div class="panel panel-roadmap">{roadmap}</div>
+
+<div class="panel panel-overview">
 <section class="tiles" aria-label="Key metrics">{tiles}</section>
 
 <section class="grid">
@@ -494,6 +597,7 @@ footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
     <h3>Recent deploys</h3><div class="scroll"><table><thead><tr><th>When (UTC)</th><th>Env</th><th>Commit</th><th>Result</th><th>Time</th></tr></thead><tbody>{deploys}</tbody></table></div></div>
   <div class="card"><h2>Recent commits</h2><ul class="plain">{commits}</ul></div>
 </section>
+</div>
 <footer>Built by scripts/dashboard.py from factory.json, docs/BACKLOG.md, docs/TECH-DEBT.md, metrics/ and git.</footer>
 </main>
 </body>

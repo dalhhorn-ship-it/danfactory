@@ -1,7 +1,7 @@
 {"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",
  "nodes": [
   {"id": "CLAUDE.md", "title": "CLAUDE.md", "lines": 37},
-  {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 13},
+  {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 14},
   {"id": "docs/GOAL.md", "title": "Goal", "lines": 30},
   {"id": "docs/OPERATING-MODEL.md", "title": "Operating model", "lines": 34},
   {"id": "docs/TECH-DEBT.md", "title": "Tech debt register", "lines": 9},

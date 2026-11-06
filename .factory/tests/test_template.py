@@ -203,6 +203,31 @@ class Dashboard(unittest.TestCase):
         self.assertEqual([(i["id"], i["open"], i["impact"], i["effort"], i["area"]) for i in items],
                          [("TD-001", True, "high", "M", "api"), ("TD-000", False, "low", "S", "ci")])
 
+    def test_roadmap_swimlanes_and_sequence(self):
+        ms = self.d.parse_backlog("""## Milestone: M1
+- [x] Login works #value
+- [ ] Set up CI (S) #ci
+- [-] Dropped idea
+- [ ] Share a list
+## Milestone: M2
+- [~] Split storage layer #arch
+- [ ] Export to CSV #feature
+""")
+        debt = [{"id": "TD-001", "title": "No retries", "impact": "high", "effort": "S"}]
+        rm = self.d.roadmap(ms, debt)
+        cols = rm["columns"]
+        self.assertEqual([c["name"] for c in cols], ["M1", "M2", "Tech debt to schedule"])
+        lane = lambda i, k: [(x["title"], x["seq"]) for x in cols[i]["lanes"][k]]
+        self.assertEqual(lane(0, "value"), [("Login works", None), ("Share a list", 1)])
+        self.assertEqual(lane(0, "foundation"), [("Set up CI", 1)])
+        self.assertEqual(lane(1, "foundation"), [("Split storage layer", 2)])
+        self.assertEqual(lane(1, "value"), [("Export to CSV", 2)])
+        self.assertEqual(lane(2, "foundation"), [("TD-001 No retries", 3)])
+        self.assertEqual(rm["open"], {"value": 2, "foundation": 3})
+        html = self.d.render_roadmap(rm)
+        self.assertIn("Technical foundation", html)
+        self.assertIn("Value-driven features", html)
+
     def test_build_writes_artefacts(self):
         d = self.d.build()
         for name in ("index.html", "data.json", "SUMMARY.md"):
@@ -211,6 +236,8 @@ class Dashboard(unittest.TestCase):
         self.assertIn("<title>", page)
         self.assertIn("prefers-color-scheme: dark", page)
         self.assertIn("progress", d)
+        self.assertIn("roadmap", d)
+        self.assertIn('id="tab-roadmap"', page)
 
 
 class AsyncDelivery(unittest.TestCase):
