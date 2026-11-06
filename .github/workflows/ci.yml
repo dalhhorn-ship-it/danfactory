@@ -1,0 +1,21 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Template checks (docs index fresh, hooks, metrics)
+        run: bash scripts/check.sh
+      - name: Project tests (once factory.json commands.test is set)
+        run: |
+          if python3 -c 'import json,sys; sys.exit(0 if json.load(open("factory.json"))["commands"]["test"] else 1)'; then
+            python3 scripts/metrics.py test
+          else
+            echo "commands.test not set yet; skipping"
+          fi

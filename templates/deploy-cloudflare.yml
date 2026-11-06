@@ -1,0 +1,36 @@
+# Route B (see .claude/skills/ship/SKILL.md): tests gate the deploy, GitHub Actions deploys to Cloudflare.
+# Copy to .github/workflows/deploy-cloudflare.yml. Needs repo secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+name: deploy-cloudflare
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test --if-present
+      - name: Deploy (production on main, preview version otherwise)
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: ${{ github.ref == 'refs/heads/main' && 'deploy' || 'versions upload' }}
+      - name: Record duration
+        if: always()
+        run: |
+          secs=$(( $(date +%s) - T0 ))
+          echo "deploy ${{ job.status }} in ~${secs}s (record with: python3 scripts/metrics.py deploy --seconds $secs --status ok|fail)" >> "$GITHUB_STEP_SUMMARY"

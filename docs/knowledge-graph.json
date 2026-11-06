@@ -1,0 +1,260 @@
+{
+ "generated_by": "scripts/docs_index.py",
+ "nodes": [
+  {
+   "id": ".claude/agents/bulk-reader.md",
+   "title": "bulk-reader",
+   "lines": 16,
+   "summary": "Reads large files, many files, logs or long diffs in its own disposable context and returns only a compact answer. Use instead of reading files >350 lines or 3+ files into the main context. Give it a precise question and the paths."
+  },
+  {
+   "id": ".claude/agents/code-writer.md",
+   "title": "code-writer",
+   "lines": 15,
+   "summary": "Generates boilerplate (tests, CRUD, config, fixtures, migrations, repetitive variants) that follows an existing reference file. Use when the spec is clear and a pattern exists to copy; not for design decisions or debugging."
+  },
+  {
+   "id": ".claude/agents/data-builder.md",
+   "title": "data-builder",
+   "lines": 15,
+   "summary": "Heavy-lifting builder for spreadsheets, workbooks, CSV/data pipelines and generated reports. Builds them with scripts (Python openpyxl/pandas) so the output is reproducible, verifiable and cheap to regenerate. Use for the data-spreadsheet path."
+  },
+  {
+   "id": ".claude/agents/doc-keeper.md",
+   "title": "doc-keeper",
+   "lines": 18,
+   "summary": "Updates project documentation after a change \u2014 docs/, ADRs, README, CLAUDE.md quick facts and the curated block of docs/INDEX.md. Use at the end of every task that changed behaviour, commands, structure or decisions."
+  },
+  {
+   "id": ".claude/agents/reviewer.md",
+   "title": "reviewer",
+   "lines": 15,
+   "summary": "Independent fresh-context review of a change against GOAL.md, OPERATING-MODEL.md and the active path's quality gates. Use before merging or declaring a milestone done. It did not write the code, so it is not anchored on the author's reasoning."
+  },
+  {
+   "id": ".claude/agents/test-runner.md",
+   "title": "test-runner",
+   "lines": 17,
+   "summary": "Runs tests/builds/linters and returns only the verdict, timing and the minimal failure detail. Use for any command whose output may be long, so logs never enter the main context."
+  },
+  {
+   "id": ".claude/skills/brainstorm/SKILL.md",
+   "title": "Brainstorm \u2014 agree the goal",
+   "lines": 30,
+   "summary": "Phase 1. Interview the user about what they want to build, sharpen it into an agreed goal, and write docs/GOAL.md. Use at the start of a new project (factory.json phase \"brainstorm\"), when the user says \"let's start\", or when the goal changes materially."
+  },
+  {
+   "id": ".claude/skills/choose-path/SKILL.md",
+   "title": "Choose path \u2014 pick the operating model",
+   "lines": 28,
+   "summary": "Phase 2. Walk the decision tree with the agreed goal, pick the operating model (primary + optional secondary path), and write docs/OPERATING-MODEL.md with the agents, practices, habits, policies, commands and budgets for this project. Use after brainstorm, or when the project's nature changes."
+  },
+  {
+   "id": ".claude/skills/docs-sync/SKILL.md",
+   "title": "Docs sync",
+   "lines": 13,
+   "summary": "Bring documentation up to date with the code after a change, and regenerate the docs index and knowledge graph. Use at the end of any task that changed behaviour, commands, structure or decisions, or when the user says \"update docs\"."
+  },
+  {
+   "id": ".claude/skills/metrics/SKILL.md",
+   "title": "Metrics",
+   "lines": 13,
+   "summary": "Record and review delivery metrics \u2014 test time, coverage, deploy duration/failures, token spend per session \u2014 and suggest structural improvements to cut wait time and token cost. Use when the user asks about speed, coverage, cost, CI time, or after changing test/deploy setup."
+  },
+  {
+   "id": ".claude/skills/retro/SKILL.md",
+   "title": "Retro \u2014 keep the factory learning",
+   "lines": 17,
+   "summary": "Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens, and enriches the decision tree, path playbooks and LEARNINGS.md so the next project starts smarter. Use at milestones, after a painful session, or when the user says \"retro\" or \"what did we learn\"."
+  },
+  {
+   "id": ".claude/skills/security-audit-run/SKILL.md",
+   "title": "Security audit (on request)",
+   "lines": 15,
+   "summary": "On-request security audit using Cloudflare's security-audit skill (installed on demand). Use only when the user explicitly asks for a security audit, pen-test, vulnerability review, or before an L3 release per OPERATING-MODEL.md. Not run automatically."
+  },
+  {
+   "id": ".claude/skills/ship/SKILL.md",
+   "title": "Ship \u2014 git-based deploys to Cloudflare",
+   "lines": 37,
+   "summary": "Take software live on Cloudflare via git (push to the production branch -> Cloudflare builds and deploys; other branches -> preview URLs). Use when software needs to go live, for first-time Cloudflare setup, for preview deployments, or when a deploy failed. Loads the cloudflare-deploy reference skill on demand for product choice and wrangler details."
+  },
+  {
+   "id": "CLAUDE.md",
+   "title": "CLAUDE.md",
+   "lines": 25,
+   "summary": "Always-loaded instructions. Keep short and stable (it is paid every turn). Details live in docs/ \u2014 find them via docs/INDEX.md."
+  },
+  {
+   "id": "README.md",
+   "title": "danfactory",
+   "lines": 70,
+   "summary": "A template for starting Claude Code projects. It gives you a guided start (brainstorm \u2192 decision tree \u2192 operating model), saves tokens by design, keeps the docs indexed, tracks delivery metrics, runs security audits on request, and deploys to Cloudflare via git."
+  },
+  {
+   "id": "docs/GOAL.md",
+   "title": "Goal",
+   "lines": 30,
+   "summary": "The agreed goal for this project. Written by the `brainstorm` skill after the user confirms. Keep under ~80 lines."
+  },
+  {
+   "id": "docs/OPERATING-MODEL.md",
+   "title": "Operating model",
+   "lines": 32,
+   "summary": "How this project is built: chosen path(s), rigor, agents, practices, gates, budgets. Written by the `choose-path` skill; revised by `retro`."
+  },
+  {
+   "id": "docs/decisions/0000-template.md",
+   "title": "NNNN \u2014 Title",
+   "lines": 15,
+   "summary": "Status: proposed | accepted | superseded by NNNN \u00b7 Date: YYYY-MM-DD"
+  },
+  {
+   "id": "docs/decisions/0001-use-danfactory-template.md",
+   "title": "0001 \u2014 Start from the danfactory template",
+   "lines": 12,
+   "summary": "Status: accepted \u00b7 Date: 2026-11-06"
+  },
+  {
+   "id": "docs/operating-model/DECISION-TREE.md",
+   "title": "Decision tree",
+   "lines": 53,
+   "summary": "Picks the operating model for a goal. Version 1.0.0. Keep this file short: details live in paths/*.md. Enriched by `retro` from LEARNINGS.md."
+  },
+  {
+   "id": "docs/operating-model/LEARNINGS.md",
+   "title": "Learnings",
+   "lines": 17,
+   "summary": "Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]` entries should be copied back to the template repo."
+  },
+  {
+   "id": "docs/operating-model/paths/automation-script.md",
+   "title": "Path: automation-script",
+   "lines": 23,
+   "summary": "Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1."
+  },
+  {
+   "id": "docs/operating-model/paths/data-spreadsheet.md",
+   "title": "Path: data-spreadsheet",
+   "lines": 30,
+   "summary": "Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default rigor L1 (L2 if decisions/money depend on it). **Heavy lifting by scripts and agents, never cell-by-cell in chat.**"
+  },
+  {
+   "id": "docs/operating-model/paths/documents-content.md",
+   "title": "Path: documents-content",
+   "lines": 23,
+   "summary": "Documents, decks, handbooks, proposals, long-form writing. Default rigor L1."
+  },
+  {
+   "id": "docs/operating-model/paths/infra-ops.md",
+   "title": "Path: infra-ops",
+   "lines": 24,
+   "summary": "Infrastructure as code, CI/CD pipelines, cloud config, DNS, access. Default rigor L3 (blast radius)."
+  },
+  {
+   "id": "docs/operating-model/paths/library-cli.md",
+   "title": "Path: library-cli",
+   "lines": 28,
+   "summary": "Packages, SDKs, CLIs that others import or invoke. Default rigor L2."
+  },
+  {
+   "id": "docs/operating-model/paths/prototype-spike.md",
+   "title": "Path: prototype-spike",
+   "lines": 18,
+   "summary": "Throwaway code to learn or prove feasibility. Rigor L0. Speed over polish \u2014 but time-boxed."
+  },
+  {
+   "id": "docs/operating-model/paths/research-analysis.md",
+   "title": "Path: research-analysis",
+   "lines": 23,
+   "summary": "Questions answered from sources or data: market scans, technical comparisons, data analysis. Default rigor L1."
+  },
+  {
+   "id": "docs/operating-model/paths/software-product.md",
+   "title": "Path: software-product",
+   "lines": 37,
+   "summary": "Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live via git \u2192 Cloudflare (`ship`)."
+  },
+  {
+   "id": "docs/policies/documentation.md",
+   "title": "Policy: documentation",
+   "lines": 11,
+   "summary": "Docs are part of done. Small, true, linked \u2014 and indexed so agents never read more than they need."
+  },
+  {
+   "id": "docs/policies/security.md",
+   "title": "Policy: security",
+   "lines": 13,
+   "summary": "Secure defaults always; full audits on request or before L3 releases."
+  },
+  {
+   "id": "docs/policies/testing-and-metrics.md",
+   "title": "Policy: testing and delivery metrics",
+   "lines": 14,
+   "summary": "Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the trend."
+  },
+  {
+   "id": "docs/policies/token-economy.md",
+   "title": "Policy: token economy",
+   "lines": 19,
+   "summary": "Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin (delegate I/O-heavy work to a cheaper worker) using native Claude Code subagents."
+  }
+ ],
+ "edges": [
+  {
+   "from": ".claude/skills/brainstorm/SKILL.md",
+   "to": "docs/GOAL.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/choose-path/SKILL.md",
+   "to": "docs/GOAL.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/choose-path/SKILL.md",
+   "to": "docs/OPERATING-MODEL.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/choose-path/SKILL.md",
+   "to": "docs/operating-model/DECISION-TREE.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/choose-path/SKILL.md",
+   "to": "docs/operating-model/LEARNINGS.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/docs-sync/SKILL.md",
+   "to": "docs/INDEX.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/retro/SKILL.md",
+   "to": "docs/operating-model/LEARNINGS.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/security-audit-run/SKILL.md",
+   "to": ".claude/skills/security-audit/SKILL.md",
+   "type": "references"
+  },
+  {
+   "from": ".claude/skills/ship/SKILL.md",
+   "to": ".claude/skills/cloudflare-deploy/SKILL.md",
+   "type": "references"
+  },
+  {
+   "from": "docs/policies/documentation.md",
+   "to": "docs/INDEX.md",
+   "type": "references"
+  },
+  {
+   "from": "docs/policies/token-economy.md",
+   "to": "docs/INDEX.md",
+   "type": "references"
+  }
+ ]
+}

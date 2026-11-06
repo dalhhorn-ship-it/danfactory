@@ -1,0 +1,17 @@
+---
+name: retro
+description: Milestone retrospective. Reviews metrics (test time, coverage, deploys, tokens), what slowed us down or cost tokens, and enriches the decision tree, path playbooks and LEARNINGS.md so the next project starts smarter. Use at milestones, after a painful session, or when the user says "retro" or "what did we learn".
+---
+
+# Retro — keep the factory learning
+
+1. `python3 scripts/metrics.py report` and read `metrics/REPORT.md`.
+2. Look at recent history cheaply: `git log --oneline -30`, and ask the user 2 questions: what was slow/annoying? what worked surprisingly well?
+3. Write 1–5 entries in `docs/operating-model/LEARNINGS.md` using its entry format. Tag each with the path(s) and one of `[practice]`, `[tree-gap]`, `[budget]`, `[tooling]`, `[anti-pattern]`.
+4. Act on them, smallest change that sticks:
+   - wrong path chosen / missing branch -> edit DECISION-TREE.md and bump its version + changelog line (also `template.decision_tree_version` in factory.json)
+   - a path default was wrong -> edit that `paths/*.md`
+   - a budget is unrealistic -> edit `factory.json` budgets with the reason in the learning
+   - a recurring manual step -> propose a hook, script or subagent
+5. Mark learnings that are general (useful for every future project) with `[upstream]`. Tell the user: "N learnings are marked [upstream]; copy them to the template repo (see README → Feeding learnings back)".
+6. `python3 scripts/docs_index.py`. Summarise in ≤8 bullets.

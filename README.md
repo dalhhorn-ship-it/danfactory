@@ -1,0 +1,70 @@
+# danfactory
+
+> A template for starting Claude Code projects. It gives you a guided start (brainstorm → decision tree → operating model), saves tokens by design, keeps the docs indexed, tracks delivery metrics, runs security audits on request, and deploys to Cloudflare via git.
+
+## Start a new project
+
+1. On GitHub: **Use this template → Create a new repository** (turn on *Settings → Template repository* for danfactory once). Or copy it by hand:
+   ```bash
+   git clone https://github.com/dalhhorn-ship-it/danfactory my-project && cd my-project && rm -rf .git && git init
+   ```
+2. Bootstrap. Add `--codegraph` to install the local code graph:
+   ```bash
+   bash scripts/bootstrap.sh "my-project" "one line description"
+   ```
+3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
+
+## The flow
+
+| Phase | Skill | Output |
+|---|---|---|
+| 1. Agree the goal | `brainstorm` (talks it through with you) | docs/GOAL.md |
+| 2. Choose how to work | `choose-path` (decision tree, rigor L0–L3) | docs/OPERATING-MODEL.md, factory.json, ADR |
+| 3. Build | path playbook + subagents | code / workbook / document … |
+| Milestones | `retro`, `metrics` | LEARNINGS.md, tree updates, metrics/REPORT.md |
+| On request | `security-audit-run`, `ship` | audit report, live deploy |
+
+### Paths (docs/operating-model/paths/)
+
+The paths are deliberately different, so a spreadsheet isn't run like a SaaS app.
+
+| Path | Use for | Heavy lifting |
+|---|---|---|
+| software-product | apps, APIs, services | vertical slices, TDD, CI, git → Cloudflare |
+| library-cli | packages, SDKs, CLIs | API-first, semver, examples as tests |
+| data-spreadsheet | workbooks, models, CSV/reports | `data-builder` generator scripts + xlsx skill |
+| documents-content | docs, decks, handbooks | outline-first, docx/pptx/pdf skills |
+| research-analysis | research, comparisons, analysis | deep-research fan-out, sources ledger |
+| automation-script | glue, jobs, bots | idempotent, dry-run, cron on Cloudflare |
+| infra-ops | IaC, pipelines, DNS | plan/apply split, least privilege |
+| prototype-spike | throwaway learning | time-box, kill/promote date |
+
+## What's inside
+
+| Piece | Where | Idea taken from |
+|---|---|---|
+| Large-read guard + delegation subagents | .claude/hooks/guard_large_read.py, .claude/agents/ | [spotify shunt](https://github.com/spotify/portal-ai-plugins/tree/main/plugins/shunt), re-targeted from AiKA to native Haiku/Sonnet subagents |
+| Docs quick-reference + doc knowledge graph | docs/INDEX.md, docs/knowledge-graph.json, scripts/docs_index.py | generated from headings and links; auto-refreshed by a hook |
+| Code knowledge graph | `bash scripts/install-codegraph.sh` | [codegraph](https://github.com/colbymchenry/codegraph) (local, telemetry off) |
+| Metrics: test time, coverage, deploys, tokens | scripts/metrics.py, metrics/ | budgets in factory.json; token use recorded at SessionEnd |
+| Security audit (on request) | `security-audit-run` skill | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), installed on demand |
+| Deploy via git to Cloudflare | `ship` skill, templates/deploy-cloudflare.yml | [cloudflare-deploy skill](https://github.com/davila7/claude-code-templates/blob/main/cli-tool/components/skills/development/cloudflare-deploy/SKILL.md), installed on demand |
+
+On-demand skills are listed in `factory.json → integrations.skills`. Install one with `bash scripts/install-skill.sh <name>`. They are git-ignored, so the template stays small and every install pulls the current version.
+
+## Commands
+
+```bash
+bash scripts/check.sh                  # template self-checks (CI runs this)
+python3 scripts/docs_index.py          # regenerate docs index + knowledge graph
+python3 scripts/metrics.py test        # run tests, record time + coverage
+python3 scripts/metrics.py report      # metrics/REPORT.md with alerts + suggestions
+bash scripts/install-skill.sh security-audit
+bash scripts/install-skill.sh cloudflare-deploy
+```
+
+Requirements: git and python3 (stdlib only). Node/npm are needed for codegraph and wrangler only when you use them.
+
+## Feeding learnings back into the template
+
+`retro` tags learnings that apply to every project with `[upstream]`. Every so often, copy those entries (and any DECISION-TREE.md or paths/*.md changes) into this template repo via a PR and bump the tree version. New projects then start from the improved tree.

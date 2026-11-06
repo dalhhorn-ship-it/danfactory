@@ -1,0 +1,19 @@
+# local / generated
+.codegraph/
+.claude/settings.local.json
+.claude/skills/security-audit/
+.claude/skills/cloudflare-deploy/
+__pycache__/
+*.pyc
+.coverage
+coverage/
+htmlcov/
+node_modules/
+.venv/
+.env
+.env.*
+!.env.example
+# security-audit output must never land in the repo unless explicitly ignored here
+security-audit-output/
+.dev.vars
+.wrangler/

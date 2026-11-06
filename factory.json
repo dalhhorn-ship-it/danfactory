@@ -1,0 +1,62 @@
+{
+  "$comment": "Single source of project configuration for agents, hooks and scripts. Edit via /choose-path and /retro; humans may edit freely.",
+  "template": {
+    "name": "danfactory",
+    "decision_tree_version": "1.0.0"
+  },
+  "project": {
+    "name": "",
+    "one_liner": ""
+  },
+  "phase": "brainstorm",
+  "paths": {
+    "primary": "",
+    "secondary": []
+  },
+  "commands": {
+    "test": "",
+    "test_affected": "",
+    "coverage": "",
+    "lint": "",
+    "build": "",
+    "deploy": ""
+  },
+  "coverage_report": {
+    "format": "auto",
+    "file": ""
+  },
+  "budgets": {
+    "test_seconds": 120,
+    "affected_test_seconds": 30,
+    "deploy_seconds": 600,
+    "min_coverage_pct": 80,
+    "max_coverage_drop_pct": 2,
+    "session_tokens_warn": 2000000,
+    "large_read_lines": 350
+  },
+  "integrations": {
+    "codegraph": false,
+    "deploy": {
+      "provider": "cloudflare",
+      "method": "git",
+      "production_branch": "main",
+      "product": "",
+      "project_name": "",
+      "production_url": ""
+    },
+    "skills": {
+      "security-audit": {
+        "repo": "https://github.com/cloudflare/security-audit-skill",
+        "ref": "main",
+        "path": "skills/security-audit",
+        "license": "MIT"
+      },
+      "cloudflare-deploy": {
+        "repo": "https://github.com/davila7/claude-code-templates",
+        "ref": "main",
+        "path": "cli-tool/components/skills/development/cloudflare-deploy",
+        "license": "Apache-2.0"
+      }
+    }
+  }
+}
