@@ -27,7 +27,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 39 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 22 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 23 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 12 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
@@ -56,4 +56,4 @@
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
 | docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/template-mode.md | 62 | Status: draft, awaiting user approval · 2026-11-07 · Owner: product-manager · Backlog:… |
+| docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |

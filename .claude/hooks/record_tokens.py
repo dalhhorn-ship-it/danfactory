@@ -14,7 +14,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ROOT, load_factory, read_event  # noqa: E402
+from _common import ROOT, read_event, template_mode  # noqa: E402
 
 FIELDS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
 WEIGHTS = {"input_tokens": 1.0, "output_tokens": 5.0, "cache_creation_input_tokens": 1.25,
@@ -81,8 +81,8 @@ def main():
     tp = ev.get("transcript_path")
     if not tp or not os.path.isfile(tp):
         return
-    if not (load_factory().get("project") or {}).get("name"):
-        return  # template repo itself, not a project
+    if template_mode():
+        return  # the template repo itself, not a project
     totals, by_model, turns = summarize(tp)
     sub_totals = {f: 0 for f in FIELDS}
     subs = subagent_transcripts(tp)

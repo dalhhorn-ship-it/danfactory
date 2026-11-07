@@ -5,6 +5,9 @@
   python3 scripts/dashboard.py --open     # ...and open it in a browser
   python3 scripts/dashboard.py --print    # print SUMMARY.md (cheap status for agents)
 
+In template mode (origin = factory.json template.source_repo, see README) it shows "Template maintenance"
+(open tech debt, then Unplanned backlog items) instead of phase and progress.
+
 Sources (all in the repo, so every build can regenerate it):
   factory.json, docs/BACKLOG.md, docs/TECH-DEBT.md, metrics/*.jsonl, git tags/log,
   plus automated debt signals (TODO/FIXME markers, oversized files, codegraph import cycles).
@@ -26,6 +29,8 @@ import webbrowser
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
+from _common import template_mode  # noqa: E402
 
 OUT = os.path.join(ROOT, "dashboard")
 PHASES = ["brainstorm", "operating-model", "build"]
@@ -270,7 +275,11 @@ def collect():
     open_debt = [d for d in debt if d["open"]]
     planned = [m for m in backlog if m["total"]]
     total = sum(m["total"] for m in planned)
+    tmpl = template_mode(root=ROOT, factory=f)
+    unplanned = [i["title"] for m in backlog if m["name"].lower() == "unplanned"
+                 for i in m["items"] if i["state"] in ("todo", "doing", "blocked")]
     return {
+        "template_mode": tmpl, "template_work": unplanned if tmpl else [],
         "generated": metrics.now(),
         "project": f.get("project", {}), "phase": f.get("phase", "brainstorm"), "paths": f.get("paths", {}),
         "template": f.get("template", {}), "deploy": f.get("integrations", {}).get("deploy", {}),
@@ -392,12 +401,15 @@ def render(d):
     phase_i = PHASES.index(d["phase"]) if d["phase"] in PHASES else len(PHASES) - 1
     steps = "".join('<li class="%s">%s</li>' % ("done" if i < phase_i else "now" if i == phase_i else "", e(p))
                     for i, p in enumerate(PHASES))
+    if d.get("template_mode"):
+        steps = '<li class="now">Template maintenance</li><li>mode: template (origin matches template.source_repo)</li>'
     chips = "".join('<span class="chip">%s</span>' % e(p) for p in
                     [d["paths"].get("primary")] + list(d["paths"].get("secondary") or []) if p)
 
+    progress_tile = tile("Progress", "%d%%" % d["progress"]["pct"], "%d done · %d open" % (
+        bl["counts"]["done"], bl["counts"]["todo"] + bl["counts"]["doing"] + bl["counts"]["blocked"]))
     tiles = "".join([
-        tile("Progress", "%d%%" % d["progress"]["pct"], "%d done · %d open" % (
-            bl["counts"]["done"], bl["counts"]["todo"] + bl["counts"]["doing"] + bl["counts"]["blocked"])),
+        "" if d.get("template_mode") else progress_tile,
         tile("Full test run", fmt_num(m["test_seconds"], "s", 1), "budget %ss" % e(m["test_budget"]),
              status(m["test_seconds"], m["test_budget"]), spark(m["series"]["test_seconds"], "Test time")),
         tile("Coverage", fmt_num(m["coverage"], "%", 1), "min %s%%" % e(m["coverage_min"]),
@@ -466,7 +478,13 @@ def render(d):
     else:
         live = " · %s" % e(prod) if prod else ""
 
+    first, third = ("Progress by milestone", '<ul class="ms">%s</ul>' % ms_rows), ("Tech debt", debt_html)
+    if d.get("template_mode"):  # open tech debt first, then template work (Unplanned backlog items)
+        work = lst(d["template_work"], "no open template work in docs/BACKLOG.md (Unplanned)")
+        first, third = ("Template maintenance: open tech debt", debt_html), (
+            "Template work", '<ul class="plain">%s</ul>' % work)
     return TEMPLATE.format(
+        h_first=first[0], c_first=first[1], h_third=third[0], c_third=third[1],
         title=e(name + " status"), name=e(name), one_liner=e(d["project"].get("one_liner") or ""),
         steps=steps, chips=chips or '<span class="chip muted">path not chosen</span>',
         version=e(v["current"]), sha=e(v["sha"] or "no commits"), branch=e(v["branch"]), live=live,
@@ -485,14 +503,17 @@ def md(x):
 
 def summary(d):
     m, bl, debt = d["metrics"], d["backlog"]["counts"], d["debt"]
+    tm = d.get("template_mode")
     lines = [
         "## %s — dashboard" % md(d["project"].get("name") or "project"),
         "",
         "| | |", "|---|---|",
-        "| Phase / path | %s / %s |" % (md(d["phase"]), md(d["paths"].get("primary") or "–")),
+    ] + ([] if tm else [
+        "| Phase / path | %s / %s |" % (md(d["phase"]), md(d["paths"].get("primary") or "–"))]) + [
         "| Version | %s (%s) |" % (md(d["versions"]["current"]), md(d["versions"]["sha"] or "–")),
+    ] + ([] if tm else [
         "| Progress | %d%% — %d done, %d doing, %d blocked, %d todo |" % (
-            d["progress"]["pct"], bl["done"], bl["doing"], bl["blocked"], bl["todo"]),
+            d["progress"]["pct"], bl["done"], bl["doing"], bl["blocked"], bl["todo"])]) + [
         "| Tests | %s (budget %ss), pass rate %s |" % (fmt_num(m["test_seconds"], "s", 1), m["test_budget"],
                                                      fmt_num(m["pass_rate"], "%")),
         "| Coverage | %s (min %s%%) |" % (fmt_num(m["coverage"], "%", 1), m["coverage_min"]),
@@ -501,6 +522,13 @@ def summary(d):
         "| Tech debt | %d open (%d high), %d code markers |" % (
             len(debt["open"]), debt["by_impact"]["high"], debt["signals"]["marker_total"]),
     ]
+    if tm:
+        lines.insert(4, "| Mode | Template maintenance (origin matches template.source_repo) |")
+        lines += ["", "**Open tech debt**", ""] + (
+            ["- %s %s (impact: %s)" % (md(x["id"]), md(x["title"]), md(x["impact"] or "–")) for x in debt["open"]]
+            or ["- none"])
+        lines += ["", "**Template work (Unplanned backlog)**", ""] + (
+            ["- " + md(t) for t in d["template_work"]] or ["- none"])
     if m["alerts"]:
         lines += ["", "**Alerts**", ""] + ["- " + md(a) for a in m["alerts"]]
     return "\n".join(lines) + "\n"
@@ -642,9 +670,9 @@ footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
 <section class="tiles" aria-label="Key metrics">{tiles}</section>
 
 <section class="grid">
-  <div class="card"><h2>Progress by milestone</h2><ul class="ms">{milestones}</ul></div>
+  <div class="card"><h2>{h_first}</h2>{c_first}</div>
   <div class="card"><h2>Backlog</h2>{backlog}</div>
-  <div class="card"><h2>Tech debt</h2>{debt}</div>
+  <div class="card"><h2>{h_third}</h2>{c_third}</div>
   <div class="card"><h2>Alerts and suggestions</h2>
     <ul class="plain">{alerts}</ul><h3>Suggested improvements</h3><ul class="plain">{ideas}</ul></div>
   <div class="card"><h2>Versions</h2><div class="scroll"><table><thead><tr><th>Tag</th><th>Date</th></tr></thead><tbody>{tags}</tbody></table></div>

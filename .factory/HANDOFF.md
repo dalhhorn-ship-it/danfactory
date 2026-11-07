@@ -5,6 +5,7 @@ Template (danfactory) improvements: pull dashboard best practices from lpdan, ru
 
 ## State
 - Done, on `main` (d0dae76): Roadmap v2 (global sequence, `> Sequence:` line, Done collapse, Next up, PRD badge, re-sequence rule).
+- Done, on branch (not yet main): template mode, 80 tests green.
 - Done, on `main` (7272d0b, pushed 2026-11-07): security hardening S1–S7 per docs/specs/security-hardening-audit-1.md (approved). 71 tests, `bash scripts/check.sh` green.
 - Audit run-1 (quick, source-only, no sandbox): reports in ~/security-audit-skill/danfactory/run-1 (outside repo; gone if container resets). 0 confirmed, 6 needs-validation, 3 rejected.
 - Branch: claude/practical-ptolemy-8ttjzi, uncommitted: none.
@@ -21,7 +22,7 @@ Template (danfactory) improvements: pull dashboard best practices from lpdan, ru
 3. Tech debt TD-001..003 (docs/TECH-DEBT.md): TD-001 cf_scaffold still writes route B — needs a PRD before fixing.
 
 ## Watch out
-- **danfactory is the TEMPLATE repo only — never build a project here.** Ignore the session hook's "run brainstorm" hint; phase=brainstorm is the template's default for new projects. Work here = improving the template.
+- **danfactory is the TEMPLATE repo only — never build a project here.** Template mode (docs/specs/template-mode.md) now detects this via origin == factory.json template.source_repo; tests: `python3 scripts/metrics.py test` (80 tests).
 - New guard blocks `cat .env` etc. and many wrangler forms; `npm run deploy -- --dry-run` is blocked (conservative).
 - Parallel worktree devs branched from d0dae76 (old base); merges were clean, but brief agents with the PRD path in main checkout.
 - User is not technical on infra choices: explain options plainly and recommend one.

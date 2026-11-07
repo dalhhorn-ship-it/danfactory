@@ -2,6 +2,7 @@
   "$comment": "Single source of project configuration for agents, hooks and scripts. Edit via /choose-path and /retro; humans may edit freely.",
   "template": {
     "name": "danfactory",
+    "source_repo": "dalhhorn-ship-it/danfactory",
     "decision_tree_version": "1.1.0"
   },
   "project": {
