@@ -56,3 +56,4 @@
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
 | docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
+| docs/specs/template-mode.md | 62 | Status: draft, awaiting user approval · 2026-11-07 · Owner: product-manager · Backlog:… |
