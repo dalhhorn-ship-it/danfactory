@@ -21,3 +21,6 @@ Design choice from the template build (not yet measured): agents would idle whil
 
 ### 2026-11-06 — Delegate big reads by default  [all] [tooling] [upstream]
 Seeded from the template, not yet measured here: Spotify reports 82–94% token savings from delegating large reads (shunt README benchmarks). Guard hook + bulk-reader subagent added. Verify with weighted tokens/session in metrics/REPORT.md after a few sessions.
+
+### 2026-11-07 — Guards must match their promises  [all] [security] [upstream]
+Audit run-1 (quick, source-only): the template's docs promised more than its code enforced (deploy "denied", secrets "read-denied", production environment as the gate). Regex command guards are advisory; real protection is credential scoping (no deploy key where the agent or PR code runs). Write security claims as "guarded" unless a credential boundary backs them, and treat adopted repos as untrusted filesystem input (symlinks, .git/config, hooks).
