@@ -1,6 +1,6 @@
 # PRD: Security hardening after audit run-1
 
-> Status: draft · Owner: product-manager · Backlog: not yet added (after user approval) · Swimlane: technical foundation (template tooling)
+> Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog: Unplanned → "Security hardening" items S1–S7 · Swimlane: technical foundation (template tooling)
 
 ## Problem
 A quick-profile, source-only security audit of the template (run-1, ref 260b6ea) confirmed no vulnerability but found that three documented promises are stronger than what the code enforces: "direct wrangler deploy is denied", ".env*/.dev.vars are read-denied", and "production environment is the deploy gate". It also found six leads needing validation (shared deploy token reaching the PR preview job, deploy-guard bypass forms, symlink-following adopt, Read-only secret deny, git run under a foreign `.git/config`, shared /tmp logs). Every project created from the template inherits these gaps.
@@ -64,6 +64,14 @@ Suggested delivery order: 7 and 1 first (cheap, highest-impact), then 2, 3, 4, t
 
 ## Effort and sequencing
 Overall L; slices: 1 M, 2 M, 3 S, 4 M, 5 S, 6 S, 7 S. Dependencies: slice 3 shares guard code with slice 2 (do after). Slice 5 SHAs need network access. Swimlane: technical foundation. Cut order if pressed: 6, then 5, then the adopt plan listing in 4.
+
+## Decisions at approval (2026-11-07, user in chat)
+- PR previews: **option A**. Cloudflare's own dashboard Git integration (Workers Builds) is the default route and builds previews itself, so GitHub holds no Cloudflare key. For projects that deploy via GitHub Actions (route B), the template ships **no secret-bearing preview job** (option C fallback: test locally with `wrangler dev`). This replaces the "separate preview token" idea, because a Cloudflare token that can upload a version can usually also deploy. AC 1–2 are read in this light: AC 2 = no pull_request job references any Cloudflare secret.
+- `production` environment: main-branch deployment rule required; required reviewers optional (recommended for teams, not required for solo projects).
+- Bash reads of secret files: **block** (not ask).
+- Adopt channels: handle both `git clone` (symlinks preserved) and zip exports.
+- Deferred items (metrics.py deploy refusal, structural merge_settings, untrusted marking in session_start): **out** for now.
+- Backlog: one item per slice (S1–S7).
 
 ## Open questions
 1. Keep PR previews with a separate narrowly scoped preview token (`preview` environment), or drop previews / run them only for trusted branches? Recommendation: keep with a separate token; default off for forks and untrusted branches.

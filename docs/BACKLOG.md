@@ -12,4 +12,11 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [ ] Test command and CI green (S) #quality
 
 ## Unplanned
+- [ ] S1 Security best practices section in docs/policies/security.md (docs/specs/security-hardening-audit-1.md) (S) #security
+- [ ] S2 Deploy credentials: route A default, no secret-bearing PR job, production-environment token, CI least privilege, SHA pins, lockfile (docs/specs/security-hardening-audit-1.md) (M) #security
+- [ ] S3 Deploy guard hardening + honest wording (docs/specs/security-hardening-audit-1.md) (M) #security
+- [ ] S4 Secret files: recursive deny, Bash check, gitignore (docs/specs/security-hardening-audit-1.md) (S) #security
+- [ ] S5 Adopt flow: symlinks, hardened git, list foreign hooks/scripts (docs/specs/security-hardening-audit-1.md) (M) #security
+- [ ] S6 Supply chain: pinned skills and codegraph, no curl|sh (docs/specs/security-hardening-audit-1.md) (S) #security
+- [ ] S7 Hygiene: private temp files, dashboard escaping, wait-for-url validation (docs/specs/security-hardening-audit-1.md) (S) #security
 - [x] Dashboard roadmap v2: global sequence, Next up, Done collapse, PRD badge (docs/specs/dashboard-roadmap-v2.md) (M) #foundation
