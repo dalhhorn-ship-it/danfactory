@@ -5,6 +5,8 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+LOGDIR="$(mktemp -d)"
+trap 'rm -rf "$LOGDIR"' EXIT
 [ -n "${CI:-}" ] && exit 0
 read -r LINT AFFECTED CAP < <(python3 - <<'PY'
 import json
@@ -18,11 +20,11 @@ run() {  # run a configured command under the time cap
   local name="$1" cmd="${2//$'\x1f'/ }"
   [ "$cmd" = "-" ] && return 0
   local t0=$(date +%s)
-  timeout "$CAP" bash -c "$cmd" >"/tmp/pre-push-$name.log" 2>&1
+  timeout "$CAP" bash -c "$cmd" >"$LOGDIR/$name.log" 2>&1
   local code=$?
   if [ $code -ne 0 ]; then
     [ $code -eq 124 ] && echo "pre-push: $name exceeded ${CAP}s — speed it up (see metrics/REPORT.md) or narrow commands.test_affected" >&2 \
-                      || { echo "pre-push: $name failed:" >&2; tail -20 "/tmp/pre-push-$name.log" >&2; }
+                      || { echo "pre-push: $name failed:" >&2; tail -20 "$LOGDIR/$name.log" >&2; }
     return 1
   fi
   echo "pre-push: $name ok ($(( $(date +%s) - t0 ))s)"
