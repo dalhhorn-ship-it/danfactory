@@ -5,7 +5,7 @@ Template (danfactory) improvements: pull dashboard best practices from lpdan, ru
 
 ## State
 - Done, on `main` (d0dae76): Roadmap v2 (global sequence, `> Sequence:` line, Done collapse, Next up, PRD badge, re-sequence rule).
-- Done, on branch (not yet main): template mode, 80 tests green.
+- Done, on `main` (3c302ec): template mode, 80 tests green.
 - Done, on `main` (7272d0b, pushed 2026-11-07): security hardening S1–S7 per docs/specs/security-hardening-audit-1.md (approved). 71 tests, `bash scripts/check.sh` green.
 - Audit run-1 (quick, source-only, no sandbox): reports in ~/security-audit-skill/danfactory/run-1 (outside repo; gone if container resets). 0 confirmed, 6 needs-validation, 3 rejected.
 - Branch: claude/practical-ptolemy-8ttjzi, uncommitted: none.
