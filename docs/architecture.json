@@ -1,0 +1,159 @@
+{
+ "curated": {
+  "elements": [],
+  "exclude": [],
+  "relations": [],
+  "roots": []
+ },
+ "generated": {
+  "elements": [
+   {
+    "attrs": {
+     "status": "accepted"
+    },
+    "id": "adr:0001",
+    "layer": "motivation",
+    "name": "Start from the danfactory template",
+    "type": "principle"
+   },
+   {
+    "attrs": {
+     "status": "accepted"
+    },
+    "id": "adr:0002",
+    "layer": "motivation",
+    "name": "PRD approval gate before any build",
+    "type": "principle"
+   },
+   {
+    "attrs": {
+     "status": "accepted"
+    },
+    "id": "adr:0003",
+    "layer": "motivation",
+    "name": "Dashboard observability: design and open questions",
+    "type": "principle"
+   },
+   {
+    "id": "app:scripts/adopt.py",
+    "layer": "application",
+    "name": "adopt.py",
+    "path": "scripts/adopt.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/adopt_scan.py",
+    "layer": "application",
+    "name": "adopt_scan.py",
+    "path": "scripts/adopt_scan.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/archmodel.py",
+    "layer": "application",
+    "name": "archmodel.py",
+    "path": "scripts/archmodel.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/cf_scaffold.py",
+    "layer": "application",
+    "name": "cf_scaffold.py",
+    "path": "scripts/cf_scaffold.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/codemap.py",
+    "layer": "application",
+    "name": "codemap.py",
+    "path": "scripts/codemap.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/dashboard.py",
+    "layer": "application",
+    "name": "dashboard.py",
+    "path": "scripts/dashboard.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/docs_index.py",
+    "layer": "application",
+    "name": "docs_index.py",
+    "path": "scripts/docs_index.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/metrics.py",
+    "layer": "application",
+    "name": "metrics.py",
+    "path": "scripts/metrics.py",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/obs",
+    "layer": "application",
+    "name": "obs",
+    "path": "scripts/obs",
+    "type": "application-component"
+   },
+   {
+    "id": "app:scripts/upstream_learnings.py",
+    "layer": "application",
+    "name": "upstream_learnings.py",
+    "path": "scripts/upstream_learnings.py",
+    "type": "application-component"
+   },
+   {
+    "attrs": {
+     "ac": 11,
+     "approved": "2026-11-07",
+     "status": "approved"
+    },
+    "id": "req:dashboard-observability-tabs",
+    "layer": "motivation",
+    "name": "Dashboard observability tabs",
+    "type": "requirement"
+   }
+  ],
+  "relations": [
+   {
+    "source": "adr:0003",
+    "target": "app:scripts/archmodel.py",
+    "type": "influence"
+   },
+   {
+    "source": "adr:0003",
+    "target": "app:scripts/dashboard.py",
+    "type": "influence"
+   },
+   {
+    "source": "adr:0003",
+    "target": "app:scripts/obs",
+    "type": "influence"
+   },
+   {
+    "source": "app:scripts/dashboard.py",
+    "target": "app:scripts/metrics.py",
+    "type": "serving"
+   },
+   {
+    "source": "app:scripts/metrics.py",
+    "target": "app:scripts/dashboard.py",
+    "type": "serving"
+   },
+   {
+    "source": "app:scripts/obs",
+    "target": "app:scripts/archmodel.py",
+    "type": "serving"
+   },
+   {
+    "source": "app:scripts/obs",
+    "target": "app:scripts/dashboard.py",
+    "type": "serving"
+   }
+  ],
+  "source": "scan"
+ },
+ "schema": 1
+}
