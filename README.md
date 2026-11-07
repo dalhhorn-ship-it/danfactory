@@ -113,3 +113,7 @@ A checkout whose git `origin` is `template.source_repo` in factory.json (`dalhho
 ## Feeding learnings back into the template
 
 `retro` tags learnings that apply to every project with `[upstream]`. From the project, run `python3 scripts/upstream_learnings.py --template ../danfactory`: it appends unsent entries to the template's LEARNINGS.md, marks them `[upstreamed]`, and lists which shared docs (tree, routing, paths) differ, for you to port. Then open a PR in the template and bump the tree version. New projects then start from the improved tree.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Some agents in `.claude/agents/` are adapted from darcyegb/ClaudeCodeAgents (MIT, see `.claude/agents/LICENSE-ClaudeCodeAgents.txt`). Skills fetched by `scripts/install-skill.sh` keep their own licenses (listed in factory.json under `skills`).
