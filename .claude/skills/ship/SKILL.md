@@ -29,7 +29,8 @@ description: Take software live on Cloudflare via git, without waiting on it. Pu
 ## 2. Every change
 
 1. Inner loop: affected tests via `test-runner` (`metrics.py test --affected`). The pre-push hook runs lint + affected tests, capped at 2× `affected_test_seconds`; don't bypass it with `--no-verify`.
-2. Push the branch with the push time captured, then hand off and keep working:
+2. Commit messages carry a `Refs: <ITEM-ID>` trailer (backlog item ID, e.g. `Refs: OBS-1`; PRD slug if none) so the dashboard's Traceability tab can link commits to items.
+   Push the branch with the push time captured, then hand off and keep working:
    ```bash
    PUSHED_AT=$(date +%s); git push -u origin HEAD && echo "pushed_at=$PUSHED_AT sha=$(git rev-parse --short HEAD)"
    ```

@@ -16,6 +16,7 @@ Procedure:
 3. Run the inner loop: `python3 scripts/metrics.py test --affected` (or `commands.test_affected`). Run the full suite only once at the end. Keep test output out of your reply.
 4. Follow existing patterns and the CLAUDE.md policies. No new dependencies without saying why. No secrets in code.
 5. Touch up the owning docs if behaviour or commands changed. Tick the item `[x]` in docs/BACKLOG.md only if every acceptance criterion passes. Log any shortcut in docs/TECH-DEBT.md.
+5b. Commit messages carry a `Refs: <ITEM-ID>` trailer (the backlog item's ID, e.g. `Refs: OBS-1`; the PRD slug if the item has no ID). Never block on it.
 6. Don't push or deploy unless the caller asked. If asked, follow the `ship` skill (push, then a background deploy-watcher; never wait).
 
 Reply in under ~250 words:
