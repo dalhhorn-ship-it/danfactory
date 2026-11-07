@@ -6,7 +6,7 @@ description: Build and show the project dashboard — versions, phase and progre
 # Dashboard
 
 The dashboard is a generated artefact, so never write it by hand. `python3 scripts/dashboard.py` writes:
-- `dashboard/index.html`: self-contained page (no JS, no network) that works in light and dark mode and on phones. Two tabs: **Overview** (metrics, backlog, debt, versions) and **Roadmap** (proposed sequence in two swimlanes: value-driven features vs technical foundation)
+- `dashboard/index.html`: self-contained page (no JS, no network) that works in light and dark mode and on phones. Tabs: **Overview** (metrics, backlog, debt, versions), **Roadmap** (proposed sequence in two swimlanes: value-driven features vs technical foundation), **Architecture** (layered ArchiMate-style diagram: Motivation from GOAL/PRDs/ADRs, Application from source roots, Technology from wrangler bindings; plus designed-vs-built drift) and **Traceability** (goal → PRD → item → commits → components → tests → version, broken links flagged). Tabs are listed in `TABS` in scripts/dashboard.py; their code is in `scripts/obs/`
 - `dashboard/data.json`: the same data for tools
 - `dashboard/SUMMARY.md`: a 12-line status table
 
@@ -31,3 +31,5 @@ Run `python3 scripts/dashboard.py --print` and answer from the summary (cheap). 
 | Deploys | metrics/history.jsonl | `metrics.py deploy`, ship |
 | Tests, coverage | metrics/history.jsonl | `metrics.py test` (test-runner) |
 | Tokens | metrics/tokens.jsonl | SessionEnd hook |
+| Architecture | docs/GOAL.md, docs/specs/ (`# PRD:`), docs/decisions/, source roots (`src/ app/ worker/ lib/ packages/ functions/`; `scripts/` in the un-bootstrapped template), wrangler.jsonc/toml, migrations/*.sql, plus curated intent in docs/architecture.json | docs-sync runs `python3 scripts/archmodel.py --write` (the tab flags a stale file); edit only `curated` by hand |
+| Traceability | PRDs + docs/BACKLOG.md + `git log` | item IDs (`ABC-n`) in the backlog and a `Refs: ABC-n` trailer on every commit (PRD slug if the item has no ID); missing keys show as broken links, never block |

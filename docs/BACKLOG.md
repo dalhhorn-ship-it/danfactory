@@ -13,7 +13,7 @@ Roadmap tab: item order here is the proposed sequence. Tag technical work `#foun
 
 ## Milestone: M1 — Dashboard observability (target: )
 - [x] OBS-0 Observability design: ADR resolving PRD open questions (docs/specs/dashboard-observability-tabs.md) (S) #arch
-- [ ] OBS-1 Slice 1: Architecture + Traceability tabs (L) #feature
+- [x] OBS-1 Slice 1: Architecture + Traceability tabs (L) #feature
 - [ ] OBS-2 Slice 2: Decisions, Gates, Docs health tabs (M) #feature
 - [ ] OBS-3 Slice 3: Flow, Cost, Hotspots tabs (L) #feature
 

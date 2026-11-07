@@ -83,7 +83,7 @@ Wiring in dashboard.py:
 - **Edges:** only edges between bands are drawn, as straight lines from the bottom centre of one box to the top centre of the other. Edges inside a band, and all relations, are listed in a capped table under the diagram.
 - **Styling:** classes only (`am-mot`, `am-app`, `am-tech`, `drift`), colours from new CSS variables in both themes. Drift elements get a dashed border. Names are truncated to 20 characters, with the full name in `<title>`.
 - **Accessibility:** `role="img"` plus an `aria-label` summary.
-- **Phone:** `width:100%; min-width:640px` inside `.scroll`, so it scrolls sideways on a phone without breaking the page.
+- **Phone:** `width:100%; min-width:960px` (640px made the labels illegible at 375px) inside `.scroll`, so it scrolls sideways on a phone without breaking the page.
 
 ## Traceability keys (ADR 0003)
 | Link | Rule |
@@ -133,7 +133,8 @@ Wiring in dashboard.py:
 
 ## Risks and spikes
 - **S1 (30 min, Slice 1):** find out which codegraph CLI output gives file-level imports. If none is usable, use the scan only and log TD.
-- **S2 (30 min, end of Slice 1):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
+- **S1 outcome (2026-11-07):** codegraph is not installed in this environment, so no file-level import output could be checked; the regex scan is used (`source: "scan"`), logged as TD-001.
+- **S2 (30 min, end of Slice 1), PENDING (TD-002; no product repo available when Slice 1 was built):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
 - **S3 (Slice 3, before Cost):** attribution spike on `metrics/tokens.jsonl` (PRD risk 1).
 - **Page size:** measure `index.html` after each slice (target under 400 KB).
 

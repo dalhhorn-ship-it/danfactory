@@ -10,4 +10,5 @@ Delegate to the `doc-keeper` subagent with a 3–5 line summary of what changed 
 Definition of done for any task (see docs/policies/documentation.md):
 - behaviour/commands changed -> the owning doc says so
 - a decision with alternatives -> ADR
+- `python3 scripts/archmodel.py --write` refreshes the generated part of docs/architecture.json (curated intent is kept)
 - `python3 scripts/docs_index.py --check` passes

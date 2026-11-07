@@ -98,6 +98,7 @@ python3 scripts/docs_index.py          # regenerate docs index + knowledge graph
 python3 scripts/metrics.py test        # run tests, record time + coverage
 python3 scripts/metrics.py report      # metrics/REPORT.md with alerts + suggestions
 python3 scripts/dashboard.py --open    # build + open the project dashboard
+python3 scripts/archmodel.py --write   # refresh docs/architecture.json (dashboard Architecture tab)
 bash scripts/install-skill.sh security-audit
 bash scripts/install-skill.sh cloudflare-deploy
 ```
