@@ -553,6 +553,9 @@ class ShortContexts(unittest.TestCase):
         d, hooks, env, note = self.project_copy()
         with open(note, "w") as fh:
             fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+        subprocess.run(git + ["commit", "-q", "--no-verify", "--allow-empty", "-m", "chore: unrelated"], cwd=d,
+                       check=True, capture_output=True)  # HEAD must not be a commit that touched the note
         head_time = int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=d, capture_output=True,
                                        text=True, check=True).stdout.strip())
         os.utime(note, (head_time - 3600, head_time - 3600))
@@ -560,7 +563,6 @@ class ShortContexts(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("older than the last commit", r.stdout)
         self.assertLess(os.path.getmtime(note), head_time)  # the snapshot keeps the note's mtime
-        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
         subprocess.run(git + ["add", "-f", note], cwd=d, check=True, capture_output=True)
         subprocess.run(git + ["commit", "-q", "--no-verify", "-m", "chore: handoff"], cwd=d, check=True,
                        capture_output=True)
