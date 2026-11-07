@@ -433,7 +433,11 @@ class ShortContexts(unittest.TestCase):
         self.assertEqual(hook("context_watch.py", big).stdout, "")  # same band: no nagging
         small = {"transcript_path": self.transcript(30000), "session_id": sid + "x"}
         self.assertEqual(hook("context_watch.py", small).stdout, "")
-        os.remove(os.path.join(tempfile.gettempdir(), "danfactory-ctx-%s" % sid))
+        sdir = os.path.join(tempfile.gettempdir(), "danfactory-%d" % (os.getuid() if hasattr(os, "getuid") else 0))
+        for s in (sid, sid + "x"):
+            p = os.path.join(sdir, "ctx-%s" % s)
+            if os.path.exists(p):
+                os.remove(p)
 
     def test_pre_compact_snapshot_and_session_reload(self):
         d = os.path.join(tempfile.mkdtemp(), "proj")
