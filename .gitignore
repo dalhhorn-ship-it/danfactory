@@ -24,3 +24,5 @@ security-audit-output/
 /dashboard/
 metrics/records.local.jsonl
 metrics/REPORT.md
+# agent worktrees (temporary, per session)
+.claude/worktrees/
