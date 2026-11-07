@@ -14,7 +14,7 @@
 |---|---|---|---|
 | Adopt an existing build | in the other repo: `/danfactory:adopt` | bulk-reader (scan questions), karen (does it run?), product-manager (as-built backlog), software-architect (L2+) | mixed |
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
-| Plan | after choose-path; milestone start; backlog messy | `product-manager` | sonnet |
+| Plan | after choose-path; milestone start; backlog messy; after every slice (re-propose the build sequence before the dashboard refresh) | `product-manager` | sonnet |
 | PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
 | Design (spreadsheet/data) | data-spreadsheet path; restructuring a model | `spreadsheet-architect` | sonnet |

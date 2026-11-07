@@ -205,10 +205,11 @@ class Dashboard(unittest.TestCase):
 
     def test_roadmap_swimlanes_and_sequence(self):
         ms = self.d.parse_backlog("""## Milestone: M1
+> Sequence: riskiest first, then polish
 - [x] Login works #value
 - [ ] Set up CI (S) #ci
 - [-] Dropped idea
-- [ ] Share a list
+- [ ] Share a list AC: can share via link
 ## Milestone: M2
 - [~] Split storage layer #arch
 - [ ] Export to CSV #feature
@@ -217,16 +218,59 @@ class Dashboard(unittest.TestCase):
         rm = self.d.roadmap(ms, debt)
         cols = rm["columns"]
         self.assertEqual([c["name"] for c in cols], ["M1", "M2", "Tech debt to schedule"])
+        self.assertEqual((cols[0]["sequence"], cols[1]["sequence"]), ("riskiest first, then polish", ""))  # AC1
         lane = lambda i, k: [(x["title"], x["seq"]) for x in cols[i]["lanes"][k]]
-        self.assertEqual(lane(0, "value"), [("Login works", None), ("Share a list", 1)])
+        # AC2/AC8: one global number in file order, open cards first, done ones trail
+        self.assertEqual(lane(0, "value"), [("Share a list AC: can share via link", 2), ("Login works", None)])
         self.assertEqual(lane(0, "foundation"), [("Set up CI", 1)])
-        self.assertEqual(lane(1, "foundation"), [("Split storage layer", 2)])
-        self.assertEqual(lane(1, "value"), [("Export to CSV", 2)])
-        self.assertEqual(lane(2, "foundation"), [("TD-001 No retries", 3)])
+        self.assertEqual(lane(1, "foundation"), [("Split storage layer", 3)])
+        self.assertEqual(lane(1, "value"), [("Export to CSV", 4)])
+        self.assertEqual(lane(2, "foundation"), [("TD-001 No retries", 5)])  # AC3: debt continues the sequence
         self.assertEqual(rm["open"], {"value": 2, "foundation": 3})
+        # AC6/AC7: next up = three lowest numbers, short title cut before " AC:"
+        self.assertEqual([(x["seq"], x["short"], x["lane"]) for x in rm["next"]],
+                         [(1, "Set up CI", "foundation"), (2, "Share a list", "value"), (3, "Split storage layer", "foundation")])
         html = self.d.render_roadmap(rm)
-        self.assertIn("Technical foundation", html)
-        self.assertIn("Value-driven features", html)
+        for text in ("Technical foundation", "Value-driven features", "Next up", "riskiest first, then polish"):
+            self.assertIn(text, html)
+        self.assertNotIn("<script", html)  # AC12
+
+    def test_roadmap_done_collapse_and_empty_states(self):
+        ms = self.d.parse_backlog("""## Milestone: M0 — Setup
+- [x] a
+- [-] dropped does not block done
+## Milestone: M1
+- [ ] b <i>
+""")
+        rm = self.d.roadmap(ms, [])
+        self.assertEqual(rm["done"], [{"name": "M0 — Setup", "done": 1, "total": 1}])  # AC4
+        self.assertEqual([c["name"] for c in rm["columns"]], ["M1"])
+        self.assertEqual(len(rm["next"]), 1)  # AC6: fewer than three
+        html = self.d.render_roadmap(rm)
+        self.assertIn("Done: M0 — Setup (1/1)", html)
+        self.assertIn("b &lt;i&gt;", html)  # AC12: escaped
+        all_done = self.d.roadmap(self.d.parse_backlog("## Milestone: M0\n- [x] a\n"), [])
+        self.assertEqual((all_done["columns"], all_done["next"]), ([], []))  # AC5, AC6 (none)
+        html = self.d.render_roadmap(all_done)
+        self.assertIn("Everything planned is done", html)
+        self.assertNotIn("Next up", html)
+
+    def test_roadmap_prd_badge(self):
+        import tempfile
+        rel = "docs/specs/_test-badge-%d.md" % os.getpid()
+        path = os.path.join(ROOT, rel)
+        try:
+            with open(path, "w") as fh:
+                fh.write("# PRD\n\n> Status: approved · 2026-11-07 · by user in chat\n")
+            ms = self.d.parse_backlog("## Milestone: M1\n- [ ] Linked item (%s) (S)\n- [ ] [Linked text](docs/specs/missing.md)\n- [ ] Plain\n" % rel)
+            items = ms[0]["items"]
+            self.assertEqual([(i["title"], i["spec"]) for i in items],
+                             [("Linked item", rel), ("Linked text", "docs/specs/missing.md"), ("Plain", "")])
+            cards = self.d.roadmap(ms, [])["columns"][0]["lanes"]["value"]
+            self.assertEqual([c["prd"] for c in cards], ["approved", "", ""])  # AC9: missing file -> no badge
+            self.assertIn("PRD approved", self.d.render_roadmap(self.d.roadmap(ms, [])))
+        finally:
+            os.remove(path)
 
     def test_build_writes_artefacts(self):
         d = self.d.build()

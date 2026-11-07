@@ -20,12 +20,15 @@ Run `python3 scripts/dashboard.py --print` and answer from the summary (cheap). 
 - In the Claude app: if the Artifact tool is available, publish `dashboard/index.html` as a private artifact and store its URL in `factory.json → integrations.dashboard_url`. Republish to the same URL later so the link stays stable.
 - CI: open the run's `dashboard` artifact.
 
+## Refresh rhythm
+After every completed slice: `product-manager` re-proposes the sequence in docs/BACKLOG.md (order + `> Sequence:` line), then rebuild and republish to the same artifact URL (`integrations.dashboard_url`).
+
 ## Keeping it truthful (the dashboard is only as good as its sources)
 | Panel | Source | Kept current by |
 |---|---|---|
 | Phase, paths | factory.json | brainstorm, choose-path |
 | Progress, backlog | docs/BACKLOG.md (`[ ] [~] [x] [!] [-]` items under milestones) | every task (definition of done), choose-path seeds it |
-| Roadmap | docs/BACKLOG.md order (milestones = columns, file order = sequence) + tags for the lane (`#foundation`, `#arch`, `#infra`, `#runway`, `#debt`, `#quality`, `#ci`, `#security`, `#process`… → foundation; untagged, `#value` or `#feature` → value) + open TECH-DEBT.md items (foundation, sorted by impact) | choose-path, product-manager when (re)sequencing: reorder items in BACKLOG.md to change the proposal |
+| Roadmap | docs/BACKLOG.md order (milestones = columns, file order = one global sequence 1..N across lanes, `> Sequence:` line = why, all-done milestones collapse, top 3 = Next up, linked `docs/specs/*.md` = PRD badge) + tags for the lane (`#foundation`, `#arch`, `#infra`, `#runway`, `#debt`, `#quality`, `#ci`, `#security`, `#process`… → foundation; untagged, `#value` or `#feature` → value) + open TECH-DEBT.md items (foundation, sorted by impact) | choose-path, product-manager when (re)sequencing: reorder items in BACKLOG.md to change the proposal |
 | Tech debt | docs/TECH-DEBT.md register + automated markers/large files/cycles | retro, `engineering:tech-debt`, any shortcut taken on purpose |
 | Versions | git tags (`git tag vX.Y.Z`), VERSION / package.json / pyproject.toml | releases |
 | Deploys | metrics/history.jsonl | `metrics.py deploy`, ship |

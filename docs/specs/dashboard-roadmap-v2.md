@@ -1,6 +1,6 @@
 # PRD: Dashboard roadmap v2 (global sequence, Next up, sequence rationale)
 
-> Status: draft · Owner: product-manager · Backlog: not yet added (added only after user approval, per docs/policies/prd-approval.md)
+> Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog: Unplanned → "Dashboard roadmap v2"
 
 ## Problem
 The Roadmap tab numbers open items per lane, so "what do we build next?" has two answers (value 1 and foundation 1). It shows every milestone as full columns even when finished, so the page gets longer and noisier as work completes. It gives no reason for the order, and cards don't show whether the PRD gate has been passed. The downstream project lpdan (/home/user/dalhhorn-ship-it/lpdan) hit all of this in real use and fixed it locally (commit 4ed7806 there). Those fixes should flow back into the template so every new project gets them.
@@ -67,6 +67,8 @@ Success: the template dashboard reproduces lpdan's behaviour (items 1-5 below) a
 - Reference implementation: /home/user/dalhhorn-ship-it/lpdan/scripts/dashboard.py roadmap()/render_roadmap() (read-only reference; adapt rather than copy blindly).
 
 ## Open questions
+Not answered at approval; built with the PRD's recommended defaults: badge included, Next up = 3, tech debt numbered globally, dropped items ignored for the Done collapse, re-sequence rule on by default.
+
 1. Include the optional PRD status badge (item 7) in this slice, or defer?
 2. Next up strip size: keep 3, as lpdan does?
 3. Should tech-debt cards be numbered in the global sequence (AC 3), or stay unnumbered as a separate "to schedule" pool?

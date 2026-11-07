@@ -42,7 +42,7 @@ Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are
 | 2. Choose how to work | `choose-path` (decision tree, rigor L0–L3) | docs/OPERATING-MODEL.md, factory.json, ADR |
 | 3. Build | path playbook + subagents | code / workbook / document … |
 | Milestones | `retro`, `metrics` | LEARNINGS.md, tree updates, metrics/REPORT.md |
-| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, plus a Roadmap tab (value vs technical-foundation swimlanes) |
+| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, plus a Roadmap tab (value vs technical-foundation swimlanes, one global build sequence, Next up, PRD badges) |
 | On request | `security-audit-run`, `ship` | audit report, live deploy |
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)

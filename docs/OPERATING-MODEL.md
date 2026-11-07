@@ -14,6 +14,7 @@ _Roster and verification ladder from docs/operating-model/AGENT-ROUTING.md; list
 
 ## Practices and habits
 - _e.g. TDD for domain logic; one vertical slice per PR; docs-sync at end of each task_
+- After every completed slice, before the dashboard refresh: `product-manager` re-proposes the build sequence (reorders open items in docs/BACKLOG.md, updates the milestone's `> Sequence:` line), then `python3 scripts/dashboard.py` and republish the dashboard to the same URL. Default on; remove this line to opt out.
 
 ## Policies
 _Which of docs/policies/* apply and any project-specific overrides._
