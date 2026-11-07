@@ -170,6 +170,14 @@ class Repo(unittest.TestCase):
         self.assertIn("done, no commits", html)
         self.assertIn("2 PRDs", tab_traceability.line(t))
 
+    def test_spec_link_in_item_links_prd(self):
+        # Roadmap v2 strips "(docs/specs/x.md)" from titles into item["spec"]; the chain must still link it
+        backlog = dashboard.parse_backlog("## Unplanned\n- [x] Linked thing (docs/specs/orphan.md) (S) #foundation\n")
+        self.assertEqual(backlog[0]["items"][0]["spec"], "docs/specs/orphan.md")
+        t = trace.build(self.root, {"progress": {"milestones": backlog}}, self.arch)
+        orphan = next(c for c in t["chains"] if c["prd"]["slug"] == "orphan")
+        self.assertEqual([i["title"] for i in orphan["items"]], ["Linked thing"])
+
 
 class Slice2(unittest.TestCase):
     def test_empty_states(self):

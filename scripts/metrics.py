@@ -148,7 +148,18 @@ def counts(lines):
     return out
 
 
+TEMPLATE_TEST = "python3 -m unittest discover -s .factory/tests"
+
+
+def template_mode():
+    sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
+    from _common import template_mode as detect  # noqa: E402
+    return detect(root=ROOT)
+
+
 def cmd_test(a, f):
+    if template_mode():  # the template repo itself: run its own suite; commands.test stays empty for copies
+        f = {**f, "commands": {**f.get("commands", {}), "test": TEMPLATE_TEST, "test_affected": "", "coverage": ""}}
     key = "test_affected" if a.affected else ("coverage" if f["commands"].get("coverage") else "test")
     cmd = f["commands"].get(key) or f["commands"].get("test")
     if not cmd:

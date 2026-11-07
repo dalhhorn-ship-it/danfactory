@@ -42,7 +42,7 @@ Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are
 | 2. Choose how to work | `choose-path` (decision tree, rigor L0–L3) | docs/OPERATING-MODEL.md, factory.json, ADR |
 | 3. Build | path playbook + subagents | code / workbook / document … |
 | Milestones | `retro`, `metrics` | LEARNINGS.md, tree updates, metrics/REPORT.md |
-| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, plus a Roadmap tab (value vs technical-foundation swimlanes) |
+| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, plus a Roadmap tab (value vs technical-foundation swimlanes, one global build sequence, Next up, PRD badges) |
 | On request | `security-audit-run`, `ship` | audit report, live deploy |
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)
@@ -104,6 +104,10 @@ bash scripts/install-skill.sh cloudflare-deploy
 ```
 
 Requirements: git and python3 (stdlib only). Node/npm are needed for codegraph and wrangler only when you use them.
+
+## Template mode (maintainers)
+
+A checkout whose git `origin` is `template.source_repo` in factory.json (`dalhhorn-ship-it/danfactory`) is the template itself. There the session-start hook says "TEMPLATE repo" instead of suggesting brainstorm, the dashboard shows "Template maintenance" (open tech debt, then open Unplanned backlog items) instead of phase and progress, and `python3 scripts/metrics.py test` runs `.factory/tests` (`commands.test` stays empty so projects are unaffected). Any other origin, no remote or no git means project mode. Detection reads local git config only (helper `template_mode()` in .claude/hooks/_common.py). If you rename or move the template repo, update `template.source_repo`. A plain `git clone` of the template keeps its origin and so counts as the template until you change the remote.
 
 ## Feeding learnings back into the template
 

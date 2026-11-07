@@ -1,6 +1,6 @@
 # Design: dashboard observability tabs
 
-> Status: accepted · 2026-11-07 · Owner: software-architect · PRD: docs/specs/dashboard-observability-tabs.md · ADR: docs/decisions/0003-dashboard-observability-design.md
+> Status: accepted · 2026-11-07 · Owner: software-architect · PRD: docs/specs/dashboard-observability-tabs.md · ADR: docs/decisions/0004-dashboard-observability-design.md
 
 How the observability tabs get built. This note covers the shared layout for all three slices and spells out Slice 1 in detail. Stdlib Python only, no JS, no network.
 
@@ -31,7 +31,7 @@ Wiring in dashboard.py:
 - `summary()` appends `module.line(d[key])`.
 - Overview and Roadmap markup stay unchanged.
 
-## Model file: `docs/architecture.json` (ADR 0003, Q4)
+## Model file: `docs/architecture.json` (ADR 0004, Q4)
 ```
 {"schema": 1,
  "curated":   {"roots": [], "exclude": [], "elements": [...], "relations": [...]},   # hand-edited, preserved verbatim
@@ -85,7 +85,7 @@ Wiring in dashboard.py:
 - **Accessibility:** `role="img"` plus an `aria-label` summary.
 - **Phone:** `width:100%; min-width:960px` (640px made the labels illegible at 375px) inside `.scroll`, so it scrolls sideways on a phone without breaking the page.
 
-## Traceability keys (ADR 0003)
+## Traceability keys (ADR 0004)
 | Link | Rule |
 |---|---|
 | goal → PRD | every PRD links to `goal:outcome` (a single goal for now) |
@@ -133,10 +133,10 @@ Wiring in dashboard.py:
 
 ## Risks and spikes
 - **S1 (30 min, Slice 1):** find out which codegraph CLI output gives file-level imports. If none is usable, use the scan only and log TD.
-- **S1 outcome (2026-11-07):** codegraph is not installed in this environment, so no file-level import output could be checked; the regex scan is used (`source: "scan"`), logged as TD-001.
-- **S2 (30 min, end of Slice 1), PENDING (TD-002; no product repo available when Slice 1 was built):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
+- **S1 outcome (2026-11-07):** codegraph is not installed in this environment, so no file-level import output could be checked; the regex scan is used (`source: "scan"`), logged as TD-004.
+- **S2 (30 min, end of Slice 1), PENDING (TD-005; no product repo available when Slice 1 was built):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
 - **S3 (Slice 3, before Cost):** attribution spike on `metrics/tokens.jsonl` (PRD risk 1).
-- **S3 outcome (2026-11-07):** token rows (`kind: session`) hold `ts`, `session_id` and token counts only: no sha, no item. The `session_id` is the transcript id, not the `Claude-Session` commit trailer, and a timestamp window would be a guess (sessions span items; subagents overlap). Decision: attribute only when a row has an explicit `item` or a `sha` of a commit with `Refs:`; rows had no link at the time (TD-005). Resolved: the SessionEnd hook now writes `shas` (commits made during the session); a row is attributed when they reference exactly one item, and sessions with several items are counted as "mixed" and left unattributed.
+- **S3 outcome (2026-11-07):** token rows (`kind: session`) hold `ts`, `session_id` and token counts only: no sha, no item. The `session_id` is the transcript id, not the `Claude-Session` commit trailer, and a timestamp window would be a guess (sessions span items; subagents overlap). Decision: attribute only when a row has an explicit `item` or a `sha` of a commit with `Refs:`; rows had no link at the time (TD-009). Resolved: the SessionEnd hook now writes `shas` (commits made during the session); a row is attributed when they reference exactly one item, and sessions with several items are counted as "mixed" and left unattributed.
 - **Page size:** measure `index.html` after each slice (target under 400 KB).
 
 ## Slice 1 build order (one developer run; split after step 5 if needed)

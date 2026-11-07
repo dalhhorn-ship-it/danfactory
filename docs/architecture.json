@@ -31,6 +31,15 @@
     },
     "id": "adr:0003",
     "layer": "motivation",
+    "name": "Deploy credential scoping",
+    "type": "principle"
+   },
+   {
+    "attrs": {
+     "status": "accepted"
+    },
+    "id": "adr:0004",
+    "layer": "motivation",
     "name": "Dashboard observability: design and open questions",
     "type": "principle"
    },
@@ -98,6 +107,13 @@
     "type": "application-component"
    },
    {
+    "id": "app:scripts/skill_frontmatter.py",
+    "layer": "application",
+    "name": "skill_frontmatter.py",
+    "path": "scripts/skill_frontmatter.py",
+    "type": "application-component"
+   },
+   {
     "id": "app:scripts/upstream_learnings.py",
     "layer": "application",
     "name": "upstream_learnings.py",
@@ -114,23 +130,61 @@
     "layer": "motivation",
     "name": "Dashboard observability tabs",
     "type": "requirement"
+   },
+   {
+    "attrs": {
+     "ac": 12,
+     "approved": "2026-11-07",
+     "status": "approved"
+    },
+    "id": "req:dashboard-roadmap-v2",
+    "layer": "motivation",
+    "name": "Dashboard roadmap v2 (global sequence, Next up, sequence rationale)",
+    "type": "requirement"
+   },
+   {
+    "attrs": {
+     "ac": 14,
+     "approved": "2026-11-07",
+     "status": "approved"
+    },
+    "id": "req:security-hardening-audit-1",
+    "layer": "motivation",
+    "name": "Security hardening after audit run-1",
+    "type": "requirement"
+   },
+   {
+    "attrs": {
+     "ac": 8,
+     "approved": "2026-11-07",
+     "status": "approved"
+    },
+    "id": "req:template-mode",
+    "layer": "motivation",
+    "name": "Template mode (the template repo knows it is the template)",
+    "type": "requirement"
    }
   ],
   "relations": [
    {
-    "source": "adr:0003",
+    "source": "adr:0004",
     "target": "app:scripts/archmodel.py",
     "type": "influence"
    },
    {
-    "source": "adr:0003",
+    "source": "adr:0004",
     "target": "app:scripts/dashboard.py",
     "type": "influence"
    },
    {
-    "source": "adr:0003",
+    "source": "adr:0004",
     "target": "app:scripts/obs",
     "type": "influence"
+   },
+   {
+    "source": "app:scripts/adopt.py",
+    "target": "app:scripts/adopt_scan.py",
+    "type": "serving"
    },
    {
     "source": "app:scripts/dashboard.py",

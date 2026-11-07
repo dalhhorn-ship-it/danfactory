@@ -4,8 +4,10 @@
   python3 scripts/adopt_scan.py --target /path/to/existing-repo [--out docs/ADOPTION-REPORT.md]
 
 Read-only on the target except for the report files it writes there
-(docs/ADOPTION-REPORT.md + docs/adoption-scan.json). Stdlib only, no network, never runs the
-target's code. Detects origin, stack, scripts, tests, CI, hosting, size, hot spots, and
+(docs/ADOPTION-REPORT.md + docs/adoption-scan.json; refused when the path goes through a symlink).
+Stdlib only, no network. The target is untrusted and its code is never run: git is invoked with
+the target's own config neutralised (fsmonitor, hooks, pager off; no system/global config; no
+prompts; no optional locks) and the files are only read as text. Detects origin, stack, scripts, tests, CI, hosting, size, hot spots, and
 security/quality signals, and turns them into findings with severities that adopt.py
 seeds into docs/TECH-DEBT.md and the adopt skill turns into next-build advice.
 """
@@ -18,6 +20,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from adopt import open_nofollow, safe_target_path  # noqa: E402
+
 SKIP_DIRS = {"node_modules", ".git", "dist", "build", ".next", ".nuxt", "out", "coverage", ".venv", "venv",
              "__pycache__", ".turbo", ".vercel", ".wrangler", ".codegraph", "vendor", "target"}
 CODE_EXT = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".vue", ".svelte", ".py", ".go", ".rs", ".rb",
@@ -27,9 +32,22 @@ BOT_RE = re.compile(r"lovable|gpt-engineer|bolt|stackblitz|v0|vercel\[bot\]", re
 SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
 
+GIT_SAFE = ["git", "--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=" + os.devnull,
+            "-c", "core.pager=cat", "-c", "core.untrackedCache=false", "-c", "protocol.allow=never",
+            "-c", "core.sshCommand=false", "-c", "core.attributesFile=" + os.devnull]
+
+
+def safe_env():
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT="0", GIT_PAGER="cat")
+    return env
+
+
 def run(args, cwd):
+    if args and args[0] == "git":
+        args = GIT_SAFE + list(args[1:])
     try:
-        p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=60)
+        p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=60, env=safe_env())
         return p.stdout if p.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
         return ""
@@ -44,7 +62,7 @@ def list_files(root):
         for d, dirs, names in os.walk(root):
             dirs[:] = [x for x in dirs if x not in SKIP_DIRS]
             files += [os.path.relpath(os.path.join(d, n), root) for n in names]
-    return sorted(f for f in files if os.path.isfile(os.path.join(root, f)))
+    return sorted(f for f in files if os.path.isfile(os.path.join(root, f)) and not os.path.islink(os.path.join(root, f)))
 
 
 def read(root, rel, limit=400_000):
@@ -140,7 +158,8 @@ def scan(root):
     service_role = [f for f, t in client_side.items() if re.search(r"service_role|SUPABASE_SERVICE_ROLE", t)]
     secret_like = [f for f, t in client_side.items() if re.search(r"sk_live_[0-9a-zA-Z]{10,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}", t)]
     hardcoded_supabase = [f for f, t in src_text.items() if re.search(r"https://[a-z0-9]{10,}\.supabase\.co", t)]
-    env_committed = [f for f in files if re.fullmatch(r"(.*/)?\.env(\.[\w.-]+)?", f) and not f.endswith((".example", ".sample", ".template"))]
+    env_committed = [f for f in files if re.fullmatch(r"(.*/)?\.(env|dev\.vars)(\.[\w.-]+)?", f)
+                     and not f.endswith((".example", ".sample", ".template"))]
     migrations = "\n".join(read(root, f) for f in files if f.startswith("supabase/migrations/") and f.endswith(".sql")).lower()
     tables = len(re.findall(r"create table", migrations))
     rls = len(re.findall(r"enable row level security", migrations))
@@ -155,7 +174,7 @@ def scan(root):
     if secret_like:
         add("critical", "security", "Secret-looking keys in source", ", ".join(secret_like[:5]))
     if env_committed:
-        add("high", "security", ".env file(s) committed to git", ", ".join(env_committed))
+        add("high", "security", ".env / .dev.vars file(s) committed to git", ", ".join(env_committed))
     if tables and rls < tables:
         add("high", "security", "Row Level Security missing on some tables (%d tables, %d RLS enables)" % (tables, rls),
             "Supabase anon key is public by design; RLS policies are the access control.")
@@ -256,11 +275,16 @@ def main():
     if a.print_only:
         print(text)
         return 0
-    out = os.path.join(root, a.out)
+    rel_out = os.path.normpath(a.out)
+    rel_json = os.path.join(os.path.dirname(rel_out), "adoption-scan.json")
+    out, js = (safe_target_path(root, r) for r in (rel_out, rel_json))
+    if out is None or js is None:
+        print("refused: report path goes through a symlink or leaves the target (%s)" % rel_out, file=sys.stderr)
+        return 2
     os.makedirs(os.path.dirname(out), exist_ok=True)
-    with open(out, "w", encoding="utf-8") as fh:
+    with open_nofollow(out, "w") as fh:
         fh.write(text)
-    with open(os.path.join(os.path.dirname(out), "adoption-scan.json"), "w", encoding="utf-8") as fh:
+    with open_nofollow(js, "w") as fh:
         json.dump(s, fh, indent=1)
     print("adoption scan: %s (%s, %d findings) -> %s" % (s["name"], s["origin"], len(s["findings"]), os.path.relpath(out, root)))
     return 0

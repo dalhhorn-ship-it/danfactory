@@ -9,8 +9,9 @@ Q0 Is there already a build (repo, Lovable/Bolt/v0 export, half-finished project
    └─ yes → adopt-existing first (scan → index → dashboard → advice), then continue below
             for the path the build will continue on.
 Q0b Is the work on the factory template itself (agents, skills, scripts, dashboard), not a product?
-   └─ yes → skip brainstorm/choose-path; the PRD gate still applies. Expect empty metrics
-            (token hook and tests are off until project.name/commands are set).
+   └─ yes → template mode (origin == factory.json template.source_repo, docs/specs/template-mode.md):
+            skip brainstorm/choose-path, never build a project here; the PRD gate still applies.
+            Track work under `## Unplanned` in BACKLOG.md. Expect empty product metrics.
 ```
 
 ## Q1–Q7: what is the main artifact? (first match wins)

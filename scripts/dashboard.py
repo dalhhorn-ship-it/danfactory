@@ -5,6 +5,9 @@
   python3 scripts/dashboard.py --open     # ...and open it in a browser
   python3 scripts/dashboard.py --print    # print SUMMARY.md (cheap status for agents)
 
+In template mode (origin = factory.json template.source_repo, see README) it shows "Template maintenance"
+(open tech debt, then Unplanned backlog items) instead of phase and progress.
+
 Sources (all in the repo, so every build can regenerate it):
   factory.json, docs/BACKLOG.md, docs/TECH-DEBT.md, metrics/*.jsonl, git tags/log,
   plus automated debt signals (TODO/FIXME markers, oversized files, codegraph import cycles).
@@ -27,6 +30,8 @@ import webbrowser
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
+from _common import template_mode  # noqa: E402
 from obs import (tab_architecture, tab_cost, tab_decisions, tab_docs, tab_flow, tab_gates, tab_hotspots,  # noqa: E402
                  tab_traceability)
 
@@ -41,6 +46,9 @@ STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "
 ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
 MILESTONE_RE = re.compile(r"^##\s+(?:Milestone:\s*)?(.+?)\s*(?:\(target:\s*([0-9-]*)\s*\))?\s*$")
 DEBT_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(TD-\d+)\s+(.*?)(?:\s+[—-]\s+(.*))?$")
+SEQUENCE_RE = re.compile(r"^>\s*Sequence:\s*(.+)$")
+SPEC_RE = re.compile(r"docs/specs/[\w.-]+\.md")
+NEXT_UP = 3
 MARKER_RE = r"\b(TODO|FIXME|HACK|XXX)\b"
 SKIP_DIRS = ("docs/", ".claude/", ".factory/", "dashboard/", "metrics/", "templates/",
              "scripts/dashboard.py", "README.md", "CLAUDE.md")
@@ -80,18 +88,27 @@ def parse_backlog(text):
     for line in strip_code(text).splitlines():
         m = MILESTONE_RE.match(line)
         if line.startswith("## ") and m:
-            current = {"name": m.group(1).strip(), "target": m.group(2) or "", "items": []}
+            current = {"name": m.group(1).strip(), "target": m.group(2) or "", "items": [], "sequence": ""}
             milestones.append(current)
+            continue
+        sm = SEQUENCE_RE.match(line)
+        if sm and current is not None and not current["sequence"]:
+            current["sequence"] = sm.group(1).strip()
             continue
         im = ITEM_RE.match(line)
         if im and current is not None:
             title = im.group(2).strip()
+            spec = SPEC_RE.search(title)
+            # "[text](docs/specs/x.md)" -> "text"; a bare "(docs/specs/x.md)" or path is dropped from the title
+            title = re.sub(r"\[([^\]]+)\]\(docs/specs/[\w.-]+\.md\)", r"\1", title)
+            title = re.sub(r"\s*\(?docs/specs/[\w.-]+\.md\)?", "", title)
             size = re.search(r"\((S|M|L)\)", title)
             current["items"].append({
                 "state": STATES.get(im.group(1), "todo"),
                 "title": re.sub(r"\s*\((S|M|L)\)|\s*#[\w-]+", "", title).strip(),
                 "size": size.group(1) if size else "",
                 "tags": re.findall(r"#([\w-]+)", title),
+                "spec": spec.group(0) if spec else "",
             })
     for ms in milestones:
         live = [i for i in ms["items"] if i["state"] != "dropped"]
@@ -217,31 +234,44 @@ def lane_of(tags):
     return "foundation" if tags & FOUNDATION_TAGS else "value"
 
 
+def spec_status(path):
+    """PRD badge for a backlog item: 'draft' / 'approved' from the spec's Status line, else ''."""
+    m = re.search(r"Status:\s*(draft|approved)", read(path)) if path else None
+    return m.group(1) if m else ""
+
+
 def roadmap(backlog, open_debt):
-    """Proposed sequence: milestones in BACKLOG.md order become columns, items keep their file order,
-    and open items are numbered per lane (1 = next up). Open debt not yet scheduled is a final column."""
-    columns, seq = [], {"value": 0, "foundation": 0}
+    """Proposed sequence: milestones in BACKLOG.md order, items in file order. Open items get ONE global number
+    across both lanes and all milestones (1 = next up). Fully done milestones collapse to a summary line.
+    Open debt not yet scheduled is a final column that continues the numbering."""
+    columns, done_ms, upcoming, seq = [], [], [], 0
     debt_cards = [{"title": "%s %s" % (x["id"], x["title"]), "state": "todo", "size": x["effort"],
                    "lane": "foundation", "impact": x["impact"], "debt": True}
                   for x in sorted(open_debt, key=lambda x: {"high": 0, "medium": 1, "low": 2}.get(x["impact"], 3))]
-    groups = [(ms["name"], ms["target"], ms["items"]) for ms in backlog]
+    groups = [(ms["name"], ms["target"], ms.get("sequence", ""), ms["items"]) for ms in backlog]
     if debt_cards:
-        groups.append(("Tech debt to schedule", "", debt_cards))
-    for name, target, items in groups:
+        groups.append(("Tech debt to schedule", "", "", debt_cards))
+    for name, target, why, items in groups:
         cards = {"value": [], "foundation": []}
-        for it in items:
-            if it["state"] == "dropped":
-                continue
+        live = [it for it in items if it["state"] != "dropped"]
+        for it in live:
             lane = it.get("lane") or lane_of(it.get("tags", []))
             card = {"title": it["title"], "state": it["state"], "size": it.get("size", ""),
-                    "impact": it.get("impact", ""), "debt": it.get("debt", False), "seq": None}
+                    "impact": it.get("impact", ""), "debt": it.get("debt", False), "seq": None,
+                    "prd": spec_status(it.get("spec", ""))}
             if it["state"] != "done":
-                seq[lane] += 1
-                card["seq"] = seq[lane]
+                seq += 1
+                card["seq"] = seq
+                upcoming.append(dict(card, lane=lane, short=re.split(r"\s+AC:", it["title"])[0].strip().rstrip(".;:, ")))
             cards[lane].append(card)
-        if cards["value"] or cards["foundation"]:
-            columns.append({"name": name, "target": target, "lanes": cards})
-    return {"columns": columns, "open": dict(seq)}
+        for k in cards:  # open cards first, done ones trail; sort is stable so file order is kept in each group
+            cards[k].sort(key=lambda c: c["seq"] is None)
+        if live and all(it["state"] == "done" for it in live):
+            done_ms.append({"name": name, "done": len(live), "total": len(live)})
+        elif live:
+            columns.append({"name": name, "target": target, "sequence": why, "lanes": cards})
+    opened = {k: sum(1 for c in columns for x in c["lanes"][k] if x["seq"]) for k in ("value", "foundation")}
+    return {"columns": columns, "done": done_ms, "next": upcoming[:NEXT_UP], "open": opened}
 
 
 def collect():
@@ -253,7 +283,11 @@ def collect():
     open_debt = [d for d in debt if d["open"]]
     planned = [m for m in backlog if m["total"]]
     total = sum(m["total"] for m in planned)
+    tmpl = template_mode(root=ROOT, factory=f)
+    unplanned = [i["title"] for m in backlog if m["name"].lower() == "unplanned"
+                 for i in m["items"] if i["state"] in ("todo", "doing", "blocked")]
     d = {
+        "template_mode": tmpl, "template_work": unplanned if tmpl else [],
         "generated": metrics.now(),
         "project": f.get("project", {}), "phase": f.get("phase", "brainstorm"), "paths": f.get("paths", {}),
         "template": f.get("template", {}), "deploy": f.get("integrations", {}).get("deploy", {}),
@@ -333,12 +367,13 @@ def f_codegraph():
 
 def render_roadmap(rm):
     cols = rm["columns"]
-    if not cols:
+    if not cols and not rm["done"]:
         return ('<div class="card"><p class="muted">No roadmap yet. Add milestones and items to docs/BACKLOG.md; '
                 'tag foundation work with #foundation (or #arch, #infra, #runway, #debt, #quality...).</p></div>')
 
     def card(c):
         badges = "".join([
+            '<span class="prd %s">PRD %s</span>' % (e(c["prd"]), e(c["prd"])) if c.get("prd") else "",
             '<span class="imp %s">%s</span>' % (e(c["impact"]), e(c["impact"])) if c["impact"] else "",
             '<span class="size">%s</span>' % e(c["size"]) if c["size"] else "",
             '<span class="state">%s</span>' % e(c["state"]) if c["state"] in ("doing", "blocked") else ""])
@@ -346,20 +381,30 @@ def render_roadmap(rm):
         return '<li class="rm-card %s">%s<span class="t">%s</span>%s</li>' % (
             e(c["state"]), num, e(c["title"]), '<span class="b">%s</span>' % badges if badges else "")
 
-    head = "".join('<div class="rm-col-h"><b>%s</b>%s</div>' % (
-        e(c["name"]), '<span class="muted small">target %s</span>' % e(c["target"]) if c["target"] else "")
+    lane_name = {k: label for k, label, _ in LANES}
+    done = "".join('<div class="rm-done">&#10003; Done: %s (%d/%d)</div>' % (e(x["name"]), x["done"], x["total"])
+                   for x in rm["done"])
+    nxt = "".join('<li><span class="seq">%d</span><span class="t">%s</span><span class="muted small">%s</span></li>'
+                  % (x["seq"], e(x["short"]), e(" · ".join(p for p in (x["size"], lane_name[x["lane"]]) if p)))
+                  for x in rm["next"])
+    nxt = '<div class="rm-next"><b>Next up</b><ol>%s</ol></div>' % nxt if nxt else ""
+    head = "".join('<div class="rm-col-h"><b>%s</b>%s%s</div>' % (
+        e(c["name"]), '<span class="muted small">target %s</span>' % e(c["target"]) if c["target"] else "",
+        '<span class="why small">%s</span>' % e(c["sequence"]) if c["sequence"] else "")
         for c in cols)
     rows = ""
-    for key, label, sub in LANES:
+    for key, label, lsub in LANES:
         rows += '<div class="rm-lane-h %s"><b>%s</b><span class="muted small">%s · %d open</span></div>' % (
-            key, e(label), e(sub), rm["open"][key])
+            key, e(label), e(lsub), rm["open"][key])
         rows += "".join('<ul class="rm-cell %s">%s</ul>' % (
             key, "".join(card(x) for x in c["lanes"][key]) or '<li class="muted small">–</li>') for c in cols)
+    grid = ('<div class="scroll"><div class="rm" style="--cols:%d"><div class="rm-corner"></div>%s%s</div></div>'
+            % (len(cols), head, rows)) if cols else '<p class="muted">Everything planned is done. Add the next milestone to docs/BACKLOG.md.</p>'
     return ('<div class="card"><h2>Roadmap: proposed sequence</h2>'
-            '<p class="muted small">Columns follow milestone order in docs/BACKLOG.md; numbers are the suggested order '
-            'within each lane. Lanes come from tags; open items in docs/TECH-DEBT.md land in the foundation lane.</p>'
-            '<div class="scroll"><div class="rm" style="--cols:%d">'
-            '<div class="rm-corner"></div>%s%s</div></div></div>' % (len(cols), head, rows))
+            '<p class="muted small">Numbers are the proposed build order across both lanes (1 = next up), following '
+            'milestone and item order in docs/BACKLOG.md; the line under a milestone says why. Lanes come from tags; '
+            'open items in docs/TECH-DEBT.md continue the sequence in the foundation lane.</p>%s%s%s</div>'
+            % (nxt, done, grid))
 
 
 def tab_parts(d):
@@ -381,12 +426,15 @@ def render(d):
     phase_i = PHASES.index(d["phase"]) if d["phase"] in PHASES else len(PHASES) - 1
     steps = "".join('<li class="%s">%s</li>' % ("done" if i < phase_i else "now" if i == phase_i else "", e(p))
                     for i, p in enumerate(PHASES))
+    if d.get("template_mode"):
+        steps = '<li class="now">Template maintenance</li><li>mode: template (origin matches template.source_repo)</li>'
     chips = "".join('<span class="chip">%s</span>' % e(p) for p in
                     [d["paths"].get("primary")] + list(d["paths"].get("secondary") or []) if p)
 
+    progress_tile = tile("Progress", "%d%%" % d["progress"]["pct"], "%d done · %d open" % (
+        bl["counts"]["done"], bl["counts"]["todo"] + bl["counts"]["doing"] + bl["counts"]["blocked"]))
     tiles = "".join([
-        tile("Progress", "%d%%" % d["progress"]["pct"], "%d done · %d open" % (
-            bl["counts"]["done"], bl["counts"]["todo"] + bl["counts"]["doing"] + bl["counts"]["blocked"])),
+        "" if d.get("template_mode") else progress_tile,
         tile("Full test run", fmt_num(m["test_seconds"], "s", 1), "budget %ss" % e(m["test_budget"]),
              status(m["test_seconds"], m["test_budget"]), spark(m["series"]["test_seconds"], "Test time")),
         tile("Coverage", fmt_num(m["coverage"], "%", 1), "min %s%%" % e(m["coverage_min"]),
@@ -450,9 +498,18 @@ def render(d):
     alerts = "".join('<li class="alert">%s</li>' % e(a) for a in m["alerts"]) or '<li class="muted">No alerts.</li>'
     ideas = "".join("<li>%s</li>" % e(i) for i in m["suggestions"][:6]) or '<li class="muted">No suggestions.</li>'
     prod = d["deploy"].get("production_url")
-    live = ' · <a href="%s">%s</a>' % (e(prod), e(prod)) if prod else ""
+    if prod and re.match(r"https?://", str(prod)):
+        live = ' · <a href="%s">%s</a>' % (e(prod), e(prod))
+    else:
+        live = " · %s" % e(prod) if prod else ""
 
+    first, third = ("Progress by milestone", '<ul class="ms">%s</ul>' % ms_rows), ("Tech debt", debt_html)
+    if d.get("template_mode"):  # open tech debt first, then template work (Unplanned backlog items)
+        work = lst(d["template_work"], "no open template work in docs/BACKLOG.md (Unplanned)")
+        first, third = ("Template maintenance: open tech debt", debt_html), (
+            "Template work", '<ul class="plain">%s</ul>' % work)
     return TEMPLATE.format(
+        h_first=first[0], c_first=first[1], h_third=third[0], c_third=third[1],
         title=e(name + " status"), name=e(name), one_liner=e(d["project"].get("one_liner") or ""),
         steps=steps, chips=chips or '<span class="chip muted">path not chosen</span>',
         version=e(v["current"]), sha=e(v["sha"] or "no commits"), branch=e(v["branch"]), live=live,
@@ -463,16 +520,25 @@ def render(d):
         commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]), **tab_parts(d))
 
 
+def md(x):
+    """Escape Markdown/table metacharacters in repo-derived text."""
+    s = re.sub(r"\s*[\r\n]+\s*", " ", "" if x is None else str(x))
+    return re.sub(r"([\\|`*_\[\]<>])", r"\\\1", s)
+
+
 def summary(d):
     m, bl, debt = d["metrics"], d["backlog"]["counts"], d["debt"]
+    tm = d.get("template_mode")
     lines = [
-        "## %s — dashboard" % (d["project"].get("name") or "project"),
+        "## %s — dashboard" % md(d["project"].get("name") or "project"),
         "",
         "| | |", "|---|---|",
-        "| Phase / path | %s / %s |" % (d["phase"], d["paths"].get("primary") or "–"),
-        "| Version | %s (%s) |" % (d["versions"]["current"], d["versions"]["sha"] or "–"),
+    ] + ([] if tm else [
+        "| Phase / path | %s / %s |" % (md(d["phase"]), md(d["paths"].get("primary") or "–"))]) + [
+        "| Version | %s (%s) |" % (md(d["versions"]["current"]), md(d["versions"]["sha"] or "–")),
+    ] + ([] if tm else [
         "| Progress | %d%% — %d done, %d doing, %d blocked, %d todo |" % (
-            d["progress"]["pct"], bl["done"], bl["doing"], bl["blocked"], bl["todo"]),
+            d["progress"]["pct"], bl["done"], bl["doing"], bl["blocked"], bl["todo"])]) + [
         "| Tests | %s (budget %ss), pass rate %s |" % (fmt_num(m["test_seconds"], "s", 1), m["test_budget"],
                                                      fmt_num(m["pass_rate"], "%")),
         "| Coverage | %s (min %s%%) |" % (fmt_num(m["coverage"], "%", 1), m["coverage_min"]),
@@ -484,8 +550,15 @@ def summary(d):
     for key, label, mod in TABS:
         if mod:
             lines.append("| %s | %s |" % (label, mod.line(d[key])))
+    if tm:
+        lines.insert(4, "| Mode | Template maintenance (origin matches template.source_repo) |")
+        lines += ["", "**Open tech debt**", ""] + (
+            ["- %s %s (impact: %s)" % (md(x["id"]), md(x["title"]), md(x["impact"] or "–")) for x in debt["open"]]
+            or ["- none"])
+        lines += ["", "**Template work (Unplanned backlog)**", ""] + (
+            ["- " + md(t) for t in d["template_work"]] or ["- none"])
     if m["alerts"]:
-        lines += ["", "**Alerts**", ""] + ["- " + a for a in m["alerts"]]
+        lines += ["", "**Alerts**", ""] + ["- " + md(a) for a in m["alerts"]]
     return "\n".join(lines) + "\n"
 
 
@@ -599,6 +672,15 @@ tr.grp td {{ background:var(--track); }}
 .rm-card .size, .rm-card .state {{ font-size:11px; padding:0 6px; border-radius:999px; background:var(--track); color:var(--muted); }}
 .rm-card.doing {{ box-shadow:inset 0 0 0 1px var(--accent); }} .rm-card.doing .state {{ color:var(--accent); }}
 .rm-card.blocked .state {{ background:var(--bad-bg); color:var(--bad); }}
+.rm-col-h .why {{ color:var(--text); margin-top:2px; font-style:italic; max-width:40ch; }}
+.rm-next {{ margin:0 0 10px; padding:8px 12px; border-radius:8px; background:var(--track); border-left:4px solid var(--accent); font-size:13px; }}
+.rm-next ol {{ list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; }}
+.rm-next li {{ display:flex; align-items:baseline; gap:8px; }}
+.rm-next .seq {{ font-variant-numeric:tabular-nums; font-weight:650; color:var(--muted); min-width:1.4em; }}
+.rm-next .t {{ flex:1 1 0; min-width:0; }}
+.rm-done {{ font-size:13px; color:var(--ok); margin:0 0 6px; }}
+.rm-card .prd {{ font-size:11px; padding:0 6px; border-radius:999px; background:var(--warn-bg); color:var(--warn); }}
+.rm-card .prd.approved {{ background:var(--ok-bg); color:var(--ok); }}
 .rm-card.done {{ opacity:.55; }} .rm-card.done .t {{ text-decoration:line-through; }} .rm-card.done .seq {{ color:var(--ok); }}
 @media (max-width:520px) {{ .rm {{ --lane-w:104px; --col-w:minmax(200px,1fr); }} .rm-lane-h {{ padding:8px; }} .meta {{ text-align:left; }} .grid {{ grid-template-columns:1fr; }} }}
 </style>
@@ -628,9 +710,9 @@ tr.grp td {{ background:var(--track); }}
 <section class="tiles" aria-label="Key metrics">{tiles}</section>
 
 <section class="grid">
-  <div class="card"><h2>Progress by milestone</h2><ul class="ms">{milestones}</ul></div>
+  <div class="card"><h2>{h_first}</h2>{c_first}</div>
   <div class="card"><h2>Backlog</h2>{backlog}</div>
-  <div class="card"><h2>Tech debt</h2>{debt}</div>
+  <div class="card"><h2>{h_third}</h2>{c_third}</div>
   <div class="card"><h2>Alerts and suggestions</h2>
     <ul class="plain">{alerts}</ul><h3>Suggested improvements</h3><ul class="plain">{ideas}</ul></div>
   <div class="card"><h2>Versions</h2><div class="scroll"><table><thead><tr><th>Tag</th><th>Date</th></tr></thead><tbody>{tags}</tbody></table></div>

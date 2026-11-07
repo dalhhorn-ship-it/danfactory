@@ -27,17 +27,18 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 39 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 21 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 30 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
-| docs/OPERATING-MODEL.md | 34 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 15 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
+| docs/TECH-DEBT.md | 18 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
-| docs/decisions/0003-dashboard-observability-design.md | 42 | Status: accepted · Date: 2026-11-07 |
+| docs/decisions/0003-deploy-credential-scoping.md | 17 | Status: accepted · Date: 2026-11-07 |
+| docs/decisions/0004-dashboard-observability-design.md | 42 | Status: accepted · Date: 2026-11-07 |
 | docs/operating-model/AGENT-ROUTING.md | 81 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
-| docs/operating-model/DECISION-TREE.md | 72 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
-| docs/operating-model/LEARNINGS.md | 35 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
+| docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
+| docs/operating-model/LEARNINGS.md | 38 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
 | docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
 | docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default… |
@@ -50,9 +51,12 @@
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/security.md | 20 | Secure defaults always; full audits on request or before L3 releases. |
+| docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
 | docs/policies/testing-and-metrics.md | 17 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 28 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
-| docs/specs/dashboard-observability-design.md | 175 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0003):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171 |
+| docs/specs/dashboard-observability-design.md | 175 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171 |
 | docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |
+| docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
+| docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
+| docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |

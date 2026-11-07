@@ -1,4 +1,4 @@
-# 0003 — Dashboard observability: design and open questions
+# 0004 — Dashboard observability: design and open questions
 
 > Status: accepted · Date: 2026-11-07
 

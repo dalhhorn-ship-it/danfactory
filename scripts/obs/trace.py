@@ -52,7 +52,7 @@ def build(root, base, arch=None):
     items = [(ms["name"], i) for ms in base.get("progress", {}).get("milestones", []) for i in ms["items"]]
     chains, linked_keys = [], set()
     for prd in S.prds(root):
-        mine = [i for name, i in items if prd["slug"] in SLUG_RE.findall(i["title"])
+        mine = [i for name, i in items if prd["slug"] in SLUG_RE.findall(i["title"] + " " + i.get("spec", ""))
                 or (prd["backlog"] and name.casefold() == prd["backlog"].casefold())]
         its = [_item(i, prd, log, comp_paths, test_paths) for i in mine]
         for it in its:

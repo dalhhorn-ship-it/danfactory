@@ -5,7 +5,7 @@ description: Security audit using Cloudflare's security-audit skill (installed o
 
 # Security audit (on request)
 
-1. If `.claude/skills/security-audit/SKILL.md` is missing, run `bash scripts/install-skill.sh security-audit`. (It is git-ignored; each run pulls the pinned ref from factory.json.)
+1. If `.claude/skills/security-audit/SKILL.md` is missing, run `bash scripts/install-skill.sh security-audit`. (It is git-ignored; each run installs the pinned commit SHA from factory.json and verifies it.)
 2. Confirm the mode with the user in one question unless obvious:
    - **guidance** — focused question or review of specific code; no artifacts.
    - **full audit** — all six phases, reports written **outside the repo** (default `~/security-audit-skill/<repo>/run-<N>`).

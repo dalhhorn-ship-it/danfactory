@@ -33,7 +33,7 @@ When compacting, keep: the user's goal and open questions; decisions and their r
 `python3 scripts/dashboard.py --print` for a cheap status; `dashboard` skill to show the full page.
 
 ## Deploy and security
-- Production deploys only via git → Cloudflare (`ship` skill). Direct `wrangler deploy` is denied.
+- Production deploys only via git → Cloudflare (`ship` skill). Direct `wrangler deploy` is guarded by a hook (advisory; real protection is credential scoping, docs/policies/security.md).
 - Never wait on builds: push, launch `deploy-watcher` in the background, keep working (docs/policies/async-delivery.md).
 - Security audits only on request or before an L3 release (`security-audit-run`).
-- Never commit secrets; `.env*` and `.dev.vars` are off limits.
+- Never commit secrets; `.env*` and `.dev.vars*` are blocked for Read and Bash.

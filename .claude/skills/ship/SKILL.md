@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Take software live on Cloudflare via git, without waiting on it. Push to the production branch -> Cloudflare builds and deploys; PR branches -> preview URLs; a background deploy-watcher confirms and records it. Use when software needs to go live, for first-time Cloudflare setup, previews, slow deploys, or a failed deploy. Loads the cloudflare-deploy reference skill on demand.
+description: Take software live on Cloudflare via git, without waiting on it. Push to the production branch -> Cloudflare builds and deploys (dashboard Git integration by default); PR branches -> preview URLs (route A); a background deploy-watcher confirms and records it. Use when software needs to go live, for first-time Cloudflare setup, previews, slow deploys, or a failed deploy. Loads the cloudflare-deploy reference skill on demand.
 ---
 
 # Ship — git-based, asynchronous deploys to Cloudflare
@@ -14,14 +14,14 @@ description: Take software live on Cloudflare via git, without waiting on it. Pu
 
 1. `bash scripts/install-skill.sh cloudflare-deploy` if missing. Read only its `SKILL.md`, then only the chosen `references/<product>/README.md` (+ `gotchas.md`). Default for web apps/APIs: **Workers with static assets**.
 2. Add a tiny `GET /version` route returning the build's git sha (from a `GIT_SHA` var). This lets the watcher prove the *new* version is live, not the old one.
-3. Choose the route (B is the default: zero dashboard clicks) and write it into docs/OPERATING-MODEL.md → Deploy:
+3. Choose the route (A is the default: GitHub holds no Cloudflare key) and write it into docs/OPERATING-MODEL.md → Deploy:
    - **A. Workers Builds (default).** User connects the repo in the dashboard (Workers & Pages → Create → Import a repository), then in the Worker's Settings → Build:
      - Deploy command: `npx wrangler deploy --var GIT_SHA:$WORKERS_CI_COMMIT_SHA`
      - Non-production branch deploy command: `npx wrangler versions upload --var GIT_SHA:$WORKERS_CI_COMMIT_SHA` (preview URLs)
      - **Build watch paths**: include `src/**`, `public/**`, `package.json`, `package-lock.json`, `wrangler.jsonc`; exclude `docs/**`, `**/*.md`, `metrics/**` (docs-only pushes don't build)
      - **Build cache**: on
      - Tests: GitHub CI runs them on the PR; make that check required in branch protection for `main`.
-   - **B. GitHub Actions: fully automatic, the default for new projects.** Run `python3 scripts/cf_scaffold.py` (or bootstrap with `--cloudflare`). It writes `wrangler.jsonc`, `worker/index.ts` (with `/version` and `/health`) and the workflow, and fills factory.json. The user adds repo secret `CLOUDFLARE_API_TOKEN` (and optionally `CLOUDFLARE_ACCOUNT_ID`, which must not be a Zone ID; see docs/policies/security.md) and marks `test` as required for `main`. **The first merge to main creates the Worker**; no dashboard step. PR previews work from then on.
+   - **B. GitHub Actions (opt-in, no dashboard Git connection).** Run `python3 scripts/cf_scaffold.py` (or bootstrap with `--cloudflare`). It writes `wrangler.jsonc`, `worker/index.ts` (with `/version` and `/health`) and the workflow, and fills factory.json. The user adds `CLOUDFLARE_API_TOKEN` as a secret of the **`production` environment** (Settings → Environments; never a repository secret) with a deployment branch rule limited to `main` (required reviewers optional, recommended for teams), optionally `CLOUDFLARE_ACCOUNT_ID` (must not be a Zone ID; see docs/policies/security.md), commits `package-lock.json` (production deploys fail without it) and marks `test` as required for `main`. **The first merge to main creates the Worker.** Route B has no PR previews: pull_request jobs never get a Cloudflare credential. Use route A for previews, or `wrangler dev` locally.
 4. Fill `factory.json` → `integrations.deploy` (`product`, `project_name`, `production_url`, `worker_name`, `workers_subdomain`), `commands.build`, `commands.lint`, `commands.test_affected`. Leave `commands.deploy` empty (git is the deploy).
 5. Speed basics: commit the lockfile, `npm ci`, keep dev tooling out of the production build, let wrangler bundle (esbuild). Target `budgets.deploy_seconds` (180s push-to-live).
 6. Secrets: `wrangler secret put NAME` or the dashboard; local `.dev.vars` (git-ignored). Never in `wrangler.jsonc`, docs or chat.
@@ -37,7 +37,7 @@ description: Take software live on Cloudflare via git, without waiting on it. Pu
    → launch `deploy-watcher` in the background with the preview `/version` URL, the short sha, `pushed_at`, env `preview`.
    - **Preview URL**: `integrations.deploy.preview_url_pattern` with `{worker}`/`{subdomain}` from factory.json and `{alias}` =
      route A: the branch name lower-cased with non-alphanumerics → `-` (Workers Builds preview alias; enable Preview URLs on the Worker),
-     route B: `pr-<PR number>` (set by `--preview-alias` in the workflow).
+     route B: none (test locally with `wrangler dev`).
      Confirm the real URL once from the first PR's Cloudflare comment/check or build log, then fix the pattern if it differs.
    - In cloud sessions with a PR: also subscribe to PR activity so CI results wake the session; don't poll.
 3. When reports arrive: CI red → fix (test-runner reads the logs); preview live → done for this step.

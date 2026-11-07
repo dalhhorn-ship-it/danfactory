@@ -11,12 +11,21 @@ Run from a danfactory checkout (the adopt skill clones one to a temp dir). Rules
     seeded from docs/adoption-scan.json when present (run adopt_scan.py first)
   * README.md stays the project's; the template README is copied as docs/TEMPLATE-GUIDE.md
   * CI is added as .github/workflows/danfactory.yml (separate from any existing workflow)
+
+The target is untrusted. adopt.py never executes its code (the only subprocess is
+`git config core.hooksPath`, which reads no hooks). Symlinks committed in the target are never
+followed: every write, copy, merge and chmod goes through safe_target_path(), which refuses a path
+when any existing component is a symlink or the real path leaves the target. Refused paths are
+listed as "skip ... symlink" in the dry run and the apply output. Foreign files already under
+.githooks/ and scripts/ are kept and listed as "note" lines, because a foreign hook will run
+through core.hooksPath once applied.
 """
 import argparse
 import datetime
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 
@@ -65,36 +74,85 @@ def tracked(rel):
     return out
 
 
+def safe_target_path(target, rel):
+    """Absolute path of `rel` inside `target`, or None when it is unsafe to touch.
+
+    Unsafe: any existing component from the target root down is a symlink (lstat per component,
+    so a dangling link counts), or the real path escapes realpath(target). Missing components are fine."""
+    parts = [x for x in rel.replace("\\", "/").split("/") if x and x != "."]
+    if os.path.isabs(rel) or ".." in parts:
+        return None
+    cur = target
+    for part in parts:
+        cur = os.path.join(cur, part)
+        try:
+            if stat.S_ISLNK(os.lstat(cur).st_mode):
+                return None
+        except FileNotFoundError:
+            break
+        except OSError:
+            return None
+    root = os.path.realpath(target)
+    real = os.path.realpath(cur)
+    if real != root and not real.startswith(root + os.sep):
+        return None
+    return os.path.join(target, rel)
+
+
+def open_nofollow(path, mode, excl=False):
+    """Open for writing without following a symlink at the final component (where supported)."""
+    flags = os.O_WRONLY | os.O_CREAT | (os.O_EXCL if excl else os.O_TRUNC) | getattr(os, "O_NOFOLLOW", 0)
+    return os.fdopen(os.open(path, flags, 0o666), mode, **({} if "b" in mode else {"encoding": "utf-8"}))
+
+
 class Plan:
     def __init__(self, target, apply):
         self.target, self.apply, self.actions = target, apply, []
 
     def note(self, kind, rel, why=""):
+        if kind == "skip" and (kind, rel, why) in self.actions:
+            return
         self.actions.append((kind, rel, why))
 
+    def safe(self, rel):
+        """Safe absolute path for rel, or None after recording a visible skip."""
+        path = safe_target_path(self.target, rel)
+        if path is None:
+            self.note("skip", rel, "symlink")
+        return path
+
     def write(self, rel, content, kind="create", why=""):
+        path = self.safe(rel)
+        if path is None:
+            return
         self.note(kind, rel, why)
         if self.apply:
-            path = os.path.join(self.target, rel)
             os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-            with open(path, "w", encoding="utf-8") as fh:
+            with open_nofollow(path, "w") as fh:
                 fh.write(content)
 
     def copy(self, src_rel, dst_rel):
-        dst = os.path.join(self.target, dst_rel)
+        dst = self.safe(dst_rel)
+        if dst is None:
+            return
         if os.path.exists(dst):
             self.note("keep", dst_rel, "exists in project; not overwritten")
             return
         self.note("create", dst_rel)
         if self.apply:
             os.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.copy2(os.path.join(TEMPLATE, src_rel), dst)
+            src = os.path.join(TEMPLATE, src_rel)
+            with open(src, "rb") as fi, open_nofollow(dst, "wb", excl=True) as fo:
+                shutil.copyfileobj(fi, fo)
+            shutil.copymode(src, dst)
 
 
 def merge_settings(plan):
     src = json.load(open(os.path.join(TEMPLATE, ".claude/settings.json")))
     rel = ".claude/settings.json"
-    path = os.path.join(plan.target, rel)
+    path = plan.safe(rel)
+    if path is None:
+        return
     if not os.path.exists(path):
         plan.write(rel, json.dumps(src, indent=2) + "\n")
         return
@@ -116,7 +174,9 @@ def merge_settings(plan):
 
 def merge_lines(plan, rel):
     src = open(os.path.join(TEMPLATE, rel), encoding="utf-8").read().splitlines()
-    path = os.path.join(plan.target, rel)
+    path = plan.safe(rel)
+    if path is None:
+        return
     cur = open(path, encoding="utf-8").read().splitlines() if os.path.exists(path) else []
     add = [l for l in src if l.strip() and l not in cur and not l.startswith("#")]
     if add:
@@ -127,7 +187,9 @@ def merge_lines(plan, rel):
 def merge_claude_md(plan):
     block = open(os.path.join(TEMPLATE, "CLAUDE.md"), encoding="utf-8").read()
     block = "%s\n%s\n%s\n" % (BLOCK_START, block.replace("# CLAUDE.md\n", "# danfactory operating rules\n", 1).strip(), BLOCK_END)
-    path = os.path.join(plan.target, "CLAUDE.md")
+    path = plan.safe("CLAUDE.md")
+    if path is None:
+        return
     if not os.path.exists(path):
         plan.write("CLAUDE.md", block)
         return
@@ -142,7 +204,9 @@ def merge_claude_md(plan):
 def factory_json(plan, scan):
     rel = "factory.json"
     tpl = json.load(open(os.path.join(TEMPLATE, rel)))
-    path = os.path.join(plan.target, rel)
+    path = plan.safe(rel)
+    if path is None:
+        return
     if os.path.exists(path):
         plan.note("keep", rel, "exists; review commands/budgets by hand")
         return
@@ -190,6 +254,50 @@ def seed_registers(plan, scan):
         plan.write("docs/BACKLOG.md", "\n".join(lines) + "\n", "create", "seeded from the scan")
 
 
+def foreign_files(plan, template_files):
+    """List files under .githooks/ and scripts/ that the template does not ship (kept, never overwritten)."""
+    for top, label in ((".githooks", "foreign hook kept: will run via core.hooksPath"),
+                       ("scripts", "foreign script kept")):
+        base = plan.safe(top)
+        if base is None or not os.path.isdir(base):
+            continue
+        for d, dirs, names in os.walk(base, followlinks=False):
+            rd = os.path.relpath(d, plan.target).replace(os.sep, "/")
+            for x in sorted(dirs):
+                if os.path.islink(os.path.join(d, x)):
+                    plan.note("skip", rd + "/" + x, "symlink")
+            dirs[:] = sorted(x for x in dirs if x not in SKIP_NAMES and not os.path.islink(os.path.join(d, x)))
+            for n in sorted(names):
+                rel = rd + "/" + n
+                if n in SKIP_NAMES or n.endswith(".pyc") or rel in template_files:
+                    continue
+                if os.path.islink(os.path.join(d, n)):
+                    plan.note("skip", rel, "symlink")
+                else:
+                    plan.note("note", rel, label)
+
+
+def chmod_scripts(plan):
+    """chmod 755 scripts and hooks without following symlinks (a link would reach outside the target)."""
+    for rel in ("scripts", ".githooks", ".claude/hooks"):
+        top = plan.safe(rel)
+        if top is None or not os.path.isdir(top):
+            continue
+        for d, dirs, names in os.walk(top, followlinks=False):
+            rd = os.path.relpath(d, plan.target).replace(os.sep, "/")
+            for x in dirs:
+                if os.path.islink(os.path.join(d, x)):
+                    plan.note("skip", rd + "/" + x, "symlink")
+            for n in names:
+                if not (n.endswith((".py", ".sh")) or rel == ".githooks"):
+                    continue
+                p = os.path.join(d, n)
+                if not stat.S_ISREG(os.lstat(p).st_mode):
+                    plan.note("skip", rd + "/" + n, "symlink")
+                    continue
+                os.chmod(p, 0o755)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--target", required=True)
@@ -201,17 +309,20 @@ def main():
         return 2
     plan = Plan(target, a.apply)
     scan = None
-    scan_path = os.path.join(target, "docs/adoption-scan.json")
-    if os.path.exists(scan_path):
+    scan_path = plan.safe("docs/adoption-scan.json")
+    if scan_path and os.path.exists(scan_path):
         scan = json.load(open(scan_path))
-    else:
+    elif scan_path:
         plan.note("warn", "docs/adoption-scan.json", "missing: run adopt_scan.py first for seeded docs")
 
+    template_files = set()
     for src, dst in COPY:
         for rel in tracked(src):
             if set(rel.split("/")) & SKIP_NAMES:
                 continue
+            template_files.add(dst + rel[len(src):])
             plan.copy(rel, dst + rel[len(src):])
+    foreign_files(plan, template_files)
     for rel in SEED_IF_ABSENT:
         plan.copy(rel, rel)
     merge_settings(plan)
@@ -221,16 +332,13 @@ def main():
     factory_json(plan, scan)
     seed_registers(plan, scan)
     ci = open(os.path.join(TEMPLATE, ".github/workflows/ci.yml"), encoding="utf-8").read()
-    if not os.path.exists(os.path.join(target, ".github/workflows/danfactory.yml")):
+    ci_path = plan.safe(".github/workflows/danfactory.yml")
+    if ci_path and not os.path.exists(ci_path):
         plan.write(".github/workflows/danfactory.yml", ci.replace("name: ci", "name: danfactory", 1), "create",
                    "factory checks, project tests, dashboard artifact")
 
     if a.apply:
-        for rel in ("scripts", ".githooks", ".claude/hooks"):
-            for d, _, names in os.walk(os.path.join(target, rel)):
-                for n in names:
-                    if n.endswith((".py", ".sh")) or rel == ".githooks":
-                        os.chmod(os.path.join(d, n), 0o755)
+        chmod_scripts(plan)
         subprocess.run(["git", "config", "core.hooksPath", ".githooks"], cwd=target, check=False)
 
     counts = {}

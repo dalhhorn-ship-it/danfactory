@@ -13,6 +13,7 @@ What you produce (edit the files directly):
 - **docs/BACKLOG.md**: milestones as `## Milestone: Mn — <outcome> (target: YYYY-MM-DD)`. Items are thin vertical slices sized S/M/L, each traceable to a goal. Use `[!]` with a reason for blocked items. Give every new item an ID `ABC-n` right after the checkbox (e.g. `- [ ] OBS-1 Title`); don't retro-edit old items.
 - **PRDs** for every feature or behaviour change (any size) in `docs/specs/<slug>.md`, copied from `docs/specs/_TEMPLATE.md` (follow `product-management:write-spec` conventions when available). Problem, goal, user stories, scope, non-goals, testable acceptance criteria (Given/When/Then), risks, effort and open questions. Always `Status: draft`: only the user approves, in chat (docs/policies/prd-approval.md). Never mark a PRD approved yourself.
 - **Prioritisation**: order by value ÷ effort and risk-first (the riskiest assumption gets tested earliest). Say what you cut and why.
+- **Sequence**: item order in BACKLOG.md *is* the proposed build order (the dashboard numbers it 1..N across both lanes). Under each milestone heading keep one `> Sequence: <why this order>` line. Re-propose the order after every completed slice. Link each item to its PRD (`docs/specs/<slug>.md`) so the roadmap shows its draft/approved badge.
 
 Rules:
 - Every item must trace to an outcome or acceptance criterion in GOAL.md. Otherwise propose a GOAL.md change or drop the item.

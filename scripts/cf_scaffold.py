@@ -7,7 +7,7 @@ Writes (only if absent): wrangler.jsonc, worker/index.ts (with /version and /hea
 .github/workflows/deploy-cloudflare.yml, and for projects without one a minimal package.json +
 public/index.html. Fills factory.json -> integrations.deploy. Detects Vite/Lovable SPAs
 (assets from ./dist, SPA fallback). Never deploys anything itself: GitHub Actions creates the
-Worker on the first merge to main (needs repo secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID).
+Worker on the first merge to main (route B; needs CLOUDFLARE_API_TOKEN as a `production` environment secret).
 """
 import argparse
 import datetime
@@ -135,11 +135,16 @@ def main():
     print("\n".join(done))
     print("""
 Worker '{name}' is scaffolded ({kind}). Next:
-  1. GitHub repo -> Settings -> Secrets and variables -> Actions: add CLOUDFLARE_API_TOKEN
-     ("Edit Cloudflare Workers" API token, not R2 keys). CLOUDFLARE_ACCOUNT_ID is optional; if set, use the
-     Account ID, never a Zone ID.
-  2. Branch protection on main: require the "test" check
-  3. Commit, open a PR (preview: https://pr-<n>-{name}.<subdomain>.workers.dev), merge -> Worker created
+  Recommended (route A, default): connect the repo in the Cloudflare dashboard (Workers & Pages -> Create ->
+     Import a repository). Cloudflare builds production and previews; GitHub holds no Cloudflare key.
+     Then you can delete .github/workflows/deploy-cloudflare.yml. See .claude/skills/ship/SKILL.md.
+  Route B (GitHub Actions, written to .github/workflows/deploy-cloudflare.yml):
+  1. GitHub repo -> Settings -> Environments -> production: restrict deployment branches to main
+     (required reviewers optional; recommended for teams). Add CLOUDFLARE_API_TOKEN there as an
+     environment secret, not a repo-wide one ("Edit Cloudflare Workers" API token, not R2 keys).
+     CLOUDFLARE_ACCOUNT_ID is optional; if set, use the Account ID, never a Zone ID.
+  2. Branch protection on main: require the "test" check. Commit package-lock.json (production needs it).
+  3. Commit, open a PR, merge -> Worker created. Route B has no PR previews (use route A or `wrangler dev`).
   4. Put the URL from the deploy log into factory.json integrations.deploy (workers_subdomain, production_url)
 """.format(name=name, kind="SPA from ./dist" if spa else "static assets from ./public"))
     return 0

@@ -2,6 +2,7 @@
   "$comment": "Single source of project configuration for agents, hooks and scripts. Edit via /choose-path and /retro; humans may edit freely.",
   "template": {
     "name": "danfactory",
+    "source_repo": "dalhhorn-ship-it/danfactory",
     "decision_tree_version": "1.2.0"
   },
   "project": {
@@ -55,14 +56,14 @@
     "skills": {
       "security-audit": {
         "repo": "https://github.com/cloudflare/security-audit-skill",
-        "ref": "main",
+        "ref": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
         "path": "skills/security-audit",
         "license": "MIT",
         "model_invocable": false
       },
       "cloudflare-deploy": {
         "repo": "https://github.com/davila7/claude-code-templates",
-        "ref": "main",
+        "ref": "395f30e0cc4b4061692c2f08b3e0d7e4d35b0aa6",
         "path": "cli-tool/components/skills/development/cloudflare-deploy",
         "license": "Apache-2.0",
         "model_invocable": false

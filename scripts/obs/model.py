@@ -101,7 +101,7 @@ def _owner(comps, path):
 
 
 def import_edges(root, comps):
-    """`serving` relations from a regex scan of relative/sibling imports (the codegraph path is TD-001)."""
+    """`serving` relations from a regex scan of relative/sibling imports (the codegraph path is TD-004)."""
     by_stem = {_stem(c["el"]["path"]): c["el"]["id"] for c in comps}
     rels = set()
     for c in comps:

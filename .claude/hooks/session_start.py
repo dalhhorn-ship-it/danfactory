@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ROOT, load_factory, read_event  # noqa: E402
+from _common import ROOT, load_factory, read_event, template_mode  # noqa: E402
 
 NEXT = {
     "brainstorm": "No agreed goal yet. Run the `brainstorm` skill: interview the user, then write docs/GOAL.md.",
@@ -32,6 +32,14 @@ def handoff_note(source):
 def main():
     ev = read_event()
     f = load_factory()
+    if template_mode(factory=f):
+        print("\n".join([
+            "[danfactory] TEMPLATE repo: maintain the template; do not start or build a project here. "
+            "Next: open tech debt (docs/TECH-DEBT.md), then the template backlog (docs/BACKLOG.md, Unplanned).",
+            "[danfactory] docs: read docs/INDEX.md first, then targeted reads (offset/limit). Never read whole large files.",
+            "[danfactory] test: python3 scripts/metrics.py test (runs .factory/tests).",
+        ] + handoff_note(ev.get("source", "startup"))))
+        return
     phase = f.get("phase", "brainstorm")
     paths = f.get("paths", {})
     adopted = f.get("adopted")

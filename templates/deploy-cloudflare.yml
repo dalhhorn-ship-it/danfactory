@@ -1,18 +1,25 @@
-# Route B (see .claude/skills/ship/SKILL.md): GitHub Actions → Cloudflare, tuned for short waits.
+# Route B (see .claude/skills/ship/SKILL.md): GitHub Actions -> Cloudflare production deploys.
+# Route A (Cloudflare dashboard Git integration / Workers Builds) is the DEFAULT: it builds production and
+# preview versions itself, so GitHub holds no Cloudflare key. Use this file only when you choose route B.
 # The first merge to main CREATES the Worker (scaffold: python3 scripts/cf_scaffold.py).
-#  - test once: tests + preview run in parallel on the PR; merging to main only builds and deploys
-#  - docs-only PRs skip the work but still report a green "test" check, so a required check
-#    never blocks the merge (paths-ignore on pull_request would leave it "Expected" forever)
-#  - superseded runs are cancelled; npm cache when a lockfile exists
-# Secrets (repo Settings → Secrets and variables → Actions): CLOUDFLARE_API_TOKEN (required);
-# CLOUDFLARE_ACCOUNT_ID optional (inferred for single-account tokens; if set: Account ID, NOT a Zone ID).
-# PRs from forks get no secrets, so they can't deploy. Branch protection on main: require "test".
+#  - NO preview job here: pull_request runs never get a Cloudflare credential. Previews come from
+#    route A or local `wrangler dev`.
+#  - docs-only PRs skip the work but still report a green "test" check, so a required check never blocks
+#    the merge (paths-ignore on pull_request would leave it "Expected" forever)
+#  - a committed lockfile is required (npm ci only); superseded runs are cancelled
+# Credentials: CLOUDFLARE_API_TOKEN must be an ENVIRONMENT secret of the `production` environment
+# (repo Settings -> Environments -> production), NOT a repository secret. Give that environment a
+# deployment branch rule limited to `main`; required reviewers are optional (recommended for teams).
+# CLOUDFLARE_ACCOUNT_ID is optional (inferred for single-account tokens; if set: Account ID, NOT a Zone ID).
+# Branch protection on main: require "test". See docs/policies/security.md.
 name: deploy-cloudflare
 on:
   pull_request:
   push:
     branches: [main]
     paths-ignore: ["docs/**", "**/*.md", "metrics/**", ".claude/**"]
+permissions:
+  contents: read
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
@@ -26,11 +33,13 @@ jobs:
     outputs:
       code: ${{ steps.diff.outputs.code }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0 }
       - id: diff
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
+          if git diff --name-only "origin/${BASE_REF}...HEAD" \
              | grep -qvE '^(docs/|metrics/|\.claude/)|\.md$'; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
 
@@ -43,56 +52,38 @@ jobs:
       - if: needs.changes.outputs.code != 'true'
         run: echo "docs-only change; tests skipped"
       - if: needs.changes.outputs.code == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - if: needs.changes.outputs.code == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: "${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}" }
       - if: needs.changes.outputs.code == 'true'
-        run: if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+        run: test -f package-lock.json || { echo "::error::commit package-lock.json (npm install --package-lock-only)"; exit 1; }
+      - if: needs.changes.outputs.code == 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
       - if: needs.changes.outputs.code == 'true'
         run: npm test --if-present
-
-  preview:
-    if: github.event_name == 'pull_request'
-    needs: changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    continue-on-error: true  # not a merge gate; fails until the first merge has created the Worker
-    permissions: { contents: read, deployments: write }
-    steps:
-      - if: needs.changes.outputs.code == 'true'
-        uses: actions/checkout@v4
-      - if: needs.changes.outputs.code == 'true'
-        uses: actions/setup-node@v4
-        with: { node-version: "${{ env.NODE_VERSION }}", cache: "${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}" }
-      - if: needs.changes.outputs.code == 'true'
-        run: if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --no-audit --no-fund; fi
-      - if: needs.changes.outputs.code == 'true'
-        run: npm run build --if-present
-      # Stable preview URL: https://pr-<number>-<worker>.<subdomain>.workers.dev
-      # (preview versions need the Worker to exist: merge once to main first)
-      - if: needs.changes.outputs.code == 'true'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: ${{ env.WRANGLER_VERSION }}
-          command: versions upload --preview-alias pr-${{ github.event.number }} --var GIT_SHA:${{ github.event.pull_request.head.sha }}
 
   deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
-    permissions: { contents: read, deployments: write }
+    permissions:
+      contents: read
     steps:
       - run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Require production secret
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: test -n "$CF_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN missing; add it as a secret of the production environment (not a repository secret)"; exit 1; }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version: "${{ env.NODE_VERSION }}", cache: "${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}" }
-      - run: if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+      - name: Require lockfile
+        run: test -f package-lock.json || { echo "::error::production deploys need a committed package-lock.json"; exit 1; }
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm run build --if-present
-      - uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -100,4 +91,6 @@ jobs:
           command: deploy --var GIT_SHA:${{ github.sha }}
       - name: Record duration
         if: always()
-        run: echo "deploy ${{ job.status }} in $(( $(date +%s) - T0 ))s (push-to-live is recorded by deploy-watcher)" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: echo "deploy ${JOB_STATUS} in $(( $(date +%s) - T0 ))s (push-to-live is recorded by deploy-watcher)" >> "$GITHUB_STEP_SUMMARY"
