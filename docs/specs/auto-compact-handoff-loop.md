@@ -1,6 +1,6 @@
 # PRD: Automatic handoff, compact, continue loop (no /clear needed)
 
-> Status: draft · 2026-11-07 · Owner: product-manager · Backlog: Unplanned → "Auto-compact handoff loop" · Swimlane: technical foundation (template tooling) · Retroactive: built on branch `claude/auto-compact-handoff-loop` (forked 41 commits before main) without a PRD; this spec describes that work so it can be approved before porting.
+> Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog: Unplanned → "Auto-compact handoff loop" · Swimlane: technical foundation (template tooling) · Retroactive: built on branch `claude/auto-compact-handoff-loop` (forked 41 commits before main) without a PRD; this spec describes that work so it can be approved before porting.
 
 ## Problem
 Today the handoff loop stalls until a human types `/clear`. The `handoff` skill and `context_watch.py` tell the agent to write a note and "ask the user to /clear". Nothing can type it for them: no hook, skill or model can run `/clear` or `/compact`. So long tasks need a person present at every handoff, and unattended or cloud sessions simply carry on in a long, expensive context.
@@ -63,7 +63,13 @@ Port notes (main now has 41 more commits):
 - **Security hardening:** the new operator section must not imply agents can set env vars; consistent with the "guards are advisory, credentials enforce" principle in security.md. State files stay in the private dir. Re-run the hook tests that main added for the guards.
 - settings.json: re-apply the two `matcher` lines against main's hook list (main has other hook entries); do not overwrite them.
 
-## Open questions
+## Decisions (user, 2026-11-07)
+1. Start compaction earlier: yes, `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` on the cloud environment (operator step; record in the ADR).
+2. Agent continues on its own after compaction, still stopping at approval gates: yes.
+3. ADR number 0005: yes.
+4. Measure compactions and token cost after a few long sessions before calling it done: yes.
+
+## Open questions (answered above)
 1. Do you want compaction to start earlier than the default? Without it, the agent keeps working in a very long conversation (slower, costlier) until the system compacts on its own near the limit. Setting it is a one-time change on the cloud environment and affects every session there. Recommendation: yes, set `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50`, which compacts at about half the window. That leaves room above the 120k handoff budget for the agent to save its note first. If you prefer to think in size rather than percent, the equivalent is `CLAUDE_CODE_AUTO_COMPACT_WINDOW=250000`. Use one of them, not both. Approve or choose a different number, and I record it in the decision log.
 2. Is it fine that, after an automatic compaction, the agent carries on by itself from the saved note (it will still stop and ask you wherever it needed your approval before)?
 3. Should I approve-gate the ADR number change (0005 instead of 0004) as described, or do you want the ADRs renumbered differently?

@@ -1,6 +1,6 @@
 # PRD: Dashboard delivery backflow (CI history and Delivery card, ported from minespel)
 
-> Status: draft · Owner: product-manager · Backlog: Unplanned → "Dashboard delivery backflow"
+> Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog: Unplanned → "Dashboard delivery backflow"
 
 ## Problem
 A real project (minespel) grew the template dashboard with delivery metrics and a release-table roadmap. Branch `claude/dashboard-backflow-from-minespel` ported them back, but without a PRD (docs/policies/prd-approval.md applies to template tooling) and 41 commits before today's main. Since the fork, main rebuilt `scripts/dashboard.py`: Roadmap v2 (global sequence, Next up, PRD badge) and the observability tabs (Decisions, Gates, Flow with deploy frequency and change failure rate, Cost, and others). A straight merge would collide and duplicate. The need that is still unmet on main is: CI pass rate and CI time are not visible anywhere, and the Tech debt register only reads one list format.
@@ -77,7 +77,10 @@ Slices:
 - Overall M. Slice 1 M (script, parser, card, CI step, docs), slice 2 S. Swimlane: technical foundation. No dependencies; do not merge the branch.
 - Port notes: treat the branch as a reference. Take `scripts/ci_runs.py` almost as-is (add the repo-name check and the AC 7 behaviour), plus the metric, changelog and bar helpers and their tests from the diff. Re-implement against current main (Roadmap v2 render, `scripts/obs/` layout, `TABS` list). Do not take the branch's `roadmap()`/`render_roadmap()` changes, its factory.json `dashboard` block (except `github_repo`, `changelog_file`), or its README/LEARNINGS wording as written. Resolve `docs/INDEX.md` and the knowledge graph by regenerating. Add `metrics/ci-runs.json` to .gitignore and the `ci_runs.py` line to README and the dashboard skill.
 
-## Open questions
+## Decisions (user, 2026-11-07)
+1. Show CI pass rate and time: yes. 2. One read-only GitHub call in CI: yes. 3. Now/Then/Later roadmap: no. 4. Table-form tech debt: yes. 5. Drop the rest of the branch: yes.
+
+## Open questions (answered above)
 Plain-language, with my recommendation:
 1. Should the dashboard show how often our automatic checks pass and how long they take? Recommend yes: it is the main thing that is missing.
 2. Is it OK that, to get this, one small script contacts GitHub (read-only) while the build runs? The dashboard page itself still works offline. Recommend yes; it is isolated and fails safely.
