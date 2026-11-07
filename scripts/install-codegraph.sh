@@ -7,11 +7,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export CODEGRAPH_TELEMETRY=0
 cd "$ROOT"
 if ! command -v codegraph >/dev/null 2>&1; then
+  CG_VERSION="1.6.2"  # pinned exact version; bump deliberately
   if command -v npm >/dev/null 2>&1; then
-    npm i -g @colbymchenry/codegraph || exit 1
+    npm i -g "@colbymchenry/codegraph@$CG_VERSION" || exit 1
   else
-    curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh || exit 1
-    export PATH="$HOME/.local/bin:$HOME/.codegraph/bin:$PATH"
+    echo "npm not found. Install Node.js/npm, then run: npm i -g @colbymchenry/codegraph@$CG_VERSION" >&2
+    echo "(No piped-installer fallback on purpose; see https://github.com/colbymchenry/codegraph for manual steps.)" >&2
+    exit 1
   fi
 fi
 codegraph telemetry off >/dev/null 2>&1 || true

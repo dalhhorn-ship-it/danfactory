@@ -20,11 +20,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$URL" ] || { echo "usage: wait-for-url.sh --url URL [--expect TEXT] [--timeout S] [--since EPOCH] [--record ENV]" >&2; exit 2; }
+case "$URL" in http://*|https://*) ;; *) echo "wait-for-url: --url must start with http:// or https://" >&2; exit 2 ;; esac
+[[ "$TIMEOUT" =~ ^[0-9]+$ ]] || { echo "usage: --timeout must be a non-negative integer" >&2; exit 2; }
+[ -z "$SINCE" ] || [[ "$SINCE" =~ ^[0-9]+$ ]] || { echo "usage: --since must be a non-negative integer (epoch)" >&2; exit 2; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 start=$(date +%s); delay=5; attempts=0; last=""
 while :; do
   attempts=$((attempts + 1))
-  body="$(curl -fsS --max-time 10 "$URL" 2>&1)"; rc=$?
+  body="$(curl -fsS --max-time 10 -- "$URL" 2>&1)"; rc=$?
   if [ $rc -eq 0 ] && { [ -z "$EXPECT" ] || printf '%s' "$body" | grep -qF -- "$EXPECT"; }; then
     now=$(date +%s); secs=$((now - ${SINCE:-$start}))
     echo "LIVE $URL after ${secs}s${SINCE:+ since push} ($attempts checks)${EXPECT:+, saw '$EXPECT'}"

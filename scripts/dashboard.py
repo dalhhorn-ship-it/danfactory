@@ -461,7 +461,10 @@ def render(d):
     alerts = "".join('<li class="alert">%s</li>' % e(a) for a in m["alerts"]) or '<li class="muted">No alerts.</li>'
     ideas = "".join("<li>%s</li>" % e(i) for i in m["suggestions"][:6]) or '<li class="muted">No suggestions.</li>'
     prod = d["deploy"].get("production_url")
-    live = ' · <a href="%s">%s</a>' % (e(prod), e(prod)) if prod else ""
+    if prod and re.match(r"https?://", str(prod)):
+        live = ' · <a href="%s">%s</a>' % (e(prod), e(prod))
+    else:
+        live = " · %s" % e(prod) if prod else ""
 
     return TEMPLATE.format(
         title=e(name + " status"), name=e(name), one_liner=e(d["project"].get("one_liner") or ""),
@@ -474,14 +477,20 @@ def render(d):
         commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]))
 
 
+def md(x):
+    """Escape Markdown/table metacharacters in repo-derived text."""
+    s = re.sub(r"\s*[\r\n]+\s*", " ", "" if x is None else str(x))
+    return re.sub(r"([\\|`*_\[\]<>])", r"\\\1", s)
+
+
 def summary(d):
     m, bl, debt = d["metrics"], d["backlog"]["counts"], d["debt"]
     lines = [
-        "## %s — dashboard" % (d["project"].get("name") or "project"),
+        "## %s — dashboard" % md(d["project"].get("name") or "project"),
         "",
         "| | |", "|---|---|",
-        "| Phase / path | %s / %s |" % (d["phase"], d["paths"].get("primary") or "–"),
-        "| Version | %s (%s) |" % (d["versions"]["current"], d["versions"]["sha"] or "–"),
+        "| Phase / path | %s / %s |" % (md(d["phase"]), md(d["paths"].get("primary") or "–")),
+        "| Version | %s (%s) |" % (md(d["versions"]["current"]), md(d["versions"]["sha"] or "–")),
         "| Progress | %d%% — %d done, %d doing, %d blocked, %d todo |" % (
             d["progress"]["pct"], bl["done"], bl["doing"], bl["blocked"], bl["todo"]),
         "| Tests | %s (budget %ss), pass rate %s |" % (fmt_num(m["test_seconds"], "s", 1), m["test_budget"],
@@ -493,7 +502,7 @@ def summary(d):
             len(debt["open"]), debt["by_impact"]["high"], debt["signals"]["marker_total"]),
     ]
     if m["alerts"]:
-        lines += ["", "**Alerts**", ""] + ["- " + a for a in m["alerts"]]
+        lines += ["", "**Alerts**", ""] + ["- " + md(a) for a in m["alerts"]]
     return "\n".join(lines) + "\n"
 
 
