@@ -5,7 +5,7 @@ Template (danfactory) improvements: pull dashboard best practices from lpdan, ru
 
 ## State
 - Done, on `main` (d0dae76): Roadmap v2 (global sequence, `> Sequence:` line, Done collapse, Next up, PRD badge, re-sequence rule).
-- Done, on branch only (0fafcfd, NOT yet on main): security hardening S1–S7 per docs/specs/security-hardening-audit-1.md (approved). 71 tests, `bash scripts/check.sh` green.
+- Done, on `main` (7272d0b, pushed 2026-11-07): security hardening S1–S7 per docs/specs/security-hardening-audit-1.md (approved). 71 tests, `bash scripts/check.sh` green.
 - Audit run-1 (quick, source-only, no sandbox): reports in ~/security-audit-skill/danfactory/run-1 (outside repo; gone if container resets). 0 confirmed, 6 needs-validation, 3 rejected.
 - Branch: claude/practical-ptolemy-8ttjzi, uncommitted: none.
 
@@ -16,7 +16,7 @@ Template (danfactory) improvements: pull dashboard best practices from lpdan, ru
 - PRD gate: ADR docs/decisions/0002-prd-approval-gate.md.
 
 ## Next steps
-1. Ask user whether to push 0fafcfd to main (they approve pushes per change; fast-forward expected).
+1. (done) Security hardening is on main.
 2. Ask user the owner-only checks: is CLOUDFLARE_API_TOKEN a repo or production-env secret? does `npx wrangler@4 deploy --help` run without prompt in their mode? how repos arrive for adopt?
 3. Tech debt TD-001..003 (docs/TECH-DEBT.md): TD-001 cf_scaffold still writes route B — needs a PRD before fixing.
 
