@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""SessionStart: inject a ~10-line status so every session knows the phase and next step."""
+"""SessionStart (startup|resume|clear|compact): inject a short status and the handoff note.
+
+Every session knows the phase and next step. After a compaction (source "compact", manual or auto)
+the note in .factory/HANDOFF.md is injected with one line that says to continue the task from it,
+so the loop "handoff note, auto-compaction, continue" needs no human /clear. stdout is added to context.
+"""
 import os
 import sys
 
@@ -15,17 +20,22 @@ NEXT = {
 
 HANDOFF = os.path.join(ROOT, ".factory", "HANDOFF.md")
 HANDOFF_MAX_LINES = 60
+COMPACTED = ("[danfactory] Context was compacted automatically; continue the task from this note; "
+             "user gates still apply.")
 
 
 def handoff_note(source):
     """After /clear or a compaction (and on startup/resume) restart from task + note, not full history."""
     if not os.path.isfile(HANDOFF):
+        if source == "compact":
+            return ["", COMPACTED.replace("from this note", "from the compaction summary (no handoff note yet)")]
         return []
     with open(HANDOFF, encoding="utf-8") as fh:
         lines = fh.read().splitlines()
     if len(lines) > HANDOFF_MAX_LINES:
         lines = lines[:HANDOFF_MAX_LINES] + ["… (truncated: keep the note under 40 lines)"]
-    return ["", "[danfactory] Handoff note (.factory/HANDOFF.md, loaded on %s). Continue from it; "
+    head = ["", COMPACTED] if source == "compact" else [""]
+    return head + ["[danfactory] Handoff note (.factory/HANDOFF.md, loaded on %s). Continue from it; "
             "verify facts against the repo before relying on them:" % source] + lines
 
 

@@ -474,24 +474,160 @@ class ShortContexts(unittest.TestCase):
             if os.path.exists(p):
                 os.remove(p)
 
-    def test_pre_compact_snapshot_and_session_reload(self):
+    def state_file(self, sid):
+        uid = os.getuid() if hasattr(os, "getuid") else 0
+        return os.path.join(tempfile.gettempdir(), "danfactory-%d" % uid, "ctx-%s" % sid)
+
+    def test_context_watch_says_keep_working_not_clear(self):
+        sid = "test-keep-%d" % os.getpid()
+        out = hook("context_watch.py", {"transcript_path": self.transcript(200000), "session_id": sid}).stdout
+        self.assertIn(".factory/HANDOFF.md", out)
+        self.assertIn("keep working", out)
+        self.assertIn("never mid-debug", out)
+        self.assertIn("Do not ask the user to /clear", out)
+        self.assertNotIn("ask the user to /clear.", out)
+        os.remove(self.state_file(sid))
+
+    def test_context_watch_rearms_after_compaction(self):
+        sid = "test-rearm-%d" % os.getpid()
+        big = {"transcript_path": self.transcript(200000), "session_id": sid}
+        self.assertIn("handoff", hook("context_watch.py", big).stdout)
+        self.assertTrue(os.path.exists(self.state_file(sid)))
+        # compaction: context drops under the budget, so the band state resets
+        self.assertEqual(hook("context_watch.py", {"transcript_path": self.transcript(30000),
+                                                   "session_id": sid}).stdout, "")
+        self.assertFalse(os.path.exists(self.state_file(sid)))
+        self.assertIn("handoff", hook("context_watch.py", big).stdout)  # grows again: nudged again
+        os.remove(self.state_file(sid))
+
+    def project_copy(self):
         d = os.path.join(tempfile.mkdtemp(), "proj")
         subprocess.run(["cp", "-r", ROOT, d], check=True)
-        hooks = os.path.join(d, ".claude", "hooks")
         env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
-        note = os.path.join(d, ".factory", "HANDOFF.md")
+        return d, os.path.join(d, ".claude", "hooks"), env, os.path.join(d, ".factory", "HANDOFF.md")
+
+    def run_hook(self, hooks, name, stdin, env):
+        return subprocess.run([sys.executable, os.path.join(hooks, name)], input=stdin,
+                              text=True, capture_output=True, env=env)
+
+    def test_pre_compact_snapshot_and_session_reload(self):
+        d, hooks, env, note = self.project_copy()
         with open(note, "w") as fh:
             fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
         for _ in range(2):  # second run must replace, not append, the snapshot
-            subprocess.run([sys.executable, os.path.join(hooks, "pre_compact.py")], input='{"trigger":"auto"}',
-                           text=True, env=env, check=True)
+            r = self.run_hook(hooks, "pre_compact.py", '{"trigger":"auto"}', env)
+            self.assertEqual(r.returncode, 0, r.stderr)
         text = open(note).read()
         self.assertEqual(text.count("auto-snapshot:start"), 1)
         self.assertIn("Ship the login page", text)
-        out = subprocess.run([sys.executable, os.path.join(hooks, "session_start.py")], input='{"source":"clear"}',
-                             text=True, capture_output=True, env=env).stdout
+        out = self.run_hook(hooks, "session_start.py", '{"source":"clear"}', env).stdout
         self.assertIn("loaded on clear", out)
         self.assertIn("Ship the login page", out)
+        self.assertNotIn("compacted automatically", out)
+
+    def test_pre_compact_prints_summary_instructions(self):
+        d, hooks, env, note = self.project_copy()
+        with open(note, "w") as fh:
+            fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
+        r = self.run_hook(hooks, "pre_compact.py", '{"trigger":"manual"}', env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for keep in ("goal and open questions", "decisions and their reasons", "commit shas",
+                     "current step and the next steps", "failed approaches", "Drop: file contents, tool output, logs",
+                     "Source of truth: .factory/HANDOFF.md"):
+            self.assertIn(keep, r.stdout)
+        self.assertLessEqual(len(r.stdout), 10000)
+        self.assertNotIn("missing", r.stdout)  # fresh, uncommitted note newer than HEAD
+        self.assertNotIn("older than the last commit", r.stdout)
+
+    def test_pre_compact_flags_missing_note(self):
+        d, hooks, env, note = self.project_copy()
+        if os.path.exists(note):
+            os.remove(note)
+        r = self.run_hook(hooks, "pre_compact.py", '{"trigger":"auto"}', env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("missing or empty", r.stdout)
+        # the snapshot-only note it created is still "missing" next time
+        self.assertIn("missing or empty", self.run_hook(hooks, "pre_compact.py", '{"trigger":"auto"}', env).stdout)
+
+    def test_pre_compact_flags_stale_note_and_accepts_committed_note(self):
+        d, hooks, env, note = self.project_copy()
+        with open(note, "w") as fh:
+            fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+        subprocess.run(git + ["commit", "-q", "--no-verify", "--allow-empty", "-m", "chore: unrelated"], cwd=d,
+                       check=True, capture_output=True)  # HEAD must not be a commit that touched the note
+        head_time = int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=d, capture_output=True,
+                                       text=True, check=True).stdout.strip())
+        os.utime(note, (head_time - 3600, head_time - 3600))
+        r = self.run_hook(hooks, "pre_compact.py", '{"trigger":"auto"}', env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("older than the last commit", r.stdout)
+        self.assertLess(os.path.getmtime(note), head_time)  # the snapshot keeps the note's mtime
+        subprocess.run(git + ["add", "-f", note], cwd=d, check=True, capture_output=True)
+        subprocess.run(git + ["commit", "-q", "--no-verify", "-m", "chore: handoff"], cwd=d, check=True,
+                       capture_output=True)
+        os.utime(note, (head_time - 3600, head_time - 3600))
+        r = self.run_hook(hooks, "pre_compact.py", '{"trigger":"auto"}', env)
+        self.assertNotIn("older than the last commit", r.stdout)
+
+    def test_pre_compact_never_blocks(self):
+        d = tempfile.mkdtemp()  # not a git repo, no factory.json, garbage input
+        r = subprocess.run([sys.executable, os.path.join(HOOKS, "pre_compact.py")], input="not json",
+                           text=True, capture_output=True, env=dict(os.environ, CLAUDE_PROJECT_DIR=d))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("Compaction instructions", r.stdout)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "needs symlinks")
+    def test_pre_compact_does_not_write_through_symlink(self):
+        d, hooks, env, note = self.project_copy()
+        target = os.path.join(tempfile.mkdtemp(), "victim.txt")
+        with open(target, "w") as fh:
+            fh.write("keep me")
+        if os.path.exists(note):
+            os.remove(note)
+        os.symlink(target, note)
+        r = self.run_hook(hooks, "pre_compact.py", '{"trigger":"auto"}', env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(open(target).read(), "keep me")
+
+    def test_session_start_after_compaction_continues_from_note(self):
+        d, hooks, env, note = self.project_copy()
+        with open(note, "w") as fh:
+            fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
+        out = self.run_hook(hooks, "session_start.py", '{"source":"compact"}', env).stdout
+        self.assertIn("Context was compacted automatically; continue the task from this note; "
+                      "user gates still apply.", out)
+        self.assertIn("Ship the login page", out)
+        self.assertNotIn("compacted automatically", self.run_hook(hooks, "session_start.py",
+                                                                 '{"source":"startup"}', env).stdout)
+        os.remove(note)
+        out = self.run_hook(hooks, "session_start.py", '{"source":"compact"}', env).stdout
+        self.assertIn("compacted automatically", out)
+        self.assertIn("user gates still apply", out)
+
+    def test_session_start_compact_line_in_template_mode(self):
+        d, hooks, env, note = self.project_copy()
+        src = json.load(open(os.path.join(d, "factory.json")))["template"]["source_repo"]
+        url = "https://github.com/%s.git" % src
+        if subprocess.run(["git", "remote", "get-url", "origin"], cwd=d, capture_output=True).returncode == 0:
+            subprocess.run(["git", "remote", "set-url", "origin", url], cwd=d, check=True)
+        else:
+            subprocess.run(["git", "remote", "add", "origin", url], cwd=d, check=True)
+        with open(note, "w") as fh:
+            fh.write("# Handoff — test\n\n## Task\nShip the login page\n")
+        out = self.run_hook(hooks, "session_start.py", '{"source":"compact"}', env).stdout
+        self.assertIn("TEMPLATE repo", out)
+        self.assertIn("Context was compacted automatically; continue the task from this note; "
+                      "user gates still apply.", out)
+        self.assertIn("Ship the login page", out)
+        self.assertNotIn("compacted automatically", self.run_hook(hooks, "session_start.py",
+                                                                 '{"source":"startup"}', env).stdout)
+
+    def test_settings_matchers_cover_compaction(self):
+        hooks_cfg = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))["hooks"]
+        start = set(hooks_cfg["SessionStart"][0]["matcher"].split("|"))
+        self.assertTrue({"startup", "resume", "clear", "compact"} <= start)
+        self.assertEqual(set(hooks_cfg["PreCompact"][0]["matcher"].split("|")), {"manual", "auto"})
 
 
 class CloudflareScaffold(unittest.TestCase):

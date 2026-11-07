@@ -36,3 +36,6 @@ Viewing the dashboard as a private artifact with a link that stays the same (rep
 
 ### 2026-11-07 — Factory work before a project goal  [all] [tree-gap] [upstream]
 M1 (dashboard observability) was improving the factory itself while phase was still `brainstorm` with no GOAL.md. The tree had no branch for this, and metrics stay empty until bootstrap: the token hook skips while project.name is empty and commands.test is unset, so the Flow, Cost and Tests views show n/a. DECISION-TREE.md 1.2.0 adds Q0b, pointing at template mode (built in parallel on main): template work skips brainstorm/choose-path but keeps the PRD gate; expect no product metrics.
+
+### 2026-11-07 — Handoff, compact, continue without /clear  [all] [tooling] [upstream]
+Design choice, not yet measured: the handoff loop stalled until a human typed `/clear`, and nothing can run it for them. Now the note is committed and work continues; auto-compaction resets, PreCompact steers the summary, SessionStart (`compact`) reloads the note (ADR 0005). Operator step (approved 2026-11-07): `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` on the cloud environment. Check compactions and weighted tokens per session after a few long runs.

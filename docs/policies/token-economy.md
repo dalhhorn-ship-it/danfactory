@@ -14,12 +14,19 @@
 
 ## Short contexts and handoff notes
 Long contexts cost more per token and rarely buy accuracy: NVIDIA's "You don't need long context" kept agents within ~2 points of full history by compacting often. In one setting, compacting after every action kept Claude Opus 4.5 at 70.2% on SWE-bench Verified versus 70.0% with full history. How the factory applies it:
-1. **Handoff note** (`handoff` skill → `.factory/HANDOFF.md`, 40 lines or fewer): task, state, decisions, next steps, gotchas, pointers. Written at logical boundaries, never mid-debug.
-2. **Fresh restart:** `/clear` after a handoff. The SessionStart hook reloads the note, so the new context holds only the task and the note.
-3. **Nudge, don't nag:** `context_watch.py` (UserPromptSubmit) reads the live context size and reminds once per 50k band above `budgets.context_handoff_tokens` (120k).
-4. **Safety net:** `pre_compact.py` adds a mechanical snapshot (branch, uncommitted files, in-progress items) before any compaction. CLAUDE.md "Compact instructions" says what a summary must keep.
+1. **Handoff note** (`handoff` skill → `.factory/HANDOFF.md`, 40 lines or fewer): task, state, decisions, next steps, gotchas, pointers. Written at logical boundaries, never mid-debug, and committed.
+2. **Nudge, don't nag:** `context_watch.py` (UserPromptSubmit) reads the live context size and reminds once per 50k band above `budgets.context_handoff_tokens` (120k): refresh the note at the next boundary, commit it, keep working. It never asks the user to `/clear`. When the context drops back under the budget (after a compaction), it re-arms.
+3. **Automatic reset (handoff, compact, continue):** no hook, skill or model can run `/clear` or `/compact`, so the reset is Claude Code's auto-compaction. `pre_compact.py` (PreCompact, `manual|auto`) prints the summary instructions (keep goal and open questions, decisions and reasons, files changed and commit shas, current step and next steps, failed approaches; drop file contents, tool output, logs), points at the note as the source of truth, and says so when the note is missing or older than the last commit, so the summary records the current step itself. It also writes a snapshot block (branch, uncommitted files, in-progress items, last commits) into the note. It never blocks.
+4. **Continue:** `session_start.py` (SessionStart, `startup|resume|clear|compact`) injects the note. After a compaction it adds: "Context was compacted automatically; continue the task from this note; user gates still apply." `/clear` stays an optional manual way to restart from the note.
 5. **Search, don't load:** subagents work in fresh contexts and return short answers; files are grepped and read in slices (rules 1–5 above).
 6. **Measured:** compactions per session are recorded in metrics/tokens.jsonl.
+
+### Operator step: start auto-compaction earlier (needs approval)
+By default auto-compaction starts close to the model's full context window, far above the 120k handoff budget. To make the loop run at a short context, the operator sets one of these Claude Code environment variables on the cloud environment (or in the shell for local runs). It changes how every session in that environment behaves, so it needs the user's (founder's) approval first; agents never set it themselves.
+- `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` (1 to 100): compact at this percentage of the context window.
+- `CLAUDE_CODE_AUTO_COMPACT_WINDOW` (tokens): the context window size used for the auto-compaction threshold.
+
+Pick a value so compaction starts some way above `budgets.context_handoff_tokens`, so the agent has room to reach a boundary and refresh the note first. Chosen and approved 2026-11-07: `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` on the cloud environment, set by the operator (ADR 0005; use one variable, not both).
 
 ## What stays in the main agent
 Debugging, edits that need exact text, architecture and trade-off decisions, anything the user is discussing live.
