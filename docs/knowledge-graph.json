@@ -29,6 +29,7 @@
   {"id": "docs/policies/testing-and-metrics.md", "title": "Policy: testing and delivery metrics", "lines": 17},
   {"id": "docs/policies/token-economy.md", "title": "Policy: token economy", "lines": 28},
   {"id": "docs/specs/_TEMPLATE.md", "title": "PRD: <feature name>", "lines": 33},
+  {"id": "docs/specs/auto-compact-handoff-loop.md", "title": "PRD: Automatic handoff, compact, continue loop (no /clear needed)", "lines": 70},
   {"id": "docs/specs/dashboard-observability-design.md", "title": "Design: dashboard observability tabs", "lines": 175},
   {"id": "docs/specs/dashboard-observability-tabs.md", "title": "PRD: Dashboard observability tabs", "lines": 78},
   {"id": "docs/specs/dashboard-roadmap-v2.md", "title": "PRD: Dashboard roadmap v2 (global sequence, Next up, sequence rationale)", "lines": 76},
@@ -39,6 +40,7 @@
   {"from": "docs/policies/documentation.md", "to": "docs/INDEX.md"},
   {"from": "docs/policies/prd-approval.md", "to": "docs/specs/_TEMPLATE.md"},
   {"from": "docs/policies/token-economy.md", "to": "docs/INDEX.md"},
+  {"from": "docs/specs/auto-compact-handoff-loop.md", "to": "docs/decisions/0002-prd-approval-gate.md"},
   {"from": "docs/specs/dashboard-observability-design.md", "to": ".claude/agents/developer.md"},
   {"from": "docs/specs/dashboard-observability-design.md", "to": ".claude/agents/product-manager.md"},
   {"from": "docs/specs/dashboard-observability-design.md", "to": ".claude/skills/dashboard/SKILL.md"}
