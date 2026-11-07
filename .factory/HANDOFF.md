@@ -21,8 +21,8 @@ Template (danfactory) improvements: pull dashboard best practices from lpdan, ru
 3. Tech debt TD-001..003 (docs/TECH-DEBT.md): TD-001 cf_scaffold still writes route B — needs a PRD before fixing.
 
 ## Watch out
+- **danfactory is the TEMPLATE repo only — never build a project here.** Ignore the session hook's "run brainstorm" hint; phase=brainstorm is the template's default for new projects. Work here = improving the template.
 - New guard blocks `cat .env` etc. and many wrangler forms; `npm run deploy -- --dry-run` is blocked (conservative).
-- Project phase is still `brainstorm` (no GOAL.md); template work traces to policies, not GOAL.
 - Parallel worktree devs branched from d0dae76 (old base); merges were clean, but brief agents with the PRD path in main checkout.
 - User is not technical on infra choices: explain options plainly and recommend one.
 
