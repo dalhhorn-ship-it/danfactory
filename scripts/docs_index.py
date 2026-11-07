@@ -33,7 +33,8 @@ DEFAULT_CURATED = """| Question | Go to |
 | How do I save tokens? | docs/policies/token-economy.md |
 | What are the test/deploy budgets? | factory.json -> budgets |
 """
-LINK_RE = re.compile(r"\]\(([^)#\s]+\.md)(#[^)]*)?\)|`((?:docs|\.claude)/[^`\s]+\.md)`")
+LINK_RE = re.compile(r"\]\(([^)#\s]+\.md)(#[^)]*)?\)|`((?:docs|\.claude)/[^`\s]+\.md)`"
+                     r"|(?<![\w./\[-])((?:\.\.?/)?[\w-][\w.-]*(?:/[\w.-]+)*\.md)\b")  # bare paths count when the file exists
 HEAD_RE = re.compile(r"^(#{1,3})\s+(.*?)\s*#*\s*$")
 
 
@@ -88,11 +89,14 @@ def parse(path):
         elif line.startswith("> ") and not summary:
             summary = line[2:].strip()
         for lm in LINK_RE.finditer(line):
-            target = lm.group(1) or lm.group(3)
+            target = lm.group(1) or lm.group(3) or lm.group(4)
             if target.startswith("http"):
                 continue
             base = ROOT if lm.group(3) or target.startswith(("docs/", ".claude/")) else os.path.dirname(path)
             full = os.path.normpath(os.path.join(base, target))
+            if lm.group(4) and not os.path.isfile(full):  # bare path: try repo-root relative, then docs/
+                full = next((c for c in (os.path.join(ROOT, target), os.path.join(ROOT, "docs", target))
+                             if os.path.isfile(c) or os.path.normpath(c) == INDEX), full)  # INDEX: as below
             if (os.path.isfile(full) or full == INDEX) and full != path:  # INDEX may not exist yet on a first run
                 links.add(rel(full))
     return {"file": rel(path), "title": title, "summary": summary, "lines": len(lines),

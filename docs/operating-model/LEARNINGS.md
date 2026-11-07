@@ -39,5 +39,9 @@ M1 (dashboard observability) was improving the factory itself while phase was st
 
 ### 2026-11-07 — Handoff, compact, continue without /clear  [all] [tooling] [upstream]
 Design choice, not yet measured: the handoff loop stalled until a human typed `/clear`, and nothing can run it for them. Now the note is committed and work continues; auto-compaction resets, PreCompact steers the summary, SessionStart (`compact`) reloads the note (ADR 0005). Operator step (approved 2026-11-07): `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` on the cloud environment. Check compactions and weighted tokens per session after a few long runs.
+
 ### 2026-11-07 — Port a downstream branch by feature, not by merge  [all] [anti-pattern] [upstream]
 minespel's dashboard branch forked 41 commits before main, which had since rebuilt scripts/dashboard.py. Merging would have collided and duplicated Flow's deploy bars, so the PRD judged each feature against current main (keep, adapt or drop) and the kept ones were re-implemented in a new scripts/obs/delivery.py. Rule: when a downstream project backports work, write a keep/adapt/drop table first; the one network call (scripts/ci_runs.py) stays outside the offline page builder, with a validated repo name and job-level `actions: read`.
+
+### 2026-11-07 — Doc graph missed plain-text links  [all] [docs] [upstream] (from lpdan)
+docs_index.py only counted Markdown links and backticked docs/ paths, so 22 of 36 docs showed as orphans on the Docs health tab although they were referenced in plain text. Bare `.md` paths that resolve to a file now count; the generated INDEX.md is not a link source, so it cannot hide orphans. Template: 13 -> 111 edges, 2 real orphans left. Fix (from lpdan): scripts/docs_index.py LINK_RE, test .factory/tests/test_docs_links.py.
