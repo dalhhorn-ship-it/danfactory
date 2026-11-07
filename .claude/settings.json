@@ -21,6 +21,11 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/.dev.vars)",
+      "Read(**/.dev.vars.*)",
+      "Read(./.dev.vars.*)",
       "Bash(wrangler deploy*)",
       "Bash(npx wrangler deploy*)",
       "Bash(wrangler pages deploy*)",
