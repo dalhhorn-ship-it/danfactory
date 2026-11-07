@@ -90,13 +90,16 @@ def write_snapshot(ev):
         "- In progress/blocked (BACKLOG): %s" % ("; ".join(doing) if doing else "none"),
         "- Last commits: %s" % " | ".join(git("log", "-3", "--format=%h %s").splitlines()),
         END]
+    if os.path.islink(PATH) or os.path.islink(os.path.dirname(PATH)):
+        return  # never write through a symlink
     os.makedirs(os.path.dirname(PATH), exist_ok=True)
     existed = os.path.exists(PATH)
     mtime = os.path.getmtime(PATH) if existed else None
     cur = open(PATH, encoding="utf-8").read() if existed else "# Handoff\n\n%s\n" % PLACEHOLDER
     if START in cur and END in cur:
         cur = cur[:cur.index(START)].rstrip() + "\n" + cur[cur.index(END) + len(END):].lstrip("\n")
-    with open(PATH, "w", encoding="utf-8") as fh:
+    fd = os.open(PATH, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o644)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(cur.rstrip() + "\n\n" + "\n".join(snap) + "\n")
     if mtime is not None:
         os.utime(PATH, (mtime, mtime))  # the snapshot is not an agent update

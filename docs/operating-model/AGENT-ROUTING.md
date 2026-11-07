@@ -31,7 +31,7 @@
 | Ready to merge | see ladder | `reviewer` | sonnet |
 | Follows our rules? | see ladder; drift suspected | `claude-md-compliance-checker` | haiku |
 | Milestone done? | milestone claimed complete | `karen` (runs it) then, if spec-heavy, `jenny` | sonnet |
-| Context getting long | context-watch nudge, or a logical boundary after a long session | `handoff` skill (main agent), then the user runs `/clear` | – |
+| Context getting long | context-watch nudge, or a logical boundary after a long session | `handoff` skill (main agent), commit the note, keep working; auto-compaction resets and the note reloads (`/clear` optional) | – |
 | Docs | end of every task that changed behaviour | `doc-keeper` | haiku |
 | Deploy | after every push | `deploy-watcher` (background) | haiku |
 | Security | on request / L3 release | `security-audit-run` skill | – |

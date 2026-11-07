@@ -26,7 +26,7 @@
 
 | File | Lines | Summary |
 |---|---:|---|
-| CLAUDE.md | 39 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
+| CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
 | docs/BACKLOG.md | 32 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
@@ -36,9 +36,10 @@
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0003-deploy-credential-scoping.md | 17 | Status: accepted · Date: 2026-11-07 |
 | docs/decisions/0004-dashboard-observability-design.md | 42 | Status: accepted · Date: 2026-11-07 |
+| docs/decisions/0005-auto-compact-handoff-loop.md | 22 | Status: accepted · Date: 2026-11-07 · PRD: docs/specs/auto-compact-handoff-loop.md |
 | docs/operating-model/AGENT-ROUTING.md | 81 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
-| docs/operating-model/LEARNINGS.md | 38 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
+| docs/operating-model/LEARNINGS.md | 41 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
 | docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
 | docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default… |
@@ -53,7 +54,7 @@
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
 | docs/policies/testing-and-metrics.md | 17 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
-| docs/policies/token-economy.md | 28 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
+| docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
 | docs/specs/auto-compact-handoff-loop.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/dashboard-delivery-backflow.md | 89 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |

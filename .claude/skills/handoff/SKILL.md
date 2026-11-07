@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Write a short structured handoff note (.factory/HANDOFF.md) so work can continue in a fresh, short context. Use at logical boundaries (task done, milestone, topic switch, before a long new task) or when the context-watch hook says the context is long; then ask the user to /clear. Also use when the user says "handoff", "wrap up" or "save state".
+description: Write a short structured handoff note (.factory/HANDOFF.md) so work can continue in a fresh, short context. Use at logical boundaries (task done, milestone, topic switch, before a long new task) or when the context-watch hook says the context is long; commit the note, then keep working (auto-compaction resets the context and the note reloads). Also use when the user says "handoff", "wrap up" or "save state".
 ---
 
 # Handoff: restart with the task and a note, not the whole history
@@ -41,7 +41,12 @@ Rules:
 - Facts only: shas, paths, commands. No narrative of how you got here.
 - Point to files instead of quoting them. The next session reads them on demand.
 - Keep the user's open questions and preferences. Those get lost first.
-- Commit the note with the work (`chore: handoff`), so cloud sessions on other machines can pick it up.
+- Commit the note with the work (`chore: handoff`), so cloud sessions on other machines can pick it up and the PreCompact hook sees it as current (a note older than the last commit is flagged as stale).
 
-## Then
-Tell the user: "Handoff written. Type `/clear` to continue in a fresh context. The note reloads automatically." If they'd rather keep the history, `/compact` also works; CLAUDE.md tells the compaction what to keep.
+## Then: commit, continue
+1. Commit the note (with the finished work, or alone as `chore: handoff`).
+2. **Keep working** on the next step. Do not ask the user to `/clear`: no hook, skill or model can run `/clear` or `/compact`, and none is needed.
+3. Auto-compaction does the reset when the context fills up. `pre_compact.py` tells the summary what to keep and points at the note; `session_start.py` reloads the note after it with "Context was compacted automatically; continue the task from this note; user gates still apply."
+4. User gates still apply after a compaction: anything that needed the user's approval before still needs it.
+
+`/clear` stays an optional manual way to restart from the note (the user types it; the note reloads the same way). A user who wants to keep more history can type `/compact`.
