@@ -1,6 +1,6 @@
 # NNNN — Title
 
-> Status: proposed | accepted | superseded by NNNN · Date: YYYY-MM-DD
+> Status: proposed | accepted | superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes: NNNN` if it replaces an earlier ADR)
 
 ## Context
 _The forces at play._

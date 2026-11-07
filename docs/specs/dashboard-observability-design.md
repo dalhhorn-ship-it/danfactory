@@ -160,3 +160,10 @@ Wiring in dashboard.py:
    - tick OBS-1 in BACKLOG
    - `bash scripts/check.sh` green
    - check `index.html` size, and that light/dark and a 375px width render
+
+## Slice 2 as built
+- **Decisions:** ADR header parsed for `Date:`, `Supersedes: NNNN`, `superseded by NNNN`; chains run oldest to newest; affected components are the `influence` relations from the Architecture model.
+- **Gates:** item to PRD status via Traceability chains (no chain = "no PRD"); tests per component by file-name match (same rule as Traceability); coverage is overall only (per-component coverage is not tracked, shown as such); dependency freshness = days since the last commit touching a manifest or lockfile.
+- **New records:** `python3 scripts/metrics.py record check|security-audit` appends `{ts, kind, sha}` to the committed `metrics/records.jsonl`. `scripts/check.sh` calls it on success; the security-audit-run skill calls it after a full audit. Absent = "not recorded yet".
+- **Docs health:** orphan = a node of the graph with no link in or out (CLAUDE.md and docs/INDEX.md excepted); stale = a code file the doc names was committed after the doc's last commit; component without docs = its path appears in no doc. The graph only has explicit doc links, so many docs count as orphans until docs link each other.
+

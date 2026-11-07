@@ -11,4 +11,5 @@ description: Security audit using Cloudflare's security-audit skill (installed o
    - **full audit** — all six phases, reports written **outside the repo** (default `~/security-audit-skill/<repo>/run-<N>`).
 3. Read `.claude/skills/security-audit/SKILL.md` and follow it exactly (the installer marks it not auto-invocable, so it runs only through this wrapper), including its execution-safety and sandbox rules. Its large reference files are read by its own subagents, not the main context.
 4. After a full audit: summarise confirmed findings (severity, file:line, fix) for the user; record an ADR or issue per accepted fix; add a `[security]` learning to LEARNINGS.md if a pattern recurs.
-5. Never paste secrets or exploit payloads into docs committed to the repo.
+5. After a completed full audit run `python3 scripts/metrics.py record security-audit` so the dashboard Gates tab shows it.
+6. Never paste secrets or exploit payloads into docs committed to the repo.

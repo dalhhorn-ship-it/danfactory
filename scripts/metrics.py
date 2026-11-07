@@ -4,6 +4,7 @@
   python3 scripts/metrics.py test [--affected]          run tests (+coverage), record time/result
   python3 scripts/metrics.py deploy [--env prod]        run commands.deploy, record time/result
   python3 scripts/metrics.py deploy --seconds 312 --status ok   record an external deploy (CI)
+  python3 scripts/metrics.py record check|security-audit   note a passed gate (shown on the dashboard Gates tab)
   python3 scripts/metrics.py report                     write metrics/REPORT.md (alerts + suggestions)
 
 Each command also regenerates dashboard/ (scripts/dashboard.py) unless --no-dashboard.
@@ -28,6 +29,7 @@ MDIR = os.path.join(ROOT, "metrics")
 HISTORY = os.path.join(MDIR, "history.jsonl")
 TOKENS = os.path.join(MDIR, "tokens.jsonl")
 REPORT = os.path.join(MDIR, "REPORT.md")
+RECORDS = os.path.join(MDIR, "records.jsonl")
 TAIL = 40
 
 
@@ -313,6 +315,12 @@ def cmd_report(a, f):
     return 0
 
 
+def cmd_record(a, f):
+    append(RECORDS, {"ts": now(), "kind": a.kind, "sha": git_sha()})
+    print("recorded %s" % a.kind)
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -323,11 +331,13 @@ def main():
     d.add_argument("--env", default="default")
     d.add_argument("--seconds", type=float)
     d.add_argument("--status", choices=["ok", "fail"], default="ok")
+    r = sub.add_parser("record")
+    r.add_argument("kind", choices=["check", "security-audit"])
     sub.add_parser("report")
     ap.add_argument("--no-dashboard", action="store_true", help="skip regenerating dashboard/")
     a = ap.parse_args()
     f = factory()
-    code = {"test": cmd_test, "deploy": cmd_deploy, "report": cmd_report}[a.cmd](a, f)
+    code = {"test": cmd_test, "deploy": cmd_deploy, "report": cmd_report, "record": cmd_record}[a.cmd](a, f)
     if not a.no_dashboard:
         refresh_dashboard()
     return code

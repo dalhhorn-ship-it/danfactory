@@ -31,7 +31,7 @@
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 34 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 11 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
-| docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD |
+| docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0003-dashboard-observability-design.md | 42 | Status: accepted · Date: 2026-11-07 |
@@ -54,5 +54,5 @@
 | docs/policies/testing-and-metrics.md | 17 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 28 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
-| docs/specs/dashboard-observability-design.md | 162 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0003):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:141 |
+| docs/specs/dashboard-observability-design.md | 169 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0003):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:141, Slice 2 as built:164 |
 | docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |

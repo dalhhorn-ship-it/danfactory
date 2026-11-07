@@ -205,3 +205,27 @@ def is_test(path):
 
 def test_files(root):
     return [p for p in project_files(root) if is_test(p) and p.endswith(SRC_EXT)]
+
+
+def commit_times(root):
+    """{path: unix time of the last commit touching it}, from one git walk (newest first)."""
+    out, cur, times = git(root, "log", "--name-only", "--format=%x1e%ct"), 0, {}
+    for ln in out.splitlines():
+        if ln.startswith("\x1e"):
+            cur = int(ln[1:] or 0)
+        elif ln.strip():
+            times.setdefault(ln.strip(), cur)
+    return times
+
+
+def last_record(root, kind):
+    """Newest row of kind in metrics/records.jsonl (written by `metrics.py record <kind>`), else None."""
+    row = None
+    for ln in read(root, "metrics/records.jsonl").splitlines():
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and r.get("kind") == kind and r.get("ts"):
+            row = r
+    return row

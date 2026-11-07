@@ -10,7 +10,7 @@ Sources (all in the repo, so every build can regenerate it):
   plus automated debt signals (TODO/FIXME markers, oversized files, codegraph import cycles).
 Output is a self-contained HTML file (no JS, no network) with tabs: Overview, Roadmap
 (two swimlanes, value vs technical foundation, in proposed sequence), and the observability tabs from
-scripts/obs/ (Architecture, Traceability). dashboard/ is git-ignored;
+scripts/obs/ (Architecture, Traceability, Decisions, Gates, Docs health). dashboard/ is git-ignored;
 CI uploads it as a build artifact and writes SUMMARY.md to the job summary.
 """
 import argparse
@@ -27,12 +27,13 @@ import webbrowser
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
-from obs import tab_architecture, tab_traceability  # noqa: E402
+from obs import tab_architecture, tab_decisions, tab_docs, tab_gates, tab_traceability  # noqa: E402
 
 OUT = os.path.join(ROOT, "dashboard")
 # (key, label, module|None): None = built into this file. Tab inputs, labels and CSS selectors are generated from it.
 TABS = (("overview", "Overview", None), ("roadmap", "Roadmap", None),
-        ("architecture", "Architecture", tab_architecture), ("traceability", "Traceability", tab_traceability))
+        ("architecture", "Architecture", tab_architecture), ("traceability", "Traceability", tab_traceability),
+        ("decisions", "Decisions", tab_decisions), ("gates", "Gates", tab_gates), ("docs", "Docs health", tab_docs))
 PHASES = ["brainstorm", "operating-model", "build"]
 STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "-": "dropped"}
 ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
