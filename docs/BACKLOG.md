@@ -12,7 +12,7 @@ Roadmap tab: item order here is the proposed sequence. Tag technical work `#foun
 - [ ] Test command and CI green (S) #quality
 
 ## Milestone: M1 — Dashboard observability (target: )
-- [ ] Observability design: ADR resolving PRD open questions (docs/specs/dashboard-observability-tabs.md) (S) #arch
+- [x] Observability design: ADR resolving PRD open questions (docs/specs/dashboard-observability-tabs.md) (S) #arch
 - [ ] Slice 1: Architecture + Traceability tabs (L) #feature
 - [ ] Slice 2: Decisions, Gates, Docs health tabs (M) #feature
 - [ ] Slice 3: Flow, Cost, Hotspots tabs (L) #feature
