@@ -128,6 +128,30 @@ class RecordTokens(unittest.TestCase):
         hook("record_tokens.py", {"transcript_path": main_t, "session_id": "x"})
         self.assertEqual(os.path.exists(os.path.join(ROOT, "metrics", "tokens.jsonl")), before)
 
+    def test_session_shas_window_and_git_failure(self):
+        sys.path.insert(0, HOOKS)
+        import datetime
+        import record_tokens
+        tmp = tempfile.mkdtemp()
+        tp = os.path.join(tmp, "t.jsonl")
+        with open(tp, "w") as fh:
+            fh.write(json.dumps({"timestamp": "2026-11-07T10:00:00Z"}) + "\n")
+            fh.write(json.dumps({"timestamp": "2026-11-07T09:00:00Z"}) + "\n")
+            fh.write("junk\n")
+        self.assertEqual(record_tokens.first_timestamp(tp),
+                         datetime.datetime(2026, 11, 7, 9, 0, tzinfo=datetime.timezone.utc))
+        end = datetime.datetime.now(datetime.timezone.utc)
+        self.assertIsInstance(record_tokens.session_shas(tp, end), list)
+        empty = os.path.join(tmp, "e.jsonl")
+        open(empty, "w").close()
+        self.assertEqual(record_tokens.session_shas(empty, end), [])
+        old = record_tokens.ROOT
+        record_tokens.ROOT = os.path.join(tmp, "missing")  # git cannot run there
+        try:
+            self.assertEqual(record_tokens.session_shas(tp, end), [])
+        finally:
+            record_tokens.ROOT = old
+
     def test_dedupes_and_sums(self):
         tmp = tempfile.mkdtemp()
         tp = os.path.join(tmp, "t.jsonl")

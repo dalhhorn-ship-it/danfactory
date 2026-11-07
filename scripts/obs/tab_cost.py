@@ -1,7 +1,7 @@
 """Cost tab: weighted tokens from metrics/tokens.jsonl, attributed to backlog items only when a record says so.
-Spike S3 (2026-11-07): session rows carry ts and session_id only (no sha, no item), and the session_id differs from the
-`Claude-Session` commit trailer; matching by timestamp window would be a guess. So a row is attributed only if it has an
-explicit `item` field, or a `sha` of a commit with `Refs: <ITEM-ID>`. Everything else is "unattributed" and counted, never assigned."""
+A row is attributed only if it has an explicit `item`, a `sha` of a commit with `Refs: <ITEM-ID>`, or a `shas` list
+(commits made during the session, written by the SessionEnd hook) whose commits reference exactly one distinct item.
+Sessions whose commits reference several items are "mixed": counted, never split or guessed. Everything else is "unattributed"."""
 import html
 import json
 
@@ -36,11 +36,30 @@ def rows(root):
     return out
 
 
+def _lookup(by_sha, sha):
+    """Item for a commit sha (full or abbreviated: git's %h and %H both occur), or ''."""
+    sha = str(sha or "")
+    if not sha:
+        return ""
+    if sha in by_sha:
+        return by_sha[sha]
+    return next((v for k, v in by_sha.items() if sha.startswith(k)), "")
+
+
 def attribute(r, by_sha):
-    """Item ID for a token row, or '' (unattributed). Never guesses from time or session."""
+    """Item ID for a token row, or '' (unattributed). Never guesses; several distinct items in `shas` = mixed = ''."""
     if r.get("item"):
         return str(r["item"])
-    return by_sha.get(str(r.get("sha") or ""), "")
+    if r.get("sha"):
+        return _lookup(by_sha, r["sha"])
+    items = {_lookup(by_sha, s) for s in (r.get("shas") or []) if isinstance(s, str)} - {""}
+    return next(iter(items)) if len(items) == 1 else ""
+
+
+def is_mixed(r, by_sha):
+    if r.get("item") or r.get("sha"):
+        return False
+    return len({_lookup(by_sha, s) for s in (r.get("shas") or []) if isinstance(s, str)} - {""}) > 1
 
 
 def collect(root, base):
@@ -50,7 +69,7 @@ def collect(root, base):
             by_sha[c["sha"]] = c["refs"][0]
     rs = rows(root)
     total = sum(weighted(r) for r in rs)
-    per, un_tokens, un_n = {}, 0, 0
+    per, un_tokens, un_n, mixed = {}, 0, 0, 0
     for r in rs:
         item = attribute(r, by_sha)
         if item:
@@ -59,10 +78,11 @@ def collect(root, base):
             p["tokens"] += weighted(r)
         else:
             un_n += 1
+            mixed += is_mixed(r, by_sha)
             un_tokens += weighted(r)
     items = sorted(per.values(), key=lambda p: (-p["tokens"], p["id"]))
     return {"sessions": len(rs), "total_tokens": total,
-            "unattributed": {"sessions": un_n, "tokens": un_tokens, "share_pct": round(100.0 * un_tokens / total) if total else None},
+            "unattributed": {"sessions": un_n, "mixed": mixed, "tokens": un_tokens, "share_pct": round(100.0 * un_tokens / total) if total else None},
             "items": items[:CAP], "items_total": len(items),
             "avg_tokens": round(total / len(rs)) if rs else None}
 
@@ -85,14 +105,15 @@ def render(d):
     u = d["unattributed"]
     facts = [("Sessions recorded", _n(d["sessions"])), ("Weighted tokens (total)", _n(d["total_tokens"])),
              ("Weighted tokens per session (average)", _n(d["avg_tokens"])),
-             ("Unattributed", "%s sessions, %s tokens (%s%%)" % (u["sessions"], _n(u["tokens"]), "–" if u["share_pct"] is None else u["share_pct"]))]
+             ("Unattributed", "%s sessions, %s tokens (%s%%)" % (u["sessions"], _n(u["tokens"]), "–" if u["share_pct"] is None else u["share_pct"])),
+             ("Mixed sessions (commits for several items, not split)", _n(u["mixed"]))]
     kv = "".join("<tr><td>%s</td><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts)
     irows = "".join('<tr><td class="mono nowrap">%s</td><td>%d</td><td>%s</td></tr>' % (e(i["id"]), i["sessions"], e(_n(i["tokens"])))
                     for i in d["items"])
     cap = '<p class="muted small">Top %d of %d items; full list in data.json.</p>' % (len(d["items"]), d["items_total"]) \
         if d["items_total"] > len(d["items"]) else ""
-    why = ('<p class="muted small">A session is attributed to an item only when its record names the item (or a commit with '
-           '<code>Refs:</code>). Session records carry no item or commit today, so they stay unattributed rather than guessed.</p>')
+    why = ('<p class="muted small">A session is attributed to an item only when its record names the item, or when every commit made during it '
+           'carries the same <code>Refs:</code> item. Sessions without commits, or with commits for several items (mixed), stay unattributed rather than guessed.</p>')
     return ('<div class="stack"><div class="card"><h2>Cost</h2><table><tbody>%s</tbody></table>%s</div>'
             '<div class="card"><h2>Attributed to items</h2><div class="scroll"><table><thead><tr><th>Item</th><th>Sessions</th><th>Weighted tokens</th></tr></thead>'
             '<tbody>%s</tbody></table></div>%s</div></div>'

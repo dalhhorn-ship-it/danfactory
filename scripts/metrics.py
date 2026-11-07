@@ -29,7 +29,8 @@ MDIR = os.path.join(ROOT, "metrics")
 HISTORY = os.path.join(MDIR, "history.jsonl")
 TOKENS = os.path.join(MDIR, "tokens.jsonl")
 REPORT = os.path.join(MDIR, "REPORT.md")
-RECORDS = os.path.join(MDIR, "records.jsonl")
+RECORDS = os.path.join(MDIR, "records.jsonl")  # committed: rare, durable rows (security-audit)
+LOCAL_RECORDS = os.path.join(MDIR, "records.local.jsonl")  # gitignored: frequent rows (check)
 TAIL = 40
 
 
@@ -316,7 +317,14 @@ def cmd_report(a, f):
 
 
 def cmd_record(a, f):
-    append(RECORDS, {"ts": now(), "kind": a.kind, "sha": git_sha()})
+    path, sha = (LOCAL_RECORDS if a.kind == "check" else RECORDS), git_sha()
+    last = None
+    for ln in load(path):
+        last = ln
+    if last and last.get("kind") == a.kind and last.get("sha") == sha:
+        print("already recorded %s at %s" % (a.kind, sha))
+        return 0
+    append(path, {"ts": now(), "kind": a.kind, "sha": sha})
     print("recorded %s" % a.kind)
     return 0
 

@@ -219,13 +219,15 @@ def commit_times(root):
 
 
 def last_record(root, kind):
-    """Newest row of kind in metrics/records.jsonl (written by `metrics.py record <kind>`), else None."""
+    """Newest row of kind across metrics/records.jsonl (committed) and records.local.jsonl (gitignored; `check`
+    rows), written by `metrics.py record <kind>`; else None."""
     row = None
-    for ln in read(root, "metrics/records.jsonl").splitlines():
-        try:
-            r = json.loads(ln)
-        except ValueError:
-            continue
-        if isinstance(r, dict) and r.get("kind") == kind and r.get("ts"):
-            row = r
+    for name in ("metrics/records.jsonl", "metrics/records.local.jsonl"):
+        for ln in read(root, name).splitlines():
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict) and r.get("kind") == kind and r.get("ts") and (row is None or str(r["ts"]) >= str(row["ts"])):
+                row = r
     return row

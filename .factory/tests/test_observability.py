@@ -243,7 +243,7 @@ class Slice2(unittest.TestCase):
         put(r, "src/alpha.ts", "x\n")
         put(r, "tests/alpha.test.ts", "x\n")
         put(r, "src/beta.ts", "x\n")
-        put(r, "metrics/records.jsonl", json.dumps({"ts": "2026-11-01T10:00:00+00:00", "kind": "check", "sha": "abc"}) + "\nnot json\n")
+        put(r, "metrics/records.local.jsonl", json.dumps({"ts": "2026-11-01T10:00:00+00:00", "kind": "check", "sha": "abc"}) + "\nnot json\n")
         sh(r, "git", "add", "-A")
         sh(r, "git", "commit", "-qm", "x")
         base = {"architecture": model.view(r),
@@ -266,22 +266,42 @@ class Slice2(unittest.TestCase):
         self.assertIn("no PRD", html)
         self.assertIn("1/2 items without approved PRD", tab_gates.line(d))
 
-    def test_metrics_record_command(self):
+    def _record(self, kind):
         import metrics
-        self.assertIn("record", metrics.cmd_record.__name__)
+        class A:
+            pass
+        A.kind = kind
+        with contextlib.redirect_stdout(io.StringIO()):
+            metrics.cmd_record(A, {})
+
+    def test_metrics_record_routing_dedupe_and_merged_read(self):
+        import metrics
         tmp = tempfile.mkdtemp()
-        old = metrics.RECORDS, metrics.MDIR
-        metrics.RECORDS, metrics.MDIR = os.path.join(tmp, "m", "records.jsonl"), os.path.join(tmp, "m")
+        m = os.path.join(tmp, "metrics")
+        old = metrics.RECORDS, metrics.LOCAL_RECORDS, metrics.MDIR, metrics.git_sha
+        metrics.RECORDS, metrics.LOCAL_RECORDS = os.path.join(m, "records.jsonl"), os.path.join(m, "records.local.jsonl")
+        metrics.MDIR = m
         try:
-            class A:
-                kind = "security-audit"
-            with contextlib.redirect_stdout(io.StringIO()):
-                metrics.cmd_record(A, {})
-            self.assertEqual(sources.last_record(tmp, "security-audit"), None)  # reads metrics/, not m/
-            os.rename(os.path.join(tmp, "m"), os.path.join(tmp, "metrics"))
+            metrics.git_sha = lambda: "s1"
+            self._record("security-audit")
+            self._record("check")
+            self._record("check")  # same kind+sha: deduped
+            self.assertNotIn("check", open(metrics.RECORDS).read())
+            self.assertEqual(len(open(metrics.LOCAL_RECORDS).read().splitlines()), 1)
+            metrics.git_sha = lambda: "s2"
+            self._record("check")  # new sha: appended
+            self.assertEqual(len(open(metrics.LOCAL_RECORDS).read().splitlines()), 2)
             self.assertEqual(sources.last_record(tmp, "security-audit")["kind"], "security-audit")
+            self.assertEqual(sources.last_record(tmp, "check")["sha"], "s2")
+            self.assertIsNone(sources.last_record(tmp, "nope"))
         finally:
-            metrics.RECORDS, metrics.MDIR = old
+            metrics.RECORDS, metrics.LOCAL_RECORDS, metrics.MDIR, metrics.git_sha = old
+
+    def test_last_record_newest_across_files(self):
+        r = tempfile.mkdtemp()
+        put(r, "metrics/records.jsonl", json.dumps({"ts": "2026-11-05T00:00:00+00:00", "kind": "check", "sha": "old"}) + "\n")
+        put(r, "metrics/records.local.jsonl", json.dumps({"ts": "2026-11-06T00:00:00+00:00", "kind": "check", "sha": "new"}) + "\n")
+        self.assertEqual(sources.last_record(r, "check")["sha"], "new")
 
 
 class Slice3(unittest.TestCase):
@@ -310,10 +330,29 @@ class Slice3(unittest.TestCase):
         put(r, "metrics/tokens.jsonl", "\n".join(json.dumps(x) for x in rows) + "\nnot json\n")
         d = tab_cost.collect(r, {})
         self.assertEqual((d["sessions"], d["total_tokens"]), (3, 450))
-        self.assertEqual(d["unattributed"], {"sessions": 1, "tokens": 300, "share_pct": 67})
+        self.assertEqual(d["unattributed"], {"sessions": 1, "mixed": 0, "tokens": 300, "share_pct": 67})
         self.assertEqual({i["id"]: i["tokens"] for i in d["items"]}, {"DEM-1": 100, "DEM-2": 50})
         self.assertIn("unattributed", tab_cost.render(d).lower())
         self.assertIn("67% unattributed", tab_cost.line(d))
+
+    def test_cost_shas_attribution_and_mixed(self):
+        r = tempfile.mkdtemp()
+        sh(r, "git", "init", "-q")
+        shas = []
+        for n, ref in enumerate(["DEM-1", "DEM-1", "DEM-2"]):
+            put(r, "f%d.txt" % n, "x")
+            sh(r, "git", "add", "-A")
+            sh(r, "git", "commit", "-qm", "feat\n\nRefs: " + ref)
+            shas.append(sources.git(r, "log", "-1", "--format=%H").strip())
+        rows = [{"weighted_tokens": 10, "shas": shas[:2]},          # one item -> DEM-1
+                {"weighted_tokens": 20, "shas": shas},              # two items -> mixed
+                {"weighted_tokens": 30, "shas": []},                # none
+                {"weighted_tokens": 40, "shas": shas, "item": "X-9"}]  # explicit item wins
+        put(r, "metrics/tokens.jsonl", "\n".join(json.dumps(x) for x in rows) + "\n")
+        d = tab_cost.collect(r, {})
+        self.assertEqual({i["id"]: i["tokens"] for i in d["items"]}, {"X-9": 40, "DEM-1": 10})
+        self.assertEqual((d["unattributed"]["sessions"], d["unattributed"]["mixed"]), (2, 1))
+        self.assertIn("Mixed sessions", tab_cost.render(d))
 
     def test_flow_lead_cycle_and_rates(self):
         r = tempfile.mkdtemp()
