@@ -238,6 +238,11 @@ class Dashboard(unittest.TestCase):
         self.assertIn("progress", d)
         self.assertIn("roadmap", d)
         self.assertIn('id="tab-roadmap"', page)
+        for tab in ("architecture", "traceability"):
+            self.assertIn('id="tab-%s"' % tab, page)
+            self.assertIn(tab, d)
+        self.assertIn("layers", d["architecture"])
+        self.assertIn("chains", d["traceability"])
 
 
 class AsyncDelivery(unittest.TestCase):

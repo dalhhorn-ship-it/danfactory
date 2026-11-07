@@ -8,8 +8,9 @@
 Sources (all in the repo, so every build can regenerate it):
   factory.json, docs/BACKLOG.md, docs/TECH-DEBT.md, metrics/*.jsonl, git tags/log,
   plus automated debt signals (TODO/FIXME markers, oversized files, codegraph import cycles).
-Output is a self-contained HTML file (no JS, no network) with two tabs: Overview and Roadmap
-(two swimlanes, value vs technical foundation, in proposed sequence). dashboard/ is git-ignored;
+Output is a self-contained HTML file (no JS, no network) with tabs: Overview, Roadmap
+(two swimlanes, value vs technical foundation, in proposed sequence), and the observability tabs from
+scripts/obs/ (Architecture, Traceability). dashboard/ is git-ignored;
 CI uploads it as a build artifact and writes SUMMARY.md to the job summary.
 """
 import argparse
@@ -26,8 +27,12 @@ import webbrowser
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
+from obs import tab_architecture, tab_traceability  # noqa: E402
 
 OUT = os.path.join(ROOT, "dashboard")
+# (key, label, module|None): None = built into this file. Tab inputs, labels and CSS selectors are generated from it.
+TABS = (("overview", "Overview", None), ("roadmap", "Roadmap", None),
+        ("architecture", "Architecture", tab_architecture), ("traceability", "Traceability", tab_traceability))
 PHASES = ["brainstorm", "operating-model", "build"]
 STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "-": "dropped"}
 ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
@@ -245,7 +250,7 @@ def collect():
     open_debt = [d for d in debt if d["open"]]
     planned = [m for m in backlog if m["total"]]
     total = sum(m["total"] for m in planned)
-    return {
+    d = {
         "generated": metrics.now(),
         "project": f.get("project", {}), "phase": f.get("phase", "brainstorm"), "paths": f.get("paths", {}),
         "template": f.get("template", {}), "deploy": f.get("integrations", {}).get("deploy", {}),
@@ -261,6 +266,10 @@ def collect():
         "roadmap": roadmap(backlog, open_debt),
         "metrics": metric_view(f),
     }
+    for key, _label, mod in TABS:  # each module may read earlier tabs' data from d
+        if mod:
+            d[key] = mod.collect(ROOT, d)
+    return d
 
 
 # ---------------------------------------------------------------- render
@@ -350,6 +359,19 @@ def render_roadmap(rm):
             '<div class="rm-corner"></div>%s%s</div></div></div>' % (len(cols), head, rows))
 
 
+def tab_parts(d):
+    """Generated tab markup and CSS from TABS (the Overview and Roadmap panels stay in TEMPLATE)."""
+    inputs = "\n".join('<input type="radio" name="tab" id="tab-%s" class="tab-input"%s>' % (k, " checked" if i == 0 else "")
+                       for i, (k, _l, _m) in enumerate(TABS))
+    nav = "".join('<label for="tab-%s">%s</label>' % (k, e(lab)) for k, lab, _m in TABS)
+    panels = "\n".join('<div class="panel panel-%s">%s</div>' % (k, m.render(d[k])) for k, _l, m in TABS if m)
+    each = lambda fmt: ", ".join(fmt % (k, k) for k, _l, _m in TABS)  # noqa: E731
+    css = ("%s {{ display:block; }}\n%s {{ color:var(--text); border-bottom-color:var(--accent); }}\n%s {{ outline:2px solid var(--accent); outline-offset:2px; }}"
+           % (each("#tab-%s:checked ~ .panel-%s"), each('#tab-%s:checked ~ .tabs label[for="tab-%s"]'),
+              each('#tab-%s:focus-visible ~ .tabs label[for="tab-%s"]'))).replace("{{", "{").replace("}}", "}")
+    return {"tab_inputs": inputs, "tab_nav": nav, "tab_panels": panels, "tab_css": css}
+
+
 def render(d):
     m, v, bl, debt = d["metrics"], d["versions"], d["backlog"], d["debt"]
     name = d["project"].get("name") or "Untitled project"
@@ -435,7 +457,7 @@ def render(d):
         tree=e(d["template"].get("decision_tree_version", "")), tiles=tiles, milestones=ms_rows,
         backlog=backlog, debt=debt_html, tags=tag_rows, deploys=dep_rows,
         commits=commits or '<li class="muted">No commits yet.</li>', alerts=alerts, ideas=ideas,
-        commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]))
+        commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]), **tab_parts(d))
 
 
 def summary(d):
@@ -456,6 +478,9 @@ def summary(d):
         "| Tech debt | %d open (%d high), %d code markers |" % (
             len(debt["open"]), debt["by_impact"]["high"], debt["signals"]["marker_total"]),
     ]
+    for key, label, mod in TABS:
+        if mod:
+            lines.append("| %s | %s |" % (label, mod.line(d[key])))
     if m["alerts"]:
         lines += ["", "**Alerts**", ""] + ["- " + a for a in m["alerts"]]
     return "\n".join(lines) + "\n"
@@ -472,18 +497,21 @@ TEMPLATE = """<!doctype html>
   --bg:#f6f7f9; --surface:#ffffff; --text:#1b1f24; --muted:#5b6470; --border:#dfe3e8;
   --accent:#2f6fdb; --ok:#1f8a4c; --ok-bg:#e6f4ec; --bad:#c23934; --bad-bg:#fbeaea;
   --warn:#9a6700; --warn-bg:#fff4d6; --track:#e9edf2;
+  --am-mot:#e6e0fa; --am-app:#d9eef8; --am-tech:#e0f2d9;
 }}
 @media (prefers-color-scheme: dark) {{
   :root:not([data-theme="light"]) {{
     --bg:#0f1216; --surface:#171b21; --text:#e6e9ed; --muted:#9aa4b1; --border:#2a313a;
     --accent:#6ea0ff; --ok:#4cc38a; --ok-bg:#12291d; --bad:#ff7b72; --bad-bg:#2d1517;
     --warn:#e3b341; --warn-bg:#2b230f; --track:#262d36;
+    --am-mot:#2d2750; --am-app:#173341; --am-tech:#1f3b27;
   }}
 }}
 :root[data-theme="dark"] {{
   --bg:#0f1216; --surface:#171b21; --text:#e6e9ed; --muted:#9aa4b1; --border:#2a313a;
   --accent:#6ea0ff; --ok:#4cc38a; --ok-bg:#12291d; --bad:#ff7b72; --bad-bg:#2d1517;
   --warn:#e3b341; --warn-bg:#2b230f; --track:#262d36;
+    --am-mot:#2d2750; --am-app:#173341; --am-tech:#1f3b27;
 }}
 * {{ box-sizing:border-box; }}
 body {{ margin:0; background:var(--bg); color:var(--text);
@@ -536,13 +564,23 @@ td {{ padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top
 .imp.low {{ background:var(--ok-bg); color:var(--ok); }}
 li.alert {{ color:var(--bad); }}
 footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
-.tabs {{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; }}
-.tabs label {{ padding:8px 14px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:600; font-size:14px; }}
+.tabs {{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; white-space:nowrap; }}
+.tabs label {{ flex:none; padding:8px 14px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:600; font-size:14px; }}
 .tab-input {{ position:absolute; opacity:0; pointer-events:none; }}
 .panel {{ display:none; }}
-#tab-overview:checked ~ .panel-overview, #tab-roadmap:checked ~ .panel-roadmap {{ display:block; }}
-#tab-overview:checked ~ .tabs label[for="tab-overview"], #tab-roadmap:checked ~ .tabs label[for="tab-roadmap"] {{ color:var(--text); border-bottom-color:var(--accent); }}
-#tab-overview:focus-visible ~ .tabs label[for="tab-overview"], #tab-roadmap:focus-visible ~ .tabs label[for="tab-roadmap"] {{ outline:2px solid var(--accent); outline-offset:2px; }}
+{tab_css}
+.stack {{ display:grid; gap:16px; }}
+tr.grp td {{ background:var(--track); }}
+.arch {{ display:block; }}
+.arch text {{ fill:var(--text); font-size:12px; text-anchor:middle; }}
+.arch .sub {{ font-size:10px; fill:var(--muted); }}
+.arch .band {{ fill:var(--track); }}
+.arch .band-l {{ text-anchor:start; font-weight:600; font-size:13px; fill:var(--muted); }}
+.arch .band-e {{ text-anchor:start; fill:var(--muted); }}
+.arch .box rect {{ stroke:var(--border); stroke-width:1; }}
+.arch .box.am-mot rect {{ fill:var(--am-mot); }} .arch .box.am-app rect {{ fill:var(--am-app); }} .arch .box.am-tech rect {{ fill:var(--am-tech); }}
+.arch .box.drift rect {{ stroke:var(--bad); stroke-width:2; stroke-dasharray:5 3; }}
+.arch .edges line {{ stroke:var(--muted); stroke-width:1; opacity:.45; }}
 .rm {{ --lane-w:minmax(150px,180px); --col-w:minmax(220px,1fr); display:grid; gap:8px; min-width:max-content;
   grid-template-columns:var(--lane-w) repeat(var(--cols),var(--col-w)); }}
 .rm-col-h {{ display:flex; flex-direction:column; font-size:14px; padding:4px 2px; border-bottom:2px solid var(--border); }}
@@ -578,9 +616,8 @@ footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
   </div>
 </header>
 
-<input type="radio" name="tab" id="tab-overview" class="tab-input" checked>
-<input type="radio" name="tab" id="tab-roadmap" class="tab-input">
-<nav class="tabs" aria-label="Dashboard views"><label for="tab-overview">Overview</label><label for="tab-roadmap">Roadmap</label></nav>
+{tab_inputs}
+<nav class="tabs" aria-label="Dashboard views">{tab_nav}</nav>
 
 <div class="panel panel-roadmap">{roadmap}</div>
 
@@ -598,6 +635,7 @@ footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
   <div class="card"><h2>Recent commits</h2><ul class="plain">{commits}</ul></div>
 </section>
 </div>
+{tab_panels}
 <footer>Built by scripts/dashboard.py from factory.json, docs/BACKLOG.md, docs/TECH-DEBT.md, metrics/ and git.</footer>
 </main>
 </body>
