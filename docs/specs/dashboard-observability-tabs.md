@@ -1,6 +1,6 @@
 # PRD: Dashboard observability tabs
 
-> Status: draft · Owner: product-manager · Backlog: not yet added (only after approval)
+> Status: approved · 2026-11-07 · by user in chat (all three slices; open questions delegated to software-architect with product-manager) · Owner: product-manager · Backlog: M1 — Dashboard observability
 
 ## Problem
 The dashboard answers "where are we?" (Overview, Roadmap) but not "what has been built, why, how well, and at what cost?". Intent, code, decisions, tests, delivery speed and token spend live in separate files, so the user cannot see them together or judge drift between design and build. The user asked for "complete observability on what has been and is being built".
