@@ -41,6 +41,7 @@ python3 "$FACTORY/scripts/adopt.py" --target . --apply  # after the user says ye
 - `CLAUDE.md` gets a danfactory block appended below the project's own rules.
 - Settings, `.gitignore` and `.gitattributes` are merged.
 - `TECH-DEBT.md` and `BACKLOG.md` are seeded from the scan.
+- Symlinks in the project are never followed: those paths show as `skip ... symlink` and nothing is written through them. Foreign files already in `.githooks/` or `scripts/` show as `note` lines; read them before approving, since a foreign hook runs via `core.hooksPath`.
 
 ## 4. Smart indexing
 1. `python3 scripts/docs_index.py` builds the docs quick reference and knowledge graph.
