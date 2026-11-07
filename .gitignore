@@ -20,3 +20,4 @@ security-audit-output/
 .wrangler/
 /dashboard/
 metrics/records.local.jsonl
+metrics/REPORT.md

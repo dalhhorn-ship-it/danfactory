@@ -12,6 +12,7 @@ Roadmap tab: item order here is the proposed sequence. Tag technical work `#foun
 - [ ] Test command and CI green (S) #quality
 
 ## Milestone: M1 — Dashboard observability (target: )
+> Closed 2026-11-07, retro done (docs/operating-model/LEARNINGS.md).
 - [x] OBS-0 Observability design: ADR resolving PRD open questions (docs/specs/dashboard-observability-tabs.md) (S) #arch
 - [x] OBS-1 Slice 1: Architecture + Traceability tabs (L) #feature
 - [x] OBS-2 Slice 2: Decisions, Gates, Docs health tabs (M) #feature

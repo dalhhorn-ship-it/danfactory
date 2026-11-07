@@ -2,7 +2,7 @@
   "$comment": "Single source of project configuration for agents, hooks and scripts. Edit via /choose-path and /retro; humans may edit freely.",
   "template": {
     "name": "danfactory",
-    "decision_tree_version": "1.1.0"
+    "decision_tree_version": "1.2.0"
   },
   "project": {
     "name": "",

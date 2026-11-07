@@ -17,7 +17,7 @@ Run `python3 scripts/dashboard.py --print` and answer from the summary (cheap). 
 
 ## Showing it
 - Local: `python3 scripts/dashboard.py --open`.
-- In the Claude app: if the Artifact tool is available, publish `dashboard/index.html` as a private artifact and store its URL in `factory.json → integrations.dashboard_url`. Republish to the same URL later so the link stays stable.
+- In the Claude app: if the Artifact tool is available, publish `dashboard/index.html` as a private artifact and store its URL in `factory.json → integrations.dashboard_url`. Republish to the same URL later so the link stays stable. In a new session the first republish is refused until the live version is read; the page is generated, so publish again unchanged.
 - CI: open the run's `dashboard` artifact.
 
 ## Keeping it truthful (the dashboard is only as good as its sources)
