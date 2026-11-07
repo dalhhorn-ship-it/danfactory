@@ -9,5 +9,7 @@ Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area
 - [ ] TD-002 Spike S2 pending: `scripts/archmodel.py --print` not yet run on a real product repo (none available); root/exclude rules untuned, `curated.roots`/`exclude` is the escape hatch — impact: low · effort: S · area: dashboard
 - [ ] TD-003 `check.sh` appends a pass to committed metrics/records.jsonl on every run, so each check dirties the working tree (and trips the uncommitted-changes stop hook); dedupe per sha/kind or record outside git — impact: medium · effort: S · area: dashboard
 - [ ] TD-004 Docs health counts 24/30 docs as orphans because docs/knowledge-graph.json holds only explicit doc-to-doc links; count INDEX.md/skill/agent references as links or relabel — impact: low · effort: S · area: dashboard
+- [ ] TD-005 Cost tab shows all sessions as unattributed: token rows (metrics/tokens.jsonl) carry no item or commit sha (spike S3); have the SessionEnd hook record the current branch/HEAD sha or an explicit `item` — impact: medium · effort: S · area: dashboard
+- [ ] TD-006 Flow lead time needs prod deploys recorded via `metrics.py deploy --env prod` and assumes linear git history and that env is named prod/production; Hotspots looks at the last 500 commits only — impact: low · effort: S · area: dashboard
 
 ## Resolved

@@ -136,6 +136,7 @@ Wiring in dashboard.py:
 - **S1 outcome (2026-11-07):** codegraph is not installed in this environment, so no file-level import output could be checked; the regex scan is used (`source: "scan"`), logged as TD-001.
 - **S2 (30 min, end of Slice 1), PENDING (TD-002; no product repo available when Slice 1 was built):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
 - **S3 (Slice 3, before Cost):** attribution spike on `metrics/tokens.jsonl` (PRD risk 1).
+- **S3 outcome (2026-11-07):** token rows (`kind: session`) hold `ts`, `session_id` and token counts only: no sha, no item. The `session_id` is the transcript id, not the `Claude-Session` commit trailer, and a timestamp window would be a guess (sessions span items; subagents overlap). Decision: attribute only when a row has an explicit `item` or a `sha` of a commit with `Refs:`; all current rows are "unattributed" (logged as TD-005).
 - **Page size:** measure `index.html` after each slice (target under 400 KB).
 
 ## Slice 1 build order (one developer run; split after step 5 if needed)
@@ -167,3 +168,8 @@ Wiring in dashboard.py:
 - **New records:** `python3 scripts/metrics.py record check|security-audit` appends `{ts, kind, sha}` to the committed `metrics/records.jsonl`. `scripts/check.sh` calls it on success; the security-audit-run skill calls it after a full audit. Absent = "not recorded yet".
 - **Docs health:** orphan = a node of the graph with no link in or out (CLAUDE.md and docs/INDEX.md excepted); stale = a code file the doc names was committed after the doc's last commit; component without docs = its path appears in no doc. The graph only has explicit doc links, so many docs count as orphans until docs link each other.
 
+## Slice 3 as built
+- **Flow** (`tab_flow.py`): lead time = PRD approval date to the first prod deploy (`metrics.py deploy --env prod|production`, ok or not) whose sha is at or after the item's first `Refs:` commit (linear history assumed). Cycle time = first `Refs:` commit to the first commit adding the item as `[x]` in docs/BACKLOG.md (`git log -G`). WIP = items in progress. Deploy frequency = prod deploys in the last 28 days per week; change failure rate = failed prod deploys / prod deploys. Medians, frequency and rate need 3 events, otherwise "n/a: needs 3 events (have N)"; per-item values with missing data show "–".
+- **Cost** (`tab_cost.py`): totals use the same token weights as `metrics.py wt`; the unattributed count and share are always shown; per-item rows only for explicit attribution (see S3 outcome).
+- **Hotspots** (`tab_hotspots.py`): source files (not tests, docs, metrics) changed in at least 2 of the last 500 commits, ranked by commits x lines, top 10, flagged when no test file matches by name.
+- data.json keys: `flow`, `cost`, `hotspots`. `--print` rows: one per tab.
