@@ -13,7 +13,7 @@
   {"id": "docs/decisions/0005-auto-compact-handoff-loop.md", "title": "0005 \u2014 Automatic handoff, compact, continue loop", "lines": 22},
   {"id": "docs/operating-model/AGENT-ROUTING.md", "title": "Agent routing", "lines": 81},
   {"id": "docs/operating-model/DECISION-TREE.md", "title": "Decision tree", "lines": 73},
-  {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 41},
+  {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 43},
   {"id": "docs/operating-model/paths/adopt-existing.md", "title": "Path: adopt-existing", "lines": 59},
   {"id": "docs/operating-model/paths/automation-script.md", "title": "Path: automation-script", "lines": 25},
   {"id": "docs/operating-model/paths/data-spreadsheet.md", "title": "Path: data-spreadsheet", "lines": 32},

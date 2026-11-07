@@ -8,6 +8,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:  # job level: top level stays contents: read
+      contents: read
+      actions: read  # read-only run history for the dashboard
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0 }  # tags + history for the dashboard
@@ -22,6 +25,11 @@ jobs:
           else
             echo "commands.test not set yet; skipping"
           fi
+      - name: Refresh CI history (best effort, read-only GitHub API call)
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci_runs.py
       - name: Build dashboard
         if: always()
         run: |
