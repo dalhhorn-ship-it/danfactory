@@ -2,7 +2,7 @@
 
 > Known shortcuts and their cost; the dashboard reads this file plus automated signals (TODO/FIXME markers, oversized files, import cycles). Updated by `retro` and `engineering:tech-debt` audits.
 
-Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area: <area>` under **Open**; move to **Resolved** with `[x]` when paid down.
+Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area: <area>` under **Open**; move to **Resolved** with `[x]` when paid down. A table with the header `Id | Severity | Item | Where | Size | Source | Status` is read too (severity major counts as high; a status starting with done/resolved/fixed/closed/dropped/wontfix/paid is closed; use `\|` or a code span for a literal pipe).
 
 ## Open
 - [ ] TD-001 cf_scaffold.py still writes the route B (GitHub Actions) workflow and sets route B in factory.json, while docs and the ship skill now default to route A (Cloudflare dashboard Git integration) — impact: medium · effort: S · area: deploy

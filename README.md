@@ -42,7 +42,7 @@ Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are
 | 2. Choose how to work | `choose-path` (decision tree, rigor L0–L3) | docs/OPERATING-MODEL.md, factory.json, ADR |
 | 3. Build | path playbook + subagents | code / workbook / document … |
 | Milestones | `retro`, `metrics` | LEARNINGS.md, tree updates, metrics/REPORT.md |
-| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, plus a Roadmap tab (value vs technical-foundation swimlanes, one global build sequence, Next up, PRD badges) |
+| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, a Delivery card (CI pass rate, time, latest failures, weekly bars, release cadence from CHANGELOG or tags), plus a Roadmap tab (value vs technical-foundation swimlanes, one global build sequence, Next up, PRD badges) |
 | On request | `security-audit-run`, `ship` | audit report, live deploy |
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)
@@ -98,6 +98,7 @@ python3 scripts/docs_index.py          # regenerate docs index + knowledge graph
 python3 scripts/metrics.py test        # run tests, record time + coverage
 python3 scripts/metrics.py report      # metrics/REPORT.md with alerts + suggestions
 python3 scripts/dashboard.py --open    # build + open the project dashboard
+python3 scripts/ci_runs.py            # refresh metrics/ci-runs.json (CI pass rate and time for the Delivery card; the only script that uses the network)
 python3 scripts/archmodel.py --write   # refresh docs/architecture.json (dashboard Architecture tab)
 bash scripts/install-skill.sh security-audit
 bash scripts/install-skill.sh cloudflare-deploy

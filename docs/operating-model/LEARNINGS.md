@@ -36,3 +36,6 @@ Viewing the dashboard as a private artifact with a link that stays the same (rep
 
 ### 2026-11-07 — Factory work before a project goal  [all] [tree-gap] [upstream]
 M1 (dashboard observability) was improving the factory itself while phase was still `brainstorm` with no GOAL.md. The tree had no branch for this, and metrics stay empty until bootstrap: the token hook skips while project.name is empty and commands.test is unset, so the Flow, Cost and Tests views show n/a. DECISION-TREE.md 1.2.0 adds Q0b, pointing at template mode (built in parallel on main): template work skips brainstorm/choose-path but keeps the PRD gate; expect no product metrics.
+
+### 2026-11-07 — Port a downstream branch by feature, not by merge  [all] [anti-pattern] [upstream]
+minespel's dashboard branch forked 41 commits before main, which had since rebuilt scripts/dashboard.py. Merging would have collided and duplicated Flow's deploy bars, so the PRD judged each feature against current main (keep, adapt or drop) and the kept ones were re-implemented in a new scripts/obs/delivery.py. Rule: when a downstream project backports work, write a keep/adapt/drop table first; the one network call (scripts/ci_runs.py) stays outside the offline page builder, with a validated repo name and job-level `actions: read`.

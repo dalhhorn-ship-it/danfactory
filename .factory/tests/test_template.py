@@ -319,6 +319,190 @@ class Dashboard(unittest.TestCase):
         self.assertIn("files", d["hotspots"])
 
 
+class DeliveryBackflow(unittest.TestCase):
+    """docs/specs/dashboard-delivery-backflow.md acceptance criteria 1-9 and 11."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(ROOT, "scripts"))
+        import ci_runs
+        import dashboard
+        from obs import delivery
+        cls.d, cls.ci, cls.dl = dashboard, ci_runs, delivery
+        import datetime
+        cls.today = datetime.date(2026, 11, 7)  # ISO week 2026-W45
+
+    @staticmethod
+    def run_(i, day, conclusion="success", branch="main", mins=2, name="ci"):
+        return {"id": i, "name": name, "head_branch": branch, "conclusion": conclusion, "status": "completed",
+                "created_at": "%sT10:00:00Z" % day, "run_started_at": "%sT10:00:00Z" % day,
+                "updated_at": "%sT10:%02d:00Z" % (day, mins), "html_url": "https://github.com/o/r/actions/runs/%d" % i}
+
+    def runs(self):
+        r = self.run_
+        return [r(1, "2026-11-05"), r(2, "2026-11-05", "failure", "feat", 6, "ci<b>x</b>"), r(3, "2026-11-04", "failure", "main", 4),
+                r(4, "2026-11-04", "cancelled"), r(5, "2026-11-03", "skipped"), r(6, "2026-11-03", "success", "main", 10),
+                r(7, "2026-10-28", "cancelled")]  # week 44 has no decided run
+
+    def test_ac1_metrics_and_failures(self):
+        m = self.dl.ci_metrics(self.runs(), self.today, "main")
+        self.assertEqual((m["decided_30"], m["pass_rate_30"]), (4, 50))  # cancelled and skipped are not decided
+        self.assertEqual((m["main_decided"], m["main_pass_rate"]), (3, 67))
+        self.assertEqual((m["median_min"], m["p90_min"]), (5.0, 10.0))
+        self.assertEqual(len(m["failures"]), 2)
+        html_ = self.dl.render({"ci": m, "releases": None})
+        self.assertIn('href="https://github.com/o/r/actions/runs/2"', html_)
+        self.assertIn("50%", html_)
+
+    def test_ac2_weekly_bars(self):
+        m = self.dl.ci_metrics(self.runs(), self.today, "main")
+        self.assertEqual(len(m["weeks"]), 8)
+        self.assertEqual(m["weeks"][-1], "2026-W45")
+        self.assertIsNone(m["pass_per_week"][-2])  # W44: only a cancelled run
+        self.assertEqual(m["pass_per_week"][-1], 50)
+        html_ = self.dl.render({"ci": m, "releases": None})
+        self.assertEqual(html_.count("<svg"), 2)
+        self.assertIn("2026-W44: no data", html_)
+        self.assertNotIn("2026-W44: 0", html_)
+
+    def test_ac3_missing_or_invalid_cache(self):
+        self.assertIsNone(self.dl.parse_runs(""))
+        self.assertIsNone(self.dl.parse_runs("{not json"))
+        with tempfile.TemporaryDirectory() as root:
+            for text in (None, "{broken"):
+                if text:
+                    os.makedirs(os.path.join(root, "metrics"))
+                    with open(os.path.join(root, "metrics", "ci-runs.json"), "w") as fh:
+                        fh.write(text)
+                dl = self.dl.collect(root, {}, self.today)
+                self.assertIsNone(dl["ci"])
+                self.assertIn("no CI history yet", self.dl.render(dl).replace("No CI", "no CI"))
+                self.assertEqual(self.dl.line(dl), "")
+
+    def test_ac4_release_cadence(self):
+        text = "# Changelog\n## [Unreleased]\n## [1.2.0] - 2026-11-01\n## 1.1.0 (2026-10-01)\n## 1.0.0 (2026-09-21)\n"
+        found = self.dl.parse_changelog(text)
+        self.assertEqual([r["version"] for r in found], ["1.2.0", "1.1.0", "1.0.0"])
+        rel = self.dl.release_metrics(found, self.today)
+        self.assertEqual((rel["count"], rel["median_gap_days"], rel["days_since_last"]), (3, 20.5, 6))
+        with tempfile.TemporaryDirectory() as root:
+            with open(os.path.join(root, "CHANGELOG.md"), "w") as fh:
+                fh.write(text)
+            dl = self.dl.collect(root, {}, self.today)
+            self.assertEqual(dl["releases"]["source"], "CHANGELOG")
+            self.assertIn("6 days since 1.2.0", self.dl.render(dl))
+        with tempfile.TemporaryDirectory() as root:  # no changelog: release-like tags; non-release tags ignored
+            g = ["git", "-c", "user.name=t", "-c", "user.email=t@t"]
+            subprocess.run(g + ["init", "-q", root], check=True)
+            subprocess.run(g + ["-C", root, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+            for tag in ("v1.0.0", "wip"):
+                subprocess.run(g + ["-C", root, "tag", tag], check=True)
+            dl = self.dl.collect(root, {})
+            self.assertEqual((dl["releases"]["source"], dl["releases"]["count"]), ("tags", 1))
+        with tempfile.TemporaryDirectory() as root:  # neither: omitted
+            dl = self.dl.collect(root, {}, self.today)
+            self.assertIsNone(dl["releases"])
+            self.assertNotIn("Releases (", self.dl.render(dl))
+
+    def test_ac5_offline_builder_one_ci_line(self):
+        for rel in ("scripts/dashboard.py", "scripts/obs/delivery.py"):
+            src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+            for word in ("urllib", "socket", "http.client", "requests"):
+                self.assertNotIn(word, src, rel)
+        d = self.d.collect()
+        d["delivery"] = {"ci": self.dl.ci_metrics(self.runs(), self.today), "releases": None}
+        self.assertEqual(sum(1 for l in self.d.summary(d).splitlines() if l.startswith("| CI |")), 1)
+        d["delivery"] = {"ci": None, "releases": None}
+        self.assertEqual(sum(1 for l in self.d.summary(d).splitlines() if l.startswith("| CI |")), 0)
+
+    def test_ac6_repo_resolution_and_validation(self):
+        ci = self.ci
+        self.assertEqual(ci.parse_repo("git@github.com:o/r.git"), "o/r")
+        for bad in ("", "owner", "a/b/c", "a/..", "../x", "a b/c", "o/r?x=1", "o/r;rm", "o/r#f"):
+            self.assertFalse(ci.valid_repo(bad), bad)
+        self.assertTrue(ci.valid_repo("my-org/my_repo.v2"))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "metrics", "ci-runs.json")
+            saved = (ci.OUT, ci.repo_name, ci.fetch)
+            ci.OUT = out
+            ci.fetch = lambda repo, page: self.fail("request made")
+            try:
+                for repo in ("", "../etc/passwd", "o/r?x"):
+                    ci.repo_name = lambda argv, repo=repo: repo
+                    self.assertEqual(ci.main([]), 1)
+                    self.assertFalse(os.path.exists(out))
+            finally:
+                ci.OUT, ci.repo_name, ci.fetch = saved
+
+    def test_ac7_partial_data_kept(self):
+        ci = self.ci
+        saved = (ci.OUT, ci.repo_name, ci.fetch)
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "metrics", "ci-runs.json")
+            ci.OUT, ci.repo_name = out, lambda argv: "o/r"
+            try:
+                def page2_fails(repo, page):
+                    if page == 1:
+                        return [self.run_(i, "2026-11-05") for i in range(100)]
+                    raise OSError("rate limited")
+                ci.fetch = page2_fails
+                self.assertEqual(ci.main([]), 0)
+                with open(out) as fh:
+                    self.assertEqual(len(json.load(fh)["runs"]), 100)
+                with open(out) as fh:
+                    before = fh.read()
+
+                def page1_fails(repo, page):
+                    raise OSError("down")
+                ci.fetch = page1_fails
+                self.assertEqual(ci.main([]), 1)
+                with open(out) as fh:
+                    self.assertEqual(fh.read(), before)
+            finally:
+                ci.OUT, ci.repo_name, ci.fetch = saved
+
+    def test_ac8_table_form_tech_debt(self):
+        text = """# Debt
+## Open
+| Id | Severity | Item | Where | Size | Source | Status |
+|---|---|---|---|---|---|---|
+| TD-1 | major | Slow `a | b` parse | api | M | audit | open |
+| TD-2 | Minor | Escaped \\| pipe | ui | S | retro | open |
+| TD-3 | medium | Paid one | db | L | retro | done (2026-01-01) |
+- [ ] TD-4 Checklist item — impact: high · effort: S · area: ci
+"""
+        items = {i["id"]: i for i in self.d.parse_debt(text)}
+        self.assertEqual(sorted(items), ["TD-1", "TD-2", "TD-3", "TD-4"])
+        self.assertEqual((items["TD-1"]["impact"], items["TD-1"]["effort"], items["TD-1"]["area"], items["TD-1"]["open"]),
+                         ("high", "M", "api", True))
+        self.assertEqual(items["TD-1"]["title"], "Slow `a | b` parse")
+        self.assertEqual((items["TD-2"]["title"], items["TD-2"]["impact"], items["TD-2"]["effort"]), ("Escaped | pipe", "low", "S"))
+        self.assertFalse(items["TD-3"]["open"])
+        self.assertEqual((items["TD-4"]["impact"], items["TD-4"]["area"], items["TD-4"]["open"]), ("high", "ci", True))
+
+    def test_ac9_escaping(self):
+        runs = [self.run_(1, "2026-11-05", "failure", "<img src=x>", 1, "<script>alert(1)</script>")]
+        html_ = self.dl.render({"ci": self.dl.ci_metrics(runs, self.today), "releases": None})
+        self.assertNotIn("<script>", html_)
+        self.assertNotIn("<img", html_)
+        self.assertIn("&lt;script&gt;", html_)
+        self.assertNotIn("<script", self.dl.render({"ci": None, "releases": None}))
+
+    @unittest.skipUnless(os.path.isfile(os.path.join(ROOT, ".github", "workflows", "ci.yml")),
+                         "template CI workflow is not part of an adopted project")
+    def test_ac11_workflow(self):
+        ci = open(os.path.join(ROOT, ".github", "workflows", "ci.yml"), encoding="utf-8").read()
+        top, jobs = ci.split("jobs:", 1)
+        self.assertIn("contents: read", top)
+        self.assertNotIn("actions: read", top)
+        self.assertIn("actions: read", jobs)
+        step = jobs[jobs.index("scripts/ci_runs.py") - 300:jobs.index("scripts/ci_runs.py") + 40]
+        self.assertIn("continue-on-error: true", step)
+        self.assertIn("GITHUB_TOKEN: ${{ github.token }}", step)
+        self.assertNotIn("${{", step.split("run:")[-1])  # token never inlined in the command
+        self.assertIn("metrics/ci-runs.json", open(os.path.join(ROOT, ".gitignore")).read().split())
+
+
 class AsyncDelivery(unittest.TestCase):
     def test_wait_for_url_live_and_timeout(self):
         import http.server

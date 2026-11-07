@@ -40,6 +40,10 @@
     "session_weighted_tokens_warn": 750000,
     "context_handoff_tokens": 120000
   },
+  "dashboard": {
+    "github_repo": "",
+    "changelog_file": "CHANGELOG.md"
+  },
   "integrations": {
     "codegraph": false,
     "deploy": {

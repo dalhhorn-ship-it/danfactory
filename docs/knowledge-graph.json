@@ -1,7 +1,7 @@
 {"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",
  "nodes": [
   {"id": "CLAUDE.md", "title": "CLAUDE.md", "lines": 39},
-  {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 30},
+  {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 31},
   {"id": "docs/GOAL.md", "title": "Goal", "lines": 30},
   {"id": "docs/OPERATING-MODEL.md", "title": "Operating model", "lines": 35},
   {"id": "docs/TECH-DEBT.md", "title": "Tech debt register", "lines": 18},
@@ -12,7 +12,7 @@
   {"id": "docs/decisions/0004-dashboard-observability-design.md", "title": "0004 \u2014 Dashboard observability: design and open questions", "lines": 42},
   {"id": "docs/operating-model/AGENT-ROUTING.md", "title": "Agent routing", "lines": 81},
   {"id": "docs/operating-model/DECISION-TREE.md", "title": "Decision tree", "lines": 73},
-  {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 38},
+  {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 41},
   {"id": "docs/operating-model/paths/adopt-existing.md", "title": "Path: adopt-existing", "lines": 59},
   {"id": "docs/operating-model/paths/automation-script.md", "title": "Path: automation-script", "lines": 25},
   {"id": "docs/operating-model/paths/data-spreadsheet.md", "title": "Path: data-spreadsheet", "lines": 32},
@@ -29,6 +29,7 @@
   {"id": "docs/policies/testing-and-metrics.md", "title": "Policy: testing and delivery metrics", "lines": 17},
   {"id": "docs/policies/token-economy.md", "title": "Policy: token economy", "lines": 28},
   {"id": "docs/specs/_TEMPLATE.md", "title": "PRD: <feature name>", "lines": 33},
+  {"id": "docs/specs/dashboard-delivery-backflow.md", "title": "PRD: Dashboard delivery backflow (CI history and Delivery card, ported from minespel)", "lines": 89},
   {"id": "docs/specs/dashboard-observability-design.md", "title": "Design: dashboard observability tabs", "lines": 175},
   {"id": "docs/specs/dashboard-observability-tabs.md", "title": "PRD: Dashboard observability tabs", "lines": 78},
   {"id": "docs/specs/dashboard-roadmap-v2.md", "title": "PRD: Dashboard roadmap v2 (global sequence, Next up, sequence rationale)", "lines": 76},
@@ -39,6 +40,7 @@
   {"from": "docs/policies/documentation.md", "to": "docs/INDEX.md"},
   {"from": "docs/policies/prd-approval.md", "to": "docs/specs/_TEMPLATE.md"},
   {"from": "docs/policies/token-economy.md", "to": "docs/INDEX.md"},
+  {"from": "docs/specs/dashboard-delivery-backflow.md", "to": "docs/INDEX.md"},
   {"from": "docs/specs/dashboard-observability-design.md", "to": ".claude/agents/developer.md"},
   {"from": "docs/specs/dashboard-observability-design.md", "to": ".claude/agents/product-manager.md"},
   {"from": "docs/specs/dashboard-observability-design.md", "to": ".claude/skills/dashboard/SKILL.md"}

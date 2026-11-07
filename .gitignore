@@ -24,3 +24,4 @@ security-audit-output/
 /dashboard/
 metrics/records.local.jsonl
 metrics/REPORT.md
+metrics/ci-runs.json

@@ -32,8 +32,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
-from obs import (tab_architecture, tab_cost, tab_decisions, tab_docs, tab_flow, tab_gates, tab_hotspots,  # noqa: E402
-                 tab_traceability)
+from obs import (delivery, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_flow, tab_gates,  # noqa: E402
+                 tab_hotspots, tab_traceability)
 
 OUT = os.path.join(ROOT, "dashboard")
 # (key, label, module|None): None = built into this file. Tab inputs, labels and CSS selectors are generated from it.
@@ -46,6 +46,8 @@ STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "
 ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
 MILESTONE_RE = re.compile(r"^##\s+(?:Milestone:\s*)?(.+?)\s*(?:\(target:\s*([0-9-]*)\s*\))?\s*$")
 DEBT_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(TD-\d+)\s+(.*?)(?:\s+[—-]\s+(.*))?$")
+CLOSED_RE = re.compile(r"^(done|resolved|fixed|closed|dropped|wontfix|paid)\b", re.I)
+SEVERITY_TO_IMPACT = {"critical": "high", "major": "high", "high": "high", "medium": "medium", "minor": "low", "low": "low"}
 SEQUENCE_RE = re.compile(r"^>\s*Sequence:\s*(.+)$")
 SPEC_RE = re.compile(r"docs/specs/[\w.-]+\.md")
 NEXT_UP = 3
@@ -118,21 +120,69 @@ def parse_backlog(text):
     return milestones
 
 
+def cells(line):
+    """Cells of a markdown table row, or None when the line is not a row.
+    Pipe safe: a `|` inside a code span or escaped as \\| does not split a cell."""
+    line = line.strip()
+    if not line.startswith("|"):
+        return None
+    out, cur, code, i = [], "", False, 1
+    while i < len(line):
+        ch = line[i]
+        if ch == "\\" and i + 1 < len(line) and line[i + 1] == "|":
+            cur += "|"
+            i += 2
+            continue
+        if ch == "`":
+            code = not code
+        if ch == "|" and not code:
+            out.append(cur.strip())
+            cur = ""
+        else:
+            cur += ch
+        i += 1
+    if cur.strip():
+        out.append(cur.strip())
+    return out
+
+
 def parse_debt(text):
-    items, section = [], ""
+    """Tech debt register: checklist lines (`- [ ] TD-001 Title — impact: high · effort: M · area: x`) and/or a
+    table `Id | Severity | Item | Where | Size | Source | Status` (columns found by header name; major = high)."""
+    items, section, header = [], "", None
     for line in strip_code(text).splitlines():
         if line.startswith("## "):
-            section = line[3:].strip().lower()
+            section, header = line[3:].strip().lower(), None
             continue
         m = DEBT_RE.match(line)
-        if not m:
+        if m:
+            attrs = dict(re.findall(r"(\w+):\s*([^·]+?)\s*(?:·|$)", m.group(4) or ""))
+            items.append({
+                "id": m.group(2), "title": m.group(3).strip(),
+                "open": m.group(1) not in "xX" and not section.startswith("resolved"),
+                "impact": attrs.get("impact", "").lower(), "effort": attrs.get("effort", ""),
+                "area": attrs.get("area", ""),
+            })
             continue
-        attrs = dict(re.findall(r"(\w+):\s*([^·]+?)\s*(?:·|$)", m.group(4) or ""))
+        c = cells(line)
+        if c is None:
+            continue
+        if header is None:
+            if c and c[0].lower() == "id":
+                header = [h.lower() for h in c]
+            continue
+        if all(re.fullmatch(r":?-+:?", x or "-") for x in c) or len(c) < len(header):
+            continue
+        row = dict(zip(header, c))
+
+        def col(*names):
+            return next((v for n in names for h, v in row.items() if n in h), "")
+        status = col("status")
         items.append({
-            "id": m.group(2), "title": m.group(3).strip(),
-            "open": m.group(1) not in "xX" and not section.startswith("resolved"),
-            "impact": attrs.get("impact", "").lower(), "effort": attrs.get("effort", ""),
-            "area": attrs.get("area", ""),
+            "id": c[0], "title": col("item", "title", "description"),
+            "open": not CLOSED_RE.match(status) and not section.startswith("resolved"),
+            "impact": SEVERITY_TO_IMPACT.get(col("severity", "impact").lower(), ""),
+            "effort": col("size", "effort"), "area": col("where", "area"),
         })
     return items
 
@@ -302,6 +352,8 @@ def collect():
                  "signals": debt_signals(f)},
         "roadmap": roadmap(backlog, open_debt),
         "metrics": metric_view(f),
+        "delivery": delivery.collect(ROOT, {"deploy": f.get("integrations", {}).get("deploy", {}),
+                                            "dashboard_conf": f.get("dashboard")}),
     }
     for key, _label, mod in TABS:  # each module may read earlier tabs' data from d
         if mod:
@@ -517,7 +569,7 @@ def render(d):
         tree=e(d["template"].get("decision_tree_version", "")), tiles=tiles, milestones=ms_rows,
         backlog=backlog, debt=debt_html, tags=tag_rows, deploys=dep_rows,
         commits=commits or '<li class="muted">No commits yet.</li>', alerts=alerts, ideas=ideas,
-        commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]), **tab_parts(d))
+        commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]), delivery=delivery.render(d["delivery"]), **tab_parts(d))
 
 
 def md(x):
@@ -550,6 +602,9 @@ def summary(d):
     for key, label, mod in TABS:
         if mod:
             lines.append("| %s | %s |" % (label, mod.line(d[key])))
+    ci_line = delivery.line(d["delivery"])
+    if ci_line:
+        lines.append("| CI | %s |" % ci_line)
     if tm:
         lines.insert(4, "| Mode | Template maintenance (origin matches template.source_repo) |")
         lines += ["", "**Open tech debt**", ""] + (
@@ -616,6 +671,9 @@ a {{ color:var(--accent); }}
 .spark {{ width:100%; height:36px; margin-top:8px; display:block; }}
 .spark polyline {{ fill:none; stroke:var(--accent); stroke-width:1.75; vector-effect:non-scaling-stroke; }}
 .spark circle {{ fill:var(--accent); }}
+.bars {{ margin:0; }} .bars figcaption {{ font-size:12px; }} .bars svg {{ width:100%; height:44px; display:block; }}
+.bars rect {{ fill:var(--accent); }} .bars rect.zero {{ fill:var(--track); }} .bars .axis {{ display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }}
+.charts {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:12px; }}
 .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; }}
 .card {{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; min-width:0; }}
 ul.plain, ul.ms {{ list-style:none; padding:0; margin:0; }}
@@ -717,6 +775,7 @@ tr.grp td {{ background:var(--track); }}
     <ul class="plain">{alerts}</ul><h3>Suggested improvements</h3><ul class="plain">{ideas}</ul></div>
   <div class="card"><h2>Versions</h2><div class="scroll"><table><thead><tr><th>Tag</th><th>Date</th></tr></thead><tbody>{tags}</tbody></table></div>
     <h3>Recent deploys</h3><div class="scroll"><table><thead><tr><th>When (UTC)</th><th>Env</th><th>Commit</th><th>Result</th><th>Time</th></tr></thead><tbody>{deploys}</tbody></table></div></div>
+  {delivery}
   <div class="card"><h2>Recent commits</h2><ul class="plain">{commits}</ul></div>
 </section>
 </div>
