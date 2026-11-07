@@ -238,7 +238,7 @@ class Dashboard(unittest.TestCase):
         self.assertIn("progress", d)
         self.assertIn("roadmap", d)
         self.assertIn('id="tab-roadmap"', page)
-        for tab in ("architecture", "traceability", "decisions", "gates", "docs"):
+        for tab in ("architecture", "traceability", "decisions", "gates", "docs", "flow", "cost", "hotspots"):
             self.assertIn('id="tab-%s"' % tab, page)
             self.assertIn(tab, d)
         self.assertIn("layers", d["architecture"])
@@ -246,6 +246,9 @@ class Dashboard(unittest.TestCase):
         self.assertIn("adrs", d["decisions"])
         self.assertIn("deps", d["gates"])
         self.assertIn("orphans", d["docs"])
+        self.assertIn("unattributed", d["cost"])
+        self.assertIn("deploys", d["flow"])
+        self.assertIn("files", d["hotspots"])
 
 
 class AsyncDelivery(unittest.TestCase):

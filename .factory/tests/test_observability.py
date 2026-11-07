@@ -11,7 +11,8 @@ import unittest
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import dashboard  # noqa: E402
-from obs import model, sources, svg, tab_architecture, tab_decisions, tab_docs, tab_gates, tab_traceability, trace  # noqa: E402
+from obs import (model, sources, svg, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_flow, tab_gates,  # noqa: E402
+                 tab_hotspots, tab_traceability, trace)
 
 FILES = {
     "factory.json": '{"project": {"name": "demo"}}',
@@ -281,6 +282,92 @@ class Slice2(unittest.TestCase):
             self.assertEqual(sources.last_record(tmp, "security-audit")["kind"], "security-audit")
         finally:
             metrics.RECORDS, metrics.MDIR = old
+
+
+class Slice3(unittest.TestCase):
+    def test_empty_states(self):
+        r = tempfile.mkdtemp()
+        base = {"architecture": model.view(r)}
+        fl, co, hs = (m.collect(r, base) for m in (tab_flow, tab_cost, tab_hotspots))
+        self.assertIn("No backlog items yet", tab_flow.render(fl))
+        self.assertIn("No token records yet", tab_cost.render(co))
+        self.assertIn("No hotspots yet", tab_hotspots.render(hs))
+        self.assertEqual(tab_flow.line(fl), "no flow data yet")
+        self.assertEqual(tab_cost.line(co), "no token records yet")
+        self.assertEqual(tab_hotspots.line(hs), "no hotspots yet")
+
+    def test_cost_never_guesses_attribution(self):
+        r = tempfile.mkdtemp()
+        sh(r, "git", "init", "-q")
+        put(r, "a.txt", "x")
+        sh(r, "git", "add", "-A")
+        sh(r, "git", "commit", "-qm", "feat\n\nRefs: DEM-1")
+        sha = sources.git(r, "log", "-1", "--format=%h").strip()
+        rows = [{"kind": "session", "session_id": "s1", "weighted_tokens": 300},
+                {"kind": "session", "session_id": "s2", "weighted_tokens": 100, "sha": sha},
+                {"kind": "session", "session_id": "s3", "output_tokens": 10, "item": "DEM-2"},
+                {"kind": "other", "weighted_tokens": 999}]
+        put(r, "metrics/tokens.jsonl", "\n".join(json.dumps(x) for x in rows) + "\nnot json\n")
+        d = tab_cost.collect(r, {})
+        self.assertEqual((d["sessions"], d["total_tokens"]), (3, 450))
+        self.assertEqual(d["unattributed"], {"sessions": 1, "tokens": 300, "share_pct": 67})
+        self.assertEqual({i["id"]: i["tokens"] for i in d["items"]}, {"DEM-1": 100, "DEM-2": 50})
+        self.assertIn("unattributed", tab_cost.render(d).lower())
+        self.assertIn("67% unattributed", tab_cost.line(d))
+
+    def test_flow_lead_cycle_and_rates(self):
+        r = tempfile.mkdtemp()
+        sh(r, "git", "init", "-q")
+        env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+
+        def commit(msg, day):
+            sh_env = dict(env, GIT_AUTHOR_DATE=day, GIT_COMMITTER_DATE=day)
+            subprocess.run(["git", "add", "-A"], cwd=r, check=True, capture_output=True, env=sh_env)
+            subprocess.run(["git", "commit", "-qm", msg], cwd=r, check=True, capture_output=True, env=sh_env)
+            return sources.git(r, "log", "-1", "--format=%h").strip()
+
+        put(r, "docs/specs/p.md", "# PRD: P\n\n> Status: approved · 2026-01-01 · by user · Owner: pm · Backlog: M1 — M\n")
+        put(r, "docs/BACKLOG.md", "## Milestone: M1 — M\n- [ ] DEM-1 Build it (S)\n")
+        commit("docs", "2026-01-01T00:00:00+00:00")
+        put(r, "a.txt", "1")
+        s1 = commit("work\n\nRefs: DEM-1", "2026-01-02T00:00:00+00:00")
+        put(r, "docs/BACKLOG.md", "## Milestone: M1 — M\n- [x] DEM-1 Build it (S)\n")
+        commit("tick\n\nRefs: DEM-1", "2026-01-04T00:00:00+00:00")
+        hist = [{"ts": "2026-01-05T00:00:00+00:00", "kind": "deploy", "env": "prod", "sha": s1, "ok": True},
+                {"ts": "2026-01-06T00:00:00+00:00", "kind": "deploy", "env": "prod", "sha": s1, "ok": False},
+                {"ts": "2026-01-07T00:00:00+00:00", "kind": "deploy", "env": "staging", "sha": s1, "ok": True},
+                {"ts": "2026-01-08T00:00:00+00:00", "kind": "deploy", "env": "prod", "sha": "zzzzzzz", "ok": True}]
+        put(r, "metrics/history.jsonl", "\n".join(json.dumps(x) for x in hist) + "\nbroken\n")
+        base = {"progress": {"milestones": [{"name": "M1", "items": [{"title": "DEM-1 Build it", "state": "done"}]}]},
+                "traceability": {"chains": [{"prd": {"slug": "p", "status": "approved"}, "items": [{"title": "Build it"}]}]}}
+        d = tab_flow.collect(r, base)
+        it = d["items"][0]
+        self.assertEqual((it["commits"], it["lead_days"], it["cycle_days"]), (2, 4.0, 2.0))
+        self.assertEqual((d["deploys"]["prod"], d["deploys"]["other"], d["deploys"]["failed"]), (3, 1, 1))
+        self.assertEqual(d["deploys"]["failure_rate_pct"], 33)
+        self.assertIsNone(d["lead"]["median_days"])  # one item only: needs 3 events
+        html = tab_flow.render(d)
+        self.assertIn("n/a: needs 3 events (have 1)", html)
+        self.assertIn("4.0 d", html)
+        self.assertIn("lead n/a", tab_flow.line(d))
+        self.assertEqual(tab_flow.median([1, 2, 6]), 2)
+
+    def test_hotspots_rank_by_churn_times_size(self):
+        r = tempfile.mkdtemp()
+        sh(r, "git", "init", "-q")
+        for i in range(3):
+            put(r, "src/big.py", "x = 1\n" * (10 + i))
+            put(r, "src/small.py", "y = 1\n")
+            put(r, "src/once.py", "z = 1\n" if i == 0 else "z = 1\n")
+            put(r, "tests/test_big.py", "pass\n")
+            sh(r, "git", "add", "-A")
+            sh(r, "git", "commit", "-qm", "c%d" % i, "--allow-empty")
+        d = tab_hotspots.collect(r, {})
+        self.assertEqual([f["path"] for f in d["files"]][:1], ["src/big.py"])
+        self.assertTrue(d["files"][0]["tested"])
+        self.assertNotIn("tests/test_big.py", [f["path"] for f in d["files"]])
+        self.assertIn("src/big.py", tab_hotspots.render(d))
+        self.assertIn("top src/big.py", tab_hotspots.line(d))
 
 
 if __name__ == "__main__":

@@ -27,13 +27,15 @@ import webbrowser
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
-from obs import tab_architecture, tab_decisions, tab_docs, tab_gates, tab_traceability  # noqa: E402
+from obs import (tab_architecture, tab_cost, tab_decisions, tab_docs, tab_flow, tab_gates, tab_hotspots,  # noqa: E402
+                 tab_traceability)
 
 OUT = os.path.join(ROOT, "dashboard")
 # (key, label, module|None): None = built into this file. Tab inputs, labels and CSS selectors are generated from it.
 TABS = (("overview", "Overview", None), ("roadmap", "Roadmap", None),
         ("architecture", "Architecture", tab_architecture), ("traceability", "Traceability", tab_traceability),
-        ("decisions", "Decisions", tab_decisions), ("gates", "Gates", tab_gates), ("docs", "Docs health", tab_docs))
+        ("decisions", "Decisions", tab_decisions), ("gates", "Gates", tab_gates), ("docs", "Docs health", tab_docs),
+        ("flow", "Flow", tab_flow), ("cost", "Cost", tab_cost), ("hotspots", "Hotspots", tab_hotspots))
 PHASES = ["brainstorm", "operating-model", "build"]
 STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "-": "dropped"}
 ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
