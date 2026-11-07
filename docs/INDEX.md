@@ -34,6 +34,7 @@
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
+| docs/decisions/0003-deploy-credential-scoping.md | 17 | Status: accepted · Date: 2026-11-07 |
 | docs/operating-model/AGENT-ROUTING.md | 81 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 68 | Picks the operating model for a goal. Version 1.1.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 23 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
@@ -49,7 +50,7 @@
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/security.md | 20 | Secure defaults always; full audits on request or before L3 releases. |
+| docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
 | docs/policies/testing-and-metrics.md | 17 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 28 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
