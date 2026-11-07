@@ -1,6 +1,6 @@
 # PRD: Template mode (the template repo knows it is the template)
 
-> Status: draft, awaiting user approval · 2026-11-07 · Owner: product-manager · Backlog: Unplanned → "Template mode" · Swimlane: technical foundation (template tooling)
+> Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager · Backlog: Unplanned → "Template mode" · Swimlane: technical foundation (template tooling)
 
 ## Problem
 The user only maintains the template here and never builds a project in it. Yet every session prints "[danfactory] next: No agreed goal yet. Run the `brainstorm` skill..." (.claude/hooks/session_start.py:10,35-47), and the dashboard shows phase brainstorm and 73% progress with onboarding items (scripts/dashboard.py:31,275; docs/BACKLOG.md:10-12). Agents then wrongly suggest brainstorming. `commands.test` is empty in factory.json, so `python3 scripts/metrics.py test` (Definition of done) cannot run the real suite (`python3 -m unittest discover -s .factory/tests`, 71 tests). record_tokens.py:85 already guesses "template repo" from an empty `project.name`, which is ambiguous because a fresh copy also has an empty name.

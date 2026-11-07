@@ -12,6 +12,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [ ] Test command and CI green (S) #quality
 
 ## Unplanned
+- [~] Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
 - [x] S1 Security best practices section in docs/policies/security.md (docs/specs/security-hardening-audit-1.md) (S) #security
 - [x] S2 Deploy credentials: route A default, no secret-bearing PR job, production-environment token, CI least privilege, SHA pins, lockfile (docs/specs/security-hardening-audit-1.md) (M) #security
 - [x] S3 Deploy guard hardening + honest wording (docs/specs/security-hardening-audit-1.md) (M) #security
