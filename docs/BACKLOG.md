@@ -39,3 +39,4 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] DASH-1 Dashboard roadmap v2: global sequence, Next up, Done collapse, PRD badge (docs/specs/dashboard-roadmap-v2.md) (M) #foundation
 - [x] DASH-2 Dashboard delivery backflow: CI pass rate/time card, release cadence, table-form tech debt (docs/specs/dashboard-delivery-backflow.md) (M) #foundation
 - [ ] DASH-3 Dashboard in IBM Carbon look: tokens, type, tiles, tables, tags, tabs, notifications, data-viz palette; offline inline CSS, light and dark (docs/specs/dashboard-carbon-design.md) (M) #feature
+- [ ] DASH-4 Roadmap view options: CSS-only sub-tabs for 6-month timeline, proposed Gantt (estimated from size) and release version view; Sequence stays default; best after DASH-3 (docs/specs/roadmap-view-options.md) (L) #feature
