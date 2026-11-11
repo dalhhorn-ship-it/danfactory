@@ -1,6 +1,6 @@
 # PRD: Agent eval harness (behavioural evals for the factory, on the dashboard and a landing page)
 
-> Status: draft · Owner: product-manager · Backlog: M2 → EVAL-1, EVAL-2, EVAL-3
+> Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 → EVAL-1, EVAL-2, EVAL-3
 
 ## Problem
 The factory has 124 deterministic structural tests (`.factory/tests/`), but nothing that tests what the agents actually do. The PRD gate, deploy guard, handoff loop and agent routing are instructions and hooks. A change to CLAUDE.md, a hook, a skill or a model version can silently make the agent skip the gate or ignore routing, and no test goes red. The owner also wants visible, honest evidence that the factory works (and a portfolio piece showing LLM-engineering practice: task suite, graders, baselines, cost control).
@@ -90,3 +90,7 @@ Slice 3 (landing page and LLM-judge): a landing section with method and latest r
 4. Public results: may real pass rates, including bad ones, be published? Recommend yes with N, model and date shown; honest numbers are the portfolio value.
 5. Transcripts: keep raw transcripts of runs? Recommend keep locally, git-ignored, delete after 30 days, never publish them.
 6. LLM-judge: is advisory-only acceptable, scored separately from gates? Recommend yes, and only in slice 3 so slice 1 stays cheap and deterministic.
+
+## Decisions (user, 2026-11-11)
+Approved with the recommended answers to questions 1, 2, 4, 5 and 6. Question 3 answered: the landing page lives in another repo, `dalhhorn-ship-it/lpdan`; slice 3 adds the results section there.
+- Q1 runner: headless `claude -p --output-format json` driven by a Python runner. A smoke check confirmed it works headless and reports cost and tokens. `claude plugin eval` targets plugin suites with case.yaml graders, which fit filesystem checks in a template copy less well; it stays as an option to revisit.
