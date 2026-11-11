@@ -19,9 +19,11 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] OBS-3 Slice 3: Flow, Cost, Hotspots tabs (L) #feature
 
 ## Milestone: M2 — Agent evals (target: )
-> Sequence: spike first to test the riskiest assumption (headless runs load hooks and are stable enough), then the CLI-usable core, then the dashboard, then the landing page and LLM-judge.
+> Sequence: spike first to test the riskiest assumption (headless runs load hooks and are stable enough), then the CLI-usable core, then the dashboard, then the landing page and LLM-judge. Visualizations next (docs/specs/eval-visualizations.md): EVAL-4 first (library, heatmap, coverage map; highest value per effort, and the runner evidence field it adds tells strong proofs from weak ones), EVAL-5 after (flow diagram; weakest case on danfactory itself, droppable). EVAL-3 stays last, blocked on push access to lpdan.
 - [x] EVAL-1 Agent eval harness slice 1: spike, ~10-task suite, deterministic graders, runner, jsonl, baseline, budget cap (docs/specs/agent-eval-harness.md) (L) #foundation
 - [x] EVAL-2 Agent eval harness slice 2: Evals dashboard card/tab (docs/specs/agent-eval-harness.md) (M) #feature
+- [ ] EVAL-4 Eval visualizations slice A: eval library with proof strength, results heatmap, gate coverage map (docs/specs/eval-visualizations.md) (M) #feature
+- [ ] EVAL-5 Eval visualizations slice B: cumulative flow of backlog items with covered-by-eval band (docs/specs/eval-visualizations.md) (M) #feature
 - [ ] EVAL-3 Agent eval harness slice 3: landing page section and LLM-judge graders (docs/specs/agent-eval-harness.md) (M) #feature
 
 ## Unplanned
