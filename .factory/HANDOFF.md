@@ -1,28 +1,30 @@
-# Handoff — 2026-11-07 — Auto-compact loop + dashboard CI card on main
+# Handoff — 2026-11-11 — Agent eval harness: slice 1 done, slice 2 next
 
 ## Task
-Template (danfactory) maintenance. User asked to push all updates to main; two unmerged branches got retroactive PRDs, were approved, ported and merged.
+User wants behavioural evals added to danfactory, shown on its dashboard and on the landing page (portfolio proof of LLM-engineering skill). PRD approved by user in chat 2026-11-11.
 
 ## State
-- Done, on `main` (9348669): auto-compact handoff loop (docs/specs/auto-compact-handoff-loop.md, ADR 0005) and dashboard delivery backflow (docs/specs/dashboard-delivery-backflow.md: CI pass rate/time card in scripts/obs/delivery.py, scripts/ci_runs.py, table-form TECH-DEBT). Both backlog items ticked. Tests green, check.sh ok.
-- Branch: claude/determined-thompson-9lj0yu (== main + this note), uncommitted: none.
+- Done: PRD docs/specs/agent-eval-harness.md approved (5c7abf5). Slice 1 EVAL-1 (6a17052): scripts/evals.py (list|run|baseline|compare), scripts/evals_graders.py, evals/tasks/ (10 tasks), evals/base/, .factory/tests/test_evals.py, ADR 0006, docs/policies/evals.md, factory.json `evals` block, metrics/evals.jsonl (15 real haiku spike rows). 160 tests green, check.sh ok.
+- In progress: nothing half-applied.
+- Branch: ccr-13a7396b-z4lqjz (pushed), uncommitted: none.
 
 ## Decisions (and why)
-- PRD answers (user, 2026-11-07): compaction at 50% yes; agent continues after compaction (gates still apply) yes; measure cost after a few long sessions yes; CI card yes; one read-only GitHub call in CI yes; Now/Then/Later roadmap NO; table debt yes; drop rest of minespel branch yes.
-- CI token via `${{ github.token }}` (test_deploy_security forbids `secrets.` in PR jobs).
+- Runner = headless `claude -p` via Python, not `claude plugin eval` (plugin-suite shaped; ours needs git-diff graders in a template copy). ADR 0006.
+- User answers: budget 5 USD/run set, N=3; publish real pass rates incl. bad ones with N/model/date; transcripts local, git-ignored, 30 days; LLM-judge advisory only, slice 3.
+- Landing page = repo dalhhorn-ship-it/lpdan (public/index.html, live at danfactory.dalhhorn.workers.dev). Read-only clone at /home/user/dalhhorn-ship-it/lpdan.
 
 ## Next steps
-1. User must set `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` on the Default cloud env in Settings (session tools refuse reserved vars). Ask if done.
-2. Ask user before deleting old remote branches: claude/auto-compact-handoff-loop, claude/dashboard-backflow-from-minespel (ported; dropped parts lost), cf-smoke-test (throwaway).
-3. After a few long sessions: check compactions/session and weighted tokens in metrics/REPORT.md (PRD 1 decision 4).
-4. Older open items: TD-001..009, owner-only security checks (see docs/TECH-DEBT.md).
+1. Slice 2 EVAL-2: Evals card/tab in dashboard (scripts/dashboard.py + scripts/obs/), reads metrics/evals.jsonl; empty state; offline, no JS (PRD AC10-11). Then republish dashboard artifact (factory.json dashboard_url).
+2. Run a baseline set (N=3, sonnet, ≤5 USD) once user OKs spend; `evals.py baseline`.
+3. Slice 3 EVAL-3: lpdan needs its own PRD (its PRD gate) and push access — add_repo push was DENIED by the auto-mode classifier; user must allow it or use a session on lpdan. lpdan GOAL: every claim must be true to the danfactory repo.
+4. Older: user to set CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50 on Default env; ask before deleting old branches (claude/auto-compact-handoff-loop, claude/dashboard-backflow-from-minespel, cf-smoke-test); TD-001..011.
 
 ## Watch out
-- danfactory is the TEMPLATE repo only: never build a project here.
-- metrics/history.jsonl is created by test runs and is not tracked; delete before committing.
-- Agent worktrees live in .claude/worktrees/ (gitignored).
+- danfactory is the TEMPLATE repo: never build a project here; eval runs happen in temp copies.
+- Delete metrics/history.jsonl before committing (test runs create it).
+- deploy-direct task passes without exercising the hook (agent declines first) — weak proof; noted in PRD spike findings.
 - User is not technical on infra: explain plainly, recommend one option.
 
 ## Pointers
-- docs/decisions/0005-auto-compact-handoff-loop.md, docs/policies/token-economy.md
-- .factory/tests/test_template.py (DeliveryBackflow, auto-compact tests)
+- docs/specs/agent-eval-harness.md (AC list, Spike findings), docs/decisions/0006-agent-eval-harness.md, docs/policies/evals.md
+- docs/TECH-DEBT.md TD-010 (no network isolation), TD-011
