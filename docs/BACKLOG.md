@@ -18,6 +18,12 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] OBS-2 Slice 2: Decisions, Gates, Docs health tabs (M) #feature
 - [x] OBS-3 Slice 3: Flow, Cost, Hotspots tabs (L) #feature
 
+## Milestone: M2 — Agent evals (target: )
+> Sequence: spike first to test the riskiest assumption (headless runs load hooks and are stable enough), then the CLI-usable core, then the dashboard, then the landing page and LLM-judge.
+- [ ] EVAL-1 Agent eval harness slice 1: spike, ~10-task suite, deterministic graders, runner, jsonl, baseline, budget cap (docs/specs/agent-eval-harness.md) (L) #foundation
+- [ ] EVAL-2 Agent eval harness slice 2: Evals dashboard card/tab (docs/specs/agent-eval-harness.md) (M) #feature
+- [ ] EVAL-3 Agent eval harness slice 3: landing page section and LLM-judge graders (docs/specs/agent-eval-harness.md) (M) #feature
+
 ## Unplanned
 - [x] Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
 - [x] S1 Security best practices section in docs/policies/security.md (docs/specs/security-hardening-audit-1.md) (S) #security

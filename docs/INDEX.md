@@ -27,7 +27,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 32 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 38 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 18 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
@@ -56,6 +56,7 @@
 | docs/policies/testing-and-metrics.md | 17 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
+| docs/specs/agent-eval-harness.md | 92 | Status: draft · Owner: product-manager · Backlog: M2 → EVAL-1, EVAL-2, EVAL-3 |
 | docs/specs/auto-compact-handoff-loop.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/dashboard-delivery-backflow.md | 89 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/dashboard-observability-design.md | 175 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171 |
