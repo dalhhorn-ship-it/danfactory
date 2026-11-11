@@ -173,3 +173,8 @@ Wiring in dashboard.py:
 - **Cost** (`tab_cost.py`): totals use the same token weights as `metrics.py wt`; the unattributed count and share are always shown; per-item rows only for explicit attribution (see S3 outcome).
 - **Hotspots** (`tab_hotspots.py`): source files (not tests, docs, metrics) changed in at least 2 of the last 500 commits, ranked by commits x lines, top 10, flagged when no test file matches by name.
 - data.json keys: `flow`, `cost`, `hotspots`. `--print` rows: one per tab.
+
+## Evals tab (EVAL-2)
+- `scripts/obs/tab_evals.py`, registered last in `TABS` (key `evals`, so data.json gets an `evals` key and `--print` an `| Evals |` row). It reuses `evals.read_rows`, `evals.rates` and `evals.compare` from scripts/evals.py, so the tab and `evals.py compare` agree; the regression threshold is `factory.json` `evals.regression_threshold`.
+- data.json `evals`: `{empty}` or `{set, sets, last_run, model, n, runs, passes, errors, tasks:{id:{runs,passes,rate,flaky,tokens_per_pass,cost_per_pass}}, gates, trend:[{set,pct}] (last 12), tokens_per_pass, cost_per_pass, flaky:[ids], baseline:null|{set,regression,regressed:[keys]}}`.
+- Scope is the latest run set (the set of the last valid row); runs with an infra `error` are not counted. Empty state names `python3 scripts/evals.py run`. Trend reuses `delivery.bars` (inline SVG, no JS).

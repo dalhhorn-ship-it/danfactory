@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
-from obs import (delivery, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_flow, tab_gates,  # noqa: E402
+from obs import (delivery, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
                  tab_hotspots, tab_traceability)
 
 OUT = os.path.join(ROOT, "dashboard")
@@ -40,7 +40,8 @@ OUT = os.path.join(ROOT, "dashboard")
 TABS = (("overview", "Overview", None), ("roadmap", "Roadmap", None),
         ("architecture", "Architecture", tab_architecture), ("traceability", "Traceability", tab_traceability),
         ("decisions", "Decisions", tab_decisions), ("gates", "Gates", tab_gates), ("docs", "Docs health", tab_docs),
-        ("flow", "Flow", tab_flow), ("cost", "Cost", tab_cost), ("hotspots", "Hotspots", tab_hotspots))
+        ("flow", "Flow", tab_flow), ("cost", "Cost", tab_cost), ("hotspots", "Hotspots", tab_hotspots),
+        ("evals", "Evals", tab_evals))
 PHASES = ["brainstorm", "operating-model", "build"]
 STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "-": "dropped"}
 ITEM_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(.*)$")
