@@ -79,3 +79,4 @@ One slice, restyle only, no change to data or content:
 
 ## Decisions (user, 2026-11-11)
 Approved with the recommended answers: fonts = local fallback stack first plus a one-tab A/B screenshot of embedded Plex for the user to decide; light theme = Carbon White; lpdan dashboard copy switches too (same build, via the lpdan handover file); sequencing question moot (EVAL-4/5 already landed).
+- Look accepted by the user in chat 2026-11-11 (AC10).
