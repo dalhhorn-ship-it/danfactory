@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
-from obs import (delivery, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
+from obs import (theme, delivery, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
                  tab_hotspots, tab_traceability)
 
 OUT = os.path.join(ROOT, "dashboard")
@@ -467,7 +467,7 @@ def tab_parts(d):
     nav = "".join('<label for="tab-%s">%s</label>' % (k, e(lab)) for k, lab, _m in TABS)
     panels = "\n".join('<div class="panel panel-%s">%s</div>' % (k, m.render(d[k])) for k, _l, m in TABS if m)
     each = lambda fmt: ", ".join(fmt % (k, k) for k, _l, _m in TABS)  # noqa: E731
-    css = ("%s {{ display:block; }}\n%s {{ color:var(--text); border-bottom-color:var(--accent); }}\n%s {{ outline:2px solid var(--accent); outline-offset:2px; }}"
+    css = ("%s {{ display:block; }}\n%s {{ color:var(--text-primary); font-weight:600; border-bottom-color:var(--border-interactive); }}\n%s {{ outline:2px solid var(--focus); outline-offset:-2px; }}"
            % (each("#tab-%s:checked ~ .panel-%s"), each('#tab-%s:checked ~ .tabs label[for="tab-%s"]'),
               each('#tab-%s:focus-visible ~ .tabs label[for="tab-%s"]'))).replace("{{", "{").replace("}}", "}")
     return {"tab_inputs": inputs, "tab_nav": nav, "tab_panels": panels, "tab_css": css}
@@ -570,7 +570,7 @@ def render(d):
         tree=e(d["template"].get("decision_tree_version", "")), tiles=tiles, milestones=ms_rows,
         backlog=backlog, debt=debt_html, tags=tag_rows, deploys=dep_rows,
         commits=commits or '<li class="muted">No commits yet.</li>', alerts=alerts, ideas=ideas,
-        commit_count=v["commit_count"], roadmap=render_roadmap(d["roadmap"]), delivery=delivery.render(d["delivery"]), **tab_parts(d))
+        commit_count=v["commit_count"], theme_css=theme.css(), roadmap=render_roadmap(d["roadmap"]), delivery=delivery.render(d["delivery"]), **tab_parts(d))
 
 
 def md(x):
@@ -625,137 +625,8 @@ TEMPLATE = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <style>
-:root {{
-  --bg:#f6f7f9; --surface:#ffffff; --text:#1b1f24; --muted:#5b6470; --border:#dfe3e8;
-  --accent:#2f6fdb; --ok:#1f8a4c; --ok-bg:#e6f4ec; --bad:#c23934; --bad-bg:#fbeaea;
-  --warn:#9a6700; --warn-bg:#fff4d6; --track:#e9edf2;
-  --am-mot:#e6e0fa; --am-app:#d9eef8; --am-tech:#e0f2d9;
-}}
-@media (prefers-color-scheme: dark) {{
-  :root:not([data-theme="light"]) {{
-    --bg:#0f1216; --surface:#171b21; --text:#e6e9ed; --muted:#9aa4b1; --border:#2a313a;
-    --accent:#6ea0ff; --ok:#4cc38a; --ok-bg:#12291d; --bad:#ff7b72; --bad-bg:#2d1517;
-    --warn:#e3b341; --warn-bg:#2b230f; --track:#262d36;
-    --am-mot:#2d2750; --am-app:#173341; --am-tech:#1f3b27;
-  }}
-}}
-:root[data-theme="dark"] {{
-  --bg:#0f1216; --surface:#171b21; --text:#e6e9ed; --muted:#9aa4b1; --border:#2a313a;
-  --accent:#6ea0ff; --ok:#4cc38a; --ok-bg:#12291d; --bad:#ff7b72; --bad-bg:#2d1517;
-  --warn:#e3b341; --warn-bg:#2b230f; --track:#262d36;
-    --am-mot:#2d2750; --am-app:#173341; --am-tech:#1f3b27;
-}}
-* {{ box-sizing:border-box; }}
-body {{ margin:0; background:var(--bg); color:var(--text);
-  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }}
-main {{ max-width:1180px; margin:0 auto; padding:24px 16px 48px; }}
-header {{ display:flex; flex-wrap:wrap; gap:12px 24px; align-items:flex-end; justify-content:space-between; margin-bottom:20px; }}
-h1 {{ font-size:24px; margin:0; letter-spacing:-.01em; }}
-h2 {{ font-size:15px; margin:0 0 12px; }}
-h3 {{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:16px 0 6px; }}
-.muted {{ color:var(--muted); }} .small {{ font-size:12px; }}
-.mono {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; }}
-a {{ color:var(--accent); }}
-.meta {{ color:var(--muted); font-size:13px; text-align:right; }}
-.steps {{ display:flex; gap:6px; list-style:none; padding:0; margin:10px 0 0; flex-wrap:wrap; }}
-.steps li {{ font-size:12px; padding:3px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }}
-.steps li.done {{ color:var(--ok); border-color:var(--ok); }}
-.steps li.now {{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }}
-.chip {{ display:inline-block; font-size:12px; padding:2px 8px; border-radius:6px; background:var(--track); margin:6px 6px 0 0; }}
-.tiles {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-bottom:16px; }}
-.tile {{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; border-top:3px solid var(--border); }}
-.tile.ok {{ border-top-color:var(--ok); }} .tile.bad {{ border-top-color:var(--bad); }} .tile.warn {{ border-top-color:var(--warn); }}
-.tile .label {{ font-size:12px; color:var(--muted); }}
-.tile .value {{ font-size:24px; font-weight:650; font-variant-numeric:tabular-nums; margin:2px 0; }}
-.tile .sub {{ font-size:12px; color:var(--muted); }}
-.tile.ok .badge {{ color:var(--ok); }} .tile.bad .badge {{ color:var(--bad); font-weight:600; }} .tile.warn .badge {{ color:var(--warn); }}
-.spark {{ width:100%; height:36px; margin-top:8px; display:block; }}
-.spark polyline {{ fill:none; stroke:var(--accent); stroke-width:1.75; vector-effect:non-scaling-stroke; }}
-.spark circle {{ fill:var(--accent); }}
-.bars {{ margin:0; }} .bars figcaption {{ font-size:12px; }} .bars svg {{ width:100%; height:44px; display:block; }}
-.bars rect {{ fill:var(--accent); }} .bars rect.zero {{ fill:var(--track); }} .bars .axis {{ display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }}
-.charts {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:12px; }}
-.grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; }}
-.card {{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; min-width:0; }}
-ul.plain, ul.ms {{ list-style:none; padding:0; margin:0; }}
-ul.plain li {{ padding:4px 0; border-bottom:1px solid var(--border); font-size:14px; }}
-ul.plain li:last-child {{ border-bottom:0; }}
-ul.ms li {{ margin-bottom:12px; }}
-.row {{ display:flex; justify-content:space-between; gap:8px; font-size:14px; }}
-.bar {{ height:8px; background:var(--track); border-radius:999px; overflow:hidden; margin-top:4px; }}
-.bar span {{ display:block; height:100%; background:var(--ok); border-radius:999px; }}
-.counts {{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }}
-.count {{ background:var(--track); border-radius:8px; padding:8px; text-align:center; }}
-.count b {{ display:block; font-size:20px; font-variant-numeric:tabular-nums; }}
-.count span {{ font-size:12px; color:var(--muted); }}
-.count.blocked b {{ color:var(--bad); }} .count.doing b {{ color:var(--accent); }} .count.done b {{ color:var(--ok); }}
-.scroll {{ overflow-x:auto; }}
-table {{ width:100%; border-collapse:collapse; font-size:14px; }}
-th {{ text-align:left; font-size:12px; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--border); }}
-td.mono, td.nowrap {{ white-space:nowrap; }}
-td {{ padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }}
-.imp {{ font-size:12px; padding:1px 7px; border-radius:999px; background:var(--track); }}
-.imp.high {{ background:var(--bad-bg); color:var(--bad); }} .imp.medium {{ background:var(--warn-bg); color:var(--warn); }}
-.imp.low {{ background:var(--ok-bg); color:var(--ok); }}
-.pf {{ font-size:12px; padding:1px 7px; border-radius:999px; background:var(--track); white-space:nowrap; }}
-.pf.s-strong, .pf.c-covered {{ background:var(--ok-bg); color:var(--ok); }} .pf.s-weak, .pf.c-covered-weak {{ background:var(--warn-bg); color:var(--warn); }}
-.pf.c-uncovered {{ background:var(--bad-bg); color:var(--bad); font-weight:600; }} .pf.s-na, .pf.s-unknown {{ background:var(--track); color:var(--muted); }}
-.pf.c-covered-unknown {{ background:var(--track); color:var(--muted); }}
-.dots {{ letter-spacing:1px; color:var(--accent); }}
-td.hm {{ text-align:center; font-variant-numeric:tabular-nums; min-width:70px; }}
-td.hm.h0 {{ background:var(--bad-bg); color:var(--bad); font-weight:600; }} td.hm.h1 {{ background:var(--warn-bg); color:var(--warn); }}
-td.hm.h2 {{ background:var(--track); }} td.hm.h3 {{ background:var(--ok-bg); color:var(--ok); }}
-.econ {{ display:grid; grid-template-columns:minmax(260px,420px) 1fr; gap:16px; align-items:start; }} tr.best td {{ font-weight:600; }}
-svg.scatter .ax {{ stroke:var(--border); }} svg.scatter .tk, svg.scatter text {{ font-size:10px; fill:var(--muted); }}
-svg.flow .fl-cov, .fl-key .fl-cov {{ fill:var(--ok); }} svg.flow .fl-done, .fl-key .fl-done {{ fill:var(--accent); }}
-svg.flow .fl-doing, .fl-key .fl-doing {{ fill:var(--warn); }} svg.flow .fl-todo, .fl-key .fl-todo {{ fill:var(--track); }}
-svg.flow .ax {{ stroke:var(--border); }} svg.flow .tk {{ font-size:10px; fill:var(--muted); }} .fl-key {{ margin-right:12px; font-size:12px; white-space:nowrap; }}
-svg.scatter .pt circle {{ fill:var(--accent); }} svg.scatter .pt.best circle {{ fill:var(--ok); stroke:var(--text); stroke-width:2; }}
-li.alert {{ color:var(--bad); }}
-footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
-.tabs {{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; white-space:nowrap; }}
-.tabs label {{ flex:none; padding:8px 14px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:600; font-size:14px; }}
-.tab-input {{ position:absolute; opacity:0; pointer-events:none; }}
-.panel {{ display:none; }}
+{theme_css}
 {tab_css}
-.stack {{ display:grid; gap:16px; }}
-tr.grp td {{ background:var(--track); }}
-.arch {{ display:block; }}
-.arch text {{ fill:var(--text); font-size:12px; text-anchor:middle; }}
-.arch .sub {{ font-size:10px; fill:var(--muted); }}
-.arch .band {{ fill:var(--track); }}
-.arch .band-l {{ text-anchor:start; font-weight:600; font-size:13px; fill:var(--muted); }}
-.arch .band-e {{ text-anchor:start; fill:var(--muted); }}
-.arch .box rect {{ stroke:var(--border); stroke-width:1; }}
-.arch .box.am-mot rect {{ fill:var(--am-mot); }} .arch .box.am-app rect {{ fill:var(--am-app); }} .arch .box.am-tech rect {{ fill:var(--am-tech); }}
-.arch .box.drift rect {{ stroke:var(--bad); stroke-width:2; stroke-dasharray:5 3; }}
-.arch .edges line {{ stroke:var(--muted); stroke-width:1; opacity:.45; }}
-.rm {{ --lane-w:minmax(150px,180px); --col-w:minmax(220px,1fr); display:grid; gap:8px; min-width:max-content;
-  grid-template-columns:var(--lane-w) repeat(var(--cols),var(--col-w)); }}
-.rm-col-h {{ display:flex; flex-direction:column; font-size:14px; padding:4px 2px; border-bottom:2px solid var(--border); }}
-.rm-lane-h {{ display:flex; flex-direction:column; justify-content:flex-start; font-size:14px; padding:10px; border-radius:8px; border-left:4px solid var(--accent); background:var(--track);
-  position:sticky; left:0; z-index:1; box-shadow:8px 0 0 var(--surface); }}
-.rm-lane-h.foundation {{ border-left-color:var(--warn); }}
-.rm-cell {{ list-style:none; margin:0; padding:8px; border-radius:8px; background:var(--bg); border:1px dashed var(--border); display:flex; flex-direction:column; gap:6px; }}
-.rm-card {{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:6px; padding:6px 8px; font-size:13px; }}
-.rm-cell.foundation .rm-card {{ border-left-color:var(--warn); }}
-.rm-card .t {{ flex:1 1 120px; }}
-.rm-card .b {{ display:flex; gap:4px; }}
-.rm-card .seq {{ font-variant-numeric:tabular-nums; font-weight:650; color:var(--muted); min-width:1.4em; }}
-.rm-card .size, .rm-card .state {{ font-size:11px; padding:0 6px; border-radius:999px; background:var(--track); color:var(--muted); }}
-.rm-card.doing {{ box-shadow:inset 0 0 0 1px var(--accent); }} .rm-card.doing .state {{ color:var(--accent); }}
-.rm-card.blocked .state {{ background:var(--bad-bg); color:var(--bad); }}
-.rm-col-h .why {{ color:var(--text); margin-top:2px; font-style:italic; max-width:40ch; }}
-.rm-next {{ margin:0 0 10px; padding:8px 12px; border-radius:8px; background:var(--track); border-left:4px solid var(--accent); font-size:13px; }}
-.rm-next ol {{ list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; }}
-.rm-next li {{ display:flex; align-items:baseline; gap:8px; }}
-.rm-next .seq {{ font-variant-numeric:tabular-nums; font-weight:650; color:var(--muted); min-width:1.4em; }}
-.rm-next .t {{ flex:1 1 0; min-width:0; }}
-.rm-done {{ font-size:13px; color:var(--ok); margin:0 0 6px; }}
-.rm-card .prd {{ font-size:11px; padding:0 6px; border-radius:999px; background:var(--warn-bg); color:var(--warn); }}
-.rm-card .prd.approved {{ background:var(--ok-bg); color:var(--ok); }}
-.rm-card.done {{ opacity:.55; }} .rm-card.done .t {{ text-decoration:line-through; }} .rm-card.done .seq {{ color:var(--ok); }}
-@media (max-width:520px) {{ .rm {{ --lane-w:104px; --col-w:minmax(200px,1fr); }} .rm-lane-h {{ padding:8px; }} .meta {{ text-align:left; }} .grid {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body>
