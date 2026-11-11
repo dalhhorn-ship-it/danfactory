@@ -129,3 +129,73 @@ def economics(ec):
             '<p class="muted small">One point per model, from its latest run set; runs with an infrastructure error are not counted. '
             'Highlight = lowest cost per run among models within the regression threshold of the best pass rate.</p>'
             % (note, _scatter(pts), rows))
+
+
+FLOW_BANDS = (("covered", "done and covered by a passing eval", "fl-cov"), ("done", "done", "fl-done"),
+              ("doing", "doing (approximate)", "fl-doing"), ("todo", "todo", "fl-todo"))
+FLOW_ROWS = 12
+
+
+def _ord(d):
+    import datetime
+    return datetime.date.fromisoformat(d).toordinal()
+
+
+def _flow_svg(pts, total):
+    W, H, L, B, T, R = 520, 220, 34, 28, 10, 12
+    x0, x1 = _ord(pts[0]["date"]), _ord(pts[-1]["date"])
+    top = max(max(p["sum"] for p in pts), 1)
+    x = lambda d: L + (W - L - R) * (_ord(d) - x0) / max(x1 - x0, 1)  # noqa: E731
+    y = lambda v: T + (H - T - B) * (1 - v / top)  # noqa: E731
+    g = ['<line class="ax" x1="%d" y1="%d" x2="%d" y2="%d"/><line class="ax" x1="%d" y1="%d" x2="%d" y2="%d"/>' % (L, H - B, W - R, H - B, L, T, L, H - B),
+         '<text class="tk" x="%d" y="%d" text-anchor="end">%d</text><text class="tk" x="%d" y="%d" text-anchor="end">0</text>' % (L - 4, y(top) + 4, top, L - 4, H - B + 4),
+         '<text class="tk" x="%d" y="%d">%s</text><text class="tk" x="%d" y="%d" text-anchor="end">%s</text>' % (L, H - 10, e(pts[0]["date"]), W - R, H - 10, e(pts[-1]["date"]))]
+    for i, (key, label, cls) in enumerate(FLOW_BANDS):  # bottom band first; each area is the running sum from the bottom
+        def edge(p, upto):
+            return sum(p[k] for k, _l, _c in FLOW_BANDS[:upto])
+        up = [(p["date"], edge(p, i + 1)) for p in pts]
+        lo = [(p["date"], edge(p, i)) for p in pts]
+        path = []
+        for j, (d, v) in enumerate(up):  # staircase: a count holds until the next event date
+            path.append("%s%.1f,%.1f" % ("M" if j == 0 else "L", x(d), y(v)))
+            if j + 1 < len(up):
+                path.append("L%.1f,%.1f" % (x(up[j + 1][0]), y(v)))
+        for j in range(len(lo) - 1, -1, -1):
+            d, v = lo[j]
+            path.append("L%.1f,%.1f" % (x(d), y(v)))
+            if j > 0:
+                path.append("L%.1f,%.1f" % (x(lo[j - 1][0]), y(v)))
+        g.append('<path class="%s" d="%sZ"><title>%s</title></path>' % (cls, "".join(path), e(label)))
+    return ('<svg class="flow" role="img" aria-labelledby="flow-t" viewBox="0 0 %d %d" width="100%%" style="max-width:640px" '
+            'xmlns="http://www.w3.org/2000/svg"><title id="flow-t">Cumulative flow of %d backlog items: todo, doing, done, done and covered '
+            'by a passing eval, per date</title>%s</svg>' % (W, H, total, "".join(g)))
+
+
+def flow(fl):
+    head = '<h3>Backlog flow</h3>'
+    if fl.get("error"):
+        return head + '<p class="muted">Flow unavailable: %s</p>' % e(fl["error"])
+    warn = ""
+    if fl.get("warnings"):
+        warn = '<p class="muted small"><span class="pf s-weak">data warning</span> %s (ignored)</p>' % e("; ".join(fl["warnings"]))
+    if not fl["ok"]:
+        return head + '<p class="muted">No backlog history: docs/BACKLOG.md has no items with IDs or git history is unavailable (copy without .git, shallow clone).</p>' + warn
+    if not fl["total"]:
+        return head + '<p class="muted">No backlog items with an ID yet. Add `- [ ] ABC-1 Title` items to docs/BACKLOG.md.</p>' + warn
+    pts, last = fl["points"], fl["last"]
+    now = ", ".join("%d %s" % (last[k], lab) for k, lab, _c in FLOW_BANDS[::-1])
+    if fl["dates"] < 3:
+        return (head + '<p>%d items now: %s. Too little history (%d distinct date%s) for a chart; it appears as items are added, started and ticked over '
+                'more days.</p>%s' % (fl["total"], e(now), fl["dates"], "" if fl["dates"] == 1 else "s", warn))
+    shown = pts[-FLOW_ROWS:]
+    legend = "".join('<span class="fl-key"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" class="%s"/></svg> %s</span> ' % (c, e(lab))
+                     for _k, lab, c in FLOW_BANDS[::-1])
+    rows = "".join('<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>' % (
+        e(p["date"]), p["todo"], p["doing"], p["done"], p["covered"], p["sum"]) for p in shown)
+    return (head + '<p>%d items now: %s.</p><div class="legend">%s</div>%s<details><summary>Data table (last %d dates)</summary><div class="scroll"><table><thead><tr>'
+            '<th>Date</th><th>Todo</th><th>Doing (approx.)</th><th>Done</th><th>Done and covered</th><th>Total</th></tr></thead><tbody>%s</tbody></table></div></details>'
+            '<p class="muted small">Only items with an ID (ABC-n). Dates are derived from git history of docs/BACKLOG.md: appeared = todo, first commit with '
+            '<span class="mono">Refs: id</span> = doing (approximate), first commit that ticks it = done (a tick commit can batch items). '
+            'Covered = a task whose <span class="mono">covers</span> lists the item has a latest run set with pass rate at or above 1 minus the regression threshold; '
+            'it lapses if the eval regresses. The top edge is the number of items that exist on that date.</p>%s'
+            % (fl["total"], e(now), legend, _flow_svg(pts, fl["total"]), len(shown), rows, warn))

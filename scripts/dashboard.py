@@ -707,6 +707,9 @@ td.hm.h0 {{ background:var(--bad-bg); color:var(--bad); font-weight:600; }} td.h
 td.hm.h2 {{ background:var(--track); }} td.hm.h3 {{ background:var(--ok-bg); color:var(--ok); }}
 .econ {{ display:grid; grid-template-columns:minmax(260px,420px) 1fr; gap:16px; align-items:start; }} tr.best td {{ font-weight:600; }}
 svg.scatter .ax {{ stroke:var(--border); }} svg.scatter .tk, svg.scatter text {{ font-size:10px; fill:var(--muted); }}
+svg.flow .fl-cov, .fl-key .fl-cov {{ fill:var(--ok); }} svg.flow .fl-done, .fl-key .fl-done {{ fill:var(--accent); }}
+svg.flow .fl-doing, .fl-key .fl-doing {{ fill:var(--warn); }} svg.flow .fl-todo, .fl-key .fl-todo {{ fill:var(--track); }}
+svg.flow .ax {{ stroke:var(--border); }} svg.flow .tk {{ font-size:10px; fill:var(--muted); }} .fl-key {{ margin-right:12px; font-size:12px; white-space:nowrap; }}
 svg.scatter .pt circle {{ fill:var(--accent); }} svg.scatter .pt.best circle {{ fill:var(--ok); stroke:var(--text); stroke-width:2; }}
 li.alert {{ color:var(--bad); }}
 footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}

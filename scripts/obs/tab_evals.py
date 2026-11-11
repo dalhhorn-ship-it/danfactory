@@ -8,7 +8,7 @@ import json
 import os
 import sys
 
-from . import delivery, evals_data, evals_views
+from . import delivery, evals_data, evals_flow, evals_views
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import evals  # noqa: E402
@@ -59,7 +59,8 @@ def collect(root, base=None):
         lib = evals_data.library(root, rows, rules=rules)
         d.update(library=lib, rules_ok=rules_ok, coverage=evals_data.coverage(rules, lib),
                  heatmap=evals_data.heatmap(rows, [t["id"] for t in lib]),
-                 economics=evals_data.economics(rows, _threshold(root)))
+                 economics=evals_data.economics(rows, _threshold(root)),
+                 flow=evals_flow.collect(root, lib, rows, _threshold(root)))
     except Exception as ex:  # a view bug must never break the dashboard build
         d["views_error"] = "%s: %s" % (type(ex).__name__, ex)
     return d
@@ -133,7 +134,8 @@ def _views(d):
     if d.get("views_error"):
         return '<p class="muted">Eval views unavailable: %s</p>' % e(d["views_error"])
     return "".join([evals_views.coverage(d["coverage"], d["rules_ok"]), evals_views.library(d["library"]),
-                    evals_views.heatmap(d["heatmap"]), evals_views.economics(d["economics"])])
+                    evals_views.heatmap(d["heatmap"]), evals_views.economics(d["economics"]),
+                    evals_views.flow(d["flow"])])
 
 
 def render(d):
