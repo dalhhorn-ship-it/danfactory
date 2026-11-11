@@ -8,7 +8,7 @@ import json
 import os
 import sys
 
-from . import delivery
+from . import delivery, evals_data, evals_views
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import evals  # noqa: E402
@@ -53,6 +53,19 @@ def _sets(rows):
 
 def collect(root, base=None):
     rows = evals.read_rows(os.path.join(root, "metrics", "evals.jsonl"))
+    d = _collect_latest(root, rows)
+    try:
+        rules, rules_ok = evals_data.load_rules(root)
+        lib = evals_data.library(root, rows, rules=rules)
+        d.update(library=lib, rules_ok=rules_ok, coverage=evals_data.coverage(rules, lib),
+                 heatmap=evals_data.heatmap(rows, [t["id"] for t in lib]),
+                 economics=evals_data.economics(rows, _threshold(root)))
+    except Exception as ex:  # a view bug must never break the dashboard build
+        d["views_error"] = "%s: %s" % (type(ex).__name__, ex)
+    return d
+
+
+def _collect_latest(root, rows):
     if not rows:
         return {"empty": True, "baseline": None}
     order = _sets(rows)
@@ -116,9 +129,16 @@ def _rows(items, flaky_col):
     return "".join(out)
 
 
+def _views(d):
+    if d.get("views_error"):
+        return '<p class="muted">Eval views unavailable: %s</p>' % e(d["views_error"])
+    return "".join([evals_views.coverage(d["coverage"], d["rules_ok"]), evals_views.library(d["library"]),
+                    evals_views.heatmap(d["heatmap"]), evals_views.economics(d["economics"])])
+
+
 def render(d):
     if d.get("empty"):
-        return '<div class="card"><h2>Evals</h2><p class="muted">%s</p></div>' % e(EMPTY)
+        return '<div class="card"><h2>Evals</h2><p class="muted">%s</p>%s</div>' % (e(EMPTY), _views(d))
     trend = d["trend"]
     chart = delivery.bars([t["pct"] for t in trend], [t["set"] for t in trend], "Pass rate per run set", "%")
     state = "ok" if d["baseline"] and not d["baseline"]["regression"] else "bad" if d["baseline"] else "na"
@@ -139,5 +159,5 @@ def render(d):
             '<h3>Per task</h3><div class="scroll"><table><thead><tr>%s<th>Flaky</th><th>Tokens / pass</th><th>Cost / pass</th></tr></thead><tbody>%s</tbody></table></div>'
             '<h3>Per gate</h3><div class="scroll"><table><thead><tr>%s</tr></thead><tbody>%s</tbody></table></div>'
             '<p class="muted small">Flaky = some but not all runs of a task passed. Runs with an infrastructure error (%d here) are not counted. '
-            'Source: metrics/evals.jsonl; run python3 scripts/evals.py run to add a set.</p></div>'
-            % (tiles, reg, chart, th, _rows(d["tasks"], True), th.replace("Task", "Gate"), _rows(d["gates"], False), d["errors"]))
+            'Source: metrics/evals.jsonl; run python3 scripts/evals.py run to add a set.</p>%s</div>'
+            % (tiles, reg, chart, th, _rows(d["tasks"], True), th.replace("Task", "Gate"), _rows(d["gates"], False), d["errors"], _views(d)))

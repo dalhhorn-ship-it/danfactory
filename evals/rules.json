@@ -1,0 +1,228 @@
+{
+ "_comment": "Curated rule inventory for the Evals tab coverage map (docs/policies/evals.md). One entry per rule; `gates` lists the task gate names that exercise it; `hook` is the script name for kind=hook (a structural test checks every hook in .claude/settings.json is listed). Seeded 2026-11-11 from a scan of CLAUDE.md, settings.json and docs/policies.",
+ "rules": [
+  {
+   "id": "hook-session-start",
+   "title": "Session start prints phase, next step and handoff note",
+   "kind": "hook",
+   "source": ".claude/settings.json (SessionStart)",
+   "gates": [],
+   "hook": "session_start.py"
+  },
+  {
+   "id": "hook-guard-large-read",
+   "title": "Whole reads of large files are blocked",
+   "kind": "hook",
+   "source": ".claude/settings.json (PreToolUse Read|Bash)",
+   "gates": [
+    "token-economy"
+   ],
+   "hook": "guard_large_read.py"
+  },
+  {
+   "id": "hook-guard-bash-policy",
+   "title": "Direct deploys, --no-verify and secret-file access in Bash are blocked",
+   "kind": "hook",
+   "source": ".claude/settings.json (PreToolUse Bash)",
+   "gates": [
+    "deploy-guard"
+   ],
+   "hook": "guard_bash_policy.py"
+  },
+  {
+   "id": "hook-docs-changed",
+   "title": "Doc edits remind the agent to sync docs and the index",
+   "kind": "hook",
+   "source": ".claude/settings.json (PostToolUse Edit|Write)",
+   "gates": [],
+   "hook": "docs_changed.py"
+  },
+  {
+   "id": "hook-record-tokens",
+   "title": "Session end records token use",
+   "kind": "hook",
+   "source": ".claude/settings.json (SessionEnd)",
+   "gates": [],
+   "hook": "record_tokens.py"
+  },
+  {
+   "id": "hook-context-watch",
+   "title": "Context-watch nudges a handoff when the context grows",
+   "kind": "hook",
+   "source": ".claude/settings.json (UserPromptSubmit)",
+   "gates": [],
+   "hook": "context_watch.py"
+  },
+  {
+   "id": "hook-pre-compact",
+   "title": "Pre-compact saves the handoff state",
+   "kind": "hook",
+   "source": ".claude/settings.json (PreCompact)",
+   "gates": [],
+   "hook": "pre_compact.py"
+  },
+  {
+   "id": "deny-secret-read",
+   "title": "Settings deny Read of .env and .dev.vars files",
+   "kind": "deny",
+   "source": ".claude/settings.json (permissions.deny)",
+   "gates": [
+    "secret-deny"
+   ]
+  },
+  {
+   "id": "deny-direct-deploy",
+   "title": "Settings deny direct wrangler deploy",
+   "kind": "deny",
+   "source": ".claude/settings.json (permissions.deny)",
+   "gates": [
+    "deploy-guard"
+   ]
+  },
+  {
+   "id": "claude-prd-gate",
+   "title": "No feature or behaviour change without an approved PRD",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (PRD gate)",
+   "gates": [
+    "prd-gate",
+    "no-self-approve",
+    "feature-delivery"
+   ]
+  },
+  {
+   "id": "claude-no-skip-ahead",
+   "title": "No code before GOAL.md is confirmed and an operating model is chosen",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Workflow)",
+   "gates": []
+  },
+  {
+   "id": "claude-template-mode",
+   "title": "In the template repo itself, redirect app building to a new project",
+   "kind": "claude-md",
+   "source": "CLAUDE.md / docs/specs/template-mode.md",
+   "gates": [
+    "template-mode"
+   ]
+  },
+  {
+   "id": "claude-token-economy",
+   "title": "Index first, targeted reads, delegate big reads",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Token economy)",
+   "gates": [
+    "token-economy",
+    "task-outcome"
+   ]
+  },
+  {
+   "id": "claude-handoff",
+   "title": "Hand off at logical boundaries and commit the note",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Short contexts)",
+   "gates": [
+    "handoff"
+   ]
+  },
+  {
+   "id": "claude-definition-of-done",
+   "title": "Tests green, nothing skipped to get green",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Definition of done)",
+   "gates": [
+    "bugfix",
+    "tests-integrity"
+   ]
+  },
+  {
+   "id": "claude-docs-adr",
+   "title": "Docs updated in the same change, decisions as ADRs, backlog ticked",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Definition of done)",
+   "gates": []
+  },
+  {
+   "id": "claude-deploy-via-git",
+   "title": "Production deploys only via git to Cloudflare, never wait on builds",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Deploy and security)",
+   "gates": [
+    "deploy-guard"
+   ]
+  },
+  {
+   "id": "claude-no-secrets",
+   "title": "Never commit secrets; .env files are not read",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Deploy and security)",
+   "gates": [
+    "secret-deny"
+   ]
+  },
+  {
+   "id": "claude-security-audit",
+   "title": "Security audits only on request or before an L3 release",
+   "kind": "claude-md",
+   "source": "CLAUDE.md (Deploy and security)",
+   "gates": []
+  },
+  {
+   "id": "policy-prd-approval",
+   "title": "PRD approval policy",
+   "kind": "policy",
+   "source": "docs/policies/prd-approval.md",
+   "gates": [
+    "prd-gate",
+    "no-self-approve"
+   ]
+  },
+  {
+   "id": "policy-security",
+   "title": "Secure defaults; guards are advisory, credential scoping is the real protection",
+   "kind": "policy",
+   "source": "docs/policies/security.md",
+   "gates": [
+    "secret-deny",
+    "deploy-guard"
+   ]
+  },
+  {
+   "id": "policy-token-economy",
+   "title": "Token economy policy",
+   "kind": "policy",
+   "source": "docs/policies/token-economy.md",
+   "gates": [
+    "token-economy"
+   ]
+  },
+  {
+   "id": "policy-async-delivery",
+   "title": "Push, hand off to a background watcher, never wait on a deploy",
+   "kind": "policy",
+   "source": "docs/policies/async-delivery.md",
+   "gates": []
+  },
+  {
+   "id": "policy-documentation",
+   "title": "Docs are part of done and indexed",
+   "kind": "policy",
+   "source": "docs/policies/documentation.md",
+   "gates": []
+  },
+  {
+   "id": "policy-testing-metrics",
+   "title": "Fast feedback; measure test time, coverage, deploys, tokens",
+   "kind": "policy",
+   "source": "docs/policies/testing-and-metrics.md",
+   "gates": []
+  },
+  {
+   "id": "policy-evals",
+   "title": "Evals are manual, budget-capped, never in CI",
+   "kind": "policy",
+   "source": "docs/policies/evals.md",
+   "gates": []
+  }
+ ]
+}

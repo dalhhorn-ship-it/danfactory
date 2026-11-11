@@ -53,7 +53,7 @@
 | docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
-| docs/policies/evals.md | 27 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
+| docs/policies/evals.md | 34 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
 | docs/policies/testing-and-metrics.md | 19 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
@@ -62,9 +62,9 @@
 | docs/specs/agent-eval-harness.md | 104 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
 | docs/specs/auto-compact-handoff-loop.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/dashboard-delivery-backflow.md | 89 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/dashboard-observability-design.md | 180 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171, Evals tab (EVAL-2):177 |
+| docs/specs/dashboard-observability-design.md | 185 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171, Evals tab (EVAL-2):177, Evals tab views (EVAL-4):182 |
 | docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |
 | docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/eval-visualizations.md | 89 | Status: draft · Owner: product-manager · Backlog: M2 → EVAL-4, EVAL-5 |
+| docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |

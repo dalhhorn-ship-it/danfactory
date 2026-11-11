@@ -178,3 +178,8 @@ Wiring in dashboard.py:
 - `scripts/obs/tab_evals.py`, registered last in `TABS` (key `evals`, so data.json gets an `evals` key and `--print` an `| Evals |` row). It reuses `evals.read_rows`, `evals.rates` and `evals.compare` from scripts/evals.py, so the tab and `evals.py compare` agree; the regression threshold is `factory.json` `evals.regression_threshold`.
 - data.json `evals`: `{empty}` or `{set, sets, last_run, model, n, runs, passes, errors, tasks:{id:{runs,passes,rate,flaky,tokens_per_pass,cost_per_pass}}, gates, trend:[{set,pct}] (last 12), tokens_per_pass, cost_per_pass, flaky:[ids], baseline:null|{set,regression,regressed:[keys]}}`.
 - Scope is the latest run set (the set of the last valid row); runs with an infra `error` are not counted. Empty state names `python3 scripts/evals.py run`. Trend reuses `delivery.bars` (inline SVG, no JS).
+
+## Evals tab views (EVAL-4)
+- `obs/evals_data.py` (pure derivations: `load_tasks`, `load_rules`, `added_dates` via one `git log --diff-filter=A`, `library`, `heatmap`, `coverage`, `economics`) and `obs/evals_views.py` (HTML/inline SVG); `tab_evals.collect` adds keys `library`, `rules_ok`, `coverage`, `heatmap`, `economics` (also when there are no rows) and `views_error` if a derivation raised, so a view bug cannot break the build. Order on the tab: EVAL-2 content, gate coverage, library, heatmap, economics.
+- Proof strength comes from the runner field `hook_evidence` (docs/policies/evals.md); the rule inventory is `evals/rules.json`. Everything is read from the project's own `evals/`, so template copies work; without `.git` the date added is "unknown".
+

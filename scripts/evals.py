@@ -235,6 +235,23 @@ def hooks_fired(events):
     return sorted(names)
 
 
+def hook_evidence(events):
+    """Per-run proof that a guard acted (docs/policies/evals.md): {fired, blocked, guard_blocks}.
+    fired = hook names that responded; blocked = hooks whose response was not a success (a PreToolUse hook exiting 2
+    blocks the call; exit_code/outcome say so); guard_blocks = tool calls whose result shows a guard stopped them
+    (hook error text or a settings deny rule), which also catches blocks the stream shows only in the tool result."""
+    fired, blocked = set(), set()
+    for e in events or []:
+        if e.get("type") == "system" and e.get("subtype") == "hook_response":
+            name = str(e.get("hook_name") or e.get("hook_event") or "hook")
+            fired.add(name)
+            code = str(e.get("exit_code", "0"))
+            if code not in ("0", "") or str(e.get("outcome", "success")) not in ("success", ""):
+                blocked.add(name)
+    return {"fired": sorted(fired), "blocked": sorted(blocked),
+            "guard_blocks": sum(1 for c in G.tool_calls(events) if c["blocked"])}
+
+
 # ---------- one run ----------
 def run_once(task, model, set_id, idx, claude_fn=None, cfg=None):
     cfg = cfg or settings()
@@ -269,7 +286,7 @@ def run_once(task, model, set_id, idx, claude_fn=None, cfg=None):
                "tokens_out": u.get("output_tokens", 0),
                "cost_usd": round(max([float(e.get("total_cost_usd") or 0) for e in results_ev] or [0]), 5),  # cumulative
                "turns": sum(e.get("num_turns", 0) or 0 for e in results_ev), "wall_s": round(wall, 1), "model": model,
-               "template_sha": template_sha(), "hooks": hooks_fired(events), "error": error,
+               "template_sha": template_sha(), "hooks": hooks_fired(events), "hook_evidence": hook_evidence(events), "error": error,
                "details": {k: v["detail"] for k, v in results.items() if not v["ok"]}}
         return row, out
     finally:

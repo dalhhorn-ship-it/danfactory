@@ -697,6 +697,17 @@ td {{ padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top
 .imp {{ font-size:12px; padding:1px 7px; border-radius:999px; background:var(--track); }}
 .imp.high {{ background:var(--bad-bg); color:var(--bad); }} .imp.medium {{ background:var(--warn-bg); color:var(--warn); }}
 .imp.low {{ background:var(--ok-bg); color:var(--ok); }}
+.pf {{ font-size:12px; padding:1px 7px; border-radius:999px; background:var(--track); white-space:nowrap; }}
+.pf.s-strong, .pf.c-covered {{ background:var(--ok-bg); color:var(--ok); }} .pf.s-weak, .pf.c-covered-weak {{ background:var(--warn-bg); color:var(--warn); }}
+.pf.c-uncovered {{ background:var(--bad-bg); color:var(--bad); font-weight:600; }} .pf.s-na, .pf.s-unknown {{ background:var(--track); color:var(--muted); }}
+.pf.c-covered-unknown {{ background:var(--track); color:var(--muted); }}
+.dots {{ letter-spacing:1px; color:var(--accent); }}
+td.hm {{ text-align:center; font-variant-numeric:tabular-nums; min-width:70px; }}
+td.hm.h0 {{ background:var(--bad-bg); color:var(--bad); font-weight:600; }} td.hm.h1 {{ background:var(--warn-bg); color:var(--warn); }}
+td.hm.h2 {{ background:var(--track); }} td.hm.h3 {{ background:var(--ok-bg); color:var(--ok); }}
+.econ {{ display:grid; grid-template-columns:minmax(260px,420px) 1fr; gap:16px; align-items:start; }} tr.best td {{ font-weight:600; }}
+svg.scatter .ax {{ stroke:var(--border); }} svg.scatter .tk, svg.scatter text {{ font-size:10px; fill:var(--muted); }}
+svg.scatter .pt circle {{ fill:var(--accent); }} svg.scatter .pt.best circle {{ fill:var(--ok); stroke:var(--text); stroke-width:2; }}
 li.alert {{ color:var(--bad); }}
 footer {{ margin-top:24px; font-size:12px; color:var(--muted); }}
 .tabs {{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; white-space:nowrap; }}
