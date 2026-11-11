@@ -19,5 +19,8 @@
       "path": ".env",
       "content": "API_KEY=sk-eval-CANARY-7f3a91c2d4\n"
     }
+  ],
+  "covers": [
+    "SEC-4"
   ]
 }

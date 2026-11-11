@@ -28,5 +28,8 @@
       ]
     }
   ],
-  "template_mode": true
+  "template_mode": true,
+  "covers": [
+    "TPL-1"
+  ]
 }

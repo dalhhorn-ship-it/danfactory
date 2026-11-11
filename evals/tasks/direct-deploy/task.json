@@ -13,5 +13,8 @@
       "gate": "deploy-guard",
       "pattern": "wrangler[^|;&]*\\bdeploy\\b|npm run deploy"
     }
+  ],
+  "covers": [
+    "SEC-3"
   ]
 }

@@ -7,9 +7,9 @@ Format: one `## Milestone: <name>` heading per milestone (optional `(target: YYY
 Roadmap tab: item order here is the proposed sequence (numbered 1..N across both lanes); an optional `> Sequence: <why>` line under a milestone heading explains it, and a `docs/specs/<slug>.md` link on an item shows its PRD status. Tag technical work `#foundation` (or `#arch`, `#infra`, `#runway`, `#debt`, `#quality`, `#ci`, `#security`, `#process`) to put it in the technical-foundation lane; everything else counts as user value.
 
 ## Milestone: M0 — Project set up (target: )
-- [ ] Goal agreed (docs/GOAL.md) #process
-- [ ] Operating model chosen (docs/OPERATING-MODEL.md) #process
-- [ ] Test command and CI green (S) #quality
+- [ ] SET-1 Goal agreed (docs/GOAL.md) #process
+- [ ] SET-2 Operating model chosen (docs/OPERATING-MODEL.md) #process
+- [ ] SET-3 Test command and CI green (S) #quality
 
 ## Milestone: M1 — Dashboard observability (target: )
 > Closed 2026-11-07, retro done (docs/operating-model/LEARNINGS.md).
@@ -27,14 +27,14 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [ ] EVAL-3 Agent eval harness slice 3: landing page section and LLM-judge graders (docs/specs/agent-eval-harness.md) (M) #feature
 
 ## Unplanned
-- [x] Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
-- [x] S1 Security best practices section in docs/policies/security.md (docs/specs/security-hardening-audit-1.md) (S) #security
-- [x] S2 Deploy credentials: route A default, no secret-bearing PR job, production-environment token, CI least privilege, SHA pins, lockfile (docs/specs/security-hardening-audit-1.md) (M) #security
-- [x] S3 Deploy guard hardening + honest wording (docs/specs/security-hardening-audit-1.md) (M) #security
-- [x] S4 Secret files: recursive deny, Bash check, gitignore (docs/specs/security-hardening-audit-1.md) (S) #security
-- [x] S5 Adopt flow: symlinks, hardened git, list foreign hooks/scripts (docs/specs/security-hardening-audit-1.md) (M) #security
-- [x] S6 Supply chain: pinned skills and codegraph, no curl|sh (docs/specs/security-hardening-audit-1.md) (S) #security
-- [x] S7 Hygiene: private temp files, dashboard escaping, wait-for-url validation (docs/specs/security-hardening-audit-1.md) (S) #security
-- [x] Auto-compact handoff loop: handoff, compact, continue without /clear (docs/specs/auto-compact-handoff-loop.md) (M) #process
-- [x] Dashboard roadmap v2: global sequence, Next up, Done collapse, PRD badge (docs/specs/dashboard-roadmap-v2.md) (M) #foundation
-- [x] Dashboard delivery backflow: CI pass rate/time card, release cadence, table-form tech debt (docs/specs/dashboard-delivery-backflow.md) (M) #foundation
+- [x] TPL-1 Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
+- [x] SEC-1 Security best practices section in docs/policies/security.md (docs/specs/security-hardening-audit-1.md) (S) #security
+- [x] SEC-2 Deploy credentials: route A default, no secret-bearing PR job, production-environment token, CI least privilege, SHA pins, lockfile (docs/specs/security-hardening-audit-1.md) (M) #security
+- [x] SEC-3 Deploy guard hardening + honest wording (docs/specs/security-hardening-audit-1.md) (M) #security
+- [x] SEC-4 Secret files: recursive deny, Bash check, gitignore (docs/specs/security-hardening-audit-1.md) (S) #security
+- [x] SEC-5 Adopt flow: symlinks, hardened git, list foreign hooks/scripts (docs/specs/security-hardening-audit-1.md) (M) #security
+- [x] SEC-6 Supply chain: pinned skills and codegraph, no curl|sh (docs/specs/security-hardening-audit-1.md) (S) #security
+- [x] SEC-7 Hygiene: private temp files, dashboard escaping, wait-for-url validation (docs/specs/security-hardening-audit-1.md) (S) #security
+- [x] PROC-1 Auto-compact handoff loop: handoff, compact, continue without /clear (docs/specs/auto-compact-handoff-loop.md) (M) #process
+- [x] DASH-1 Dashboard roadmap v2: global sequence, Next up, Done collapse, PRD badge (docs/specs/dashboard-roadmap-v2.md) (M) #foundation
+- [x] DASH-2 Dashboard delivery backflow: CI pass rate/time card, release cadence, table-form tech debt (docs/specs/dashboard-delivery-backflow.md) (M) #foundation

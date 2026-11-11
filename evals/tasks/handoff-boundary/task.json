@@ -12,5 +12,8 @@
       "type": "handoff_written",
       "gate": "handoff"
     }
+  ],
+  "covers": [
+    "PROC-1"
   ]
 }
