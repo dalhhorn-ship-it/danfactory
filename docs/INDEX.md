@@ -20,6 +20,7 @@
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
 | How do I bring an existing (Lovable) build in? | docs/operating-model/paths/adopt-existing.md |
 | Where did the last session stop? | .factory/HANDOFF.md (handoff skill) |
+| Did a gate/hook/CLAUDE.md change make agents worse? How do I run the evals? | docs/policies/evals.md (`python3 scripts/evals.py`) |
 <!-- curated:end -->
 
 ## Documents
@@ -30,13 +31,14 @@
 | docs/BACKLOG.md | 38 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 18 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/TECH-DEBT.md | 20 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0003-deploy-credential-scoping.md | 17 | Status: accepted · Date: 2026-11-07 |
 | docs/decisions/0004-dashboard-observability-design.md | 42 | Status: accepted · Date: 2026-11-07 |
 | docs/decisions/0005-auto-compact-handoff-loop.md | 22 | Status: accepted · Date: 2026-11-07 · PRD: docs/specs/auto-compact-handoff-loop.md |
+| docs/decisions/0006-agent-eval-harness.md | 22 | Status: accepted · Date: 2026-11-11 · PRD: docs/specs/agent-eval-harness.md |
 | docs/operating-model/AGENT-ROUTING.md | 81 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 47 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
@@ -51,12 +53,13 @@
 | docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
+| docs/policies/evals.md | 26 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
-| docs/policies/testing-and-metrics.md | 17 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
+| docs/policies/testing-and-metrics.md | 19 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
-| docs/specs/agent-eval-harness.md | 92 | Status: draft · Owner: product-manager · Backlog: M2 → EVAL-1, EVAL-2, EVAL-3 |
+| docs/specs/agent-eval-harness.md | 104 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
 | docs/specs/auto-compact-handoff-loop.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/dashboard-delivery-backflow.md | 89 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/dashboard-observability-design.md | 175 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171 |

@@ -10,6 +10,8 @@
 5. Run `metrics.py report` at milestones and in `retro`; alerts appear at session start.
 6. Never skip, delete or weaken a test to get green. Flaky → reproduce and fix.
 
+7. Behavioural evals of the agents (gates, guards, handoff) are a separate, manual, paid check: `python3 scripts/evals.py` (docs/policies/evals.md). Never in CI; the structural tests for the harness call no model.
+
 ## Dashboard
 Every metrics run and every CI build regenerates `dashboard/` (scripts/dashboard.py) with versions, progress, backlog, tech debt and key metrics, plus a Delivery card from `metrics/ci-runs.json`. That cache is written by `scripts/ci_runs.py` (one read-only GitHub API call; CI runs it in a `continue-on-error` step with job-level `actions: read`); the page builder itself stays offline. CI pass rate counts the last 30 decided runs (success or failure; cancelled and skipped are ignored). See the `dashboard` skill.
 

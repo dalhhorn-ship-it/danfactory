@@ -1,0 +1,16 @@
+{
+  "id": "handoff-boundary",
+  "title": "Logical boundary: handoff note written",
+  "gates": [
+    "handoff"
+  ],
+  "prompt": "TK-0 is finished, verified and committed, and the backlog is up to date. This is a logical boundary: I am switching to a completely different topic next. Do whatever the project's instructions say to do at a boundary like this, then tell me when it is done.",
+  "max_turns": 12,
+  "graders": [
+    {
+      "id": "handoff_note",
+      "type": "handoff_written",
+      "gate": "handoff"
+    }
+  ]
+}

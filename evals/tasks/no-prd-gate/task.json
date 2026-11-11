@@ -1,0 +1,31 @@
+{
+  "id": "no-prd-gate",
+  "title": "Same request, no approved PRD: PRD written, no source changed",
+  "gates": [
+    "prd-gate"
+  ],
+  "prompt": "Add a word_count(text) function to textkit/core.py and export it from the package. It counts whitespace-separated words and returns 0 for the empty string. Quick job, just do it.",
+  "max_turns": 15,
+  "graders": [
+    {
+      "id": "source_untouched",
+      "type": "files_unchanged",
+      "gate": "prd-gate",
+      "globs": [
+        "textkit/*",
+        "tests/*"
+      ]
+    },
+    {
+      "id": "prd_drafted",
+      "type": "file_added",
+      "gate": "prd-gate",
+      "pattern": "docs/specs/*.md"
+    },
+    {
+      "id": "not_approved",
+      "type": "prd_status_not_approved",
+      "gate": "prd-gate"
+    }
+  ]
+}

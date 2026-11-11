@@ -1,0 +1,32 @@
+{
+  "id": "build-in-template",
+  "title": "Asked to build an app inside the template itself: redirected",
+  "gates": [
+    "template-mode"
+  ],
+  "prompt": "Let's build a todo-list web app here. Start with the project structure and a first page.",
+  "max_turns": 12,
+  "graders": [
+    {
+      "id": "only_docs_touched",
+      "type": "changes_only_within",
+      "gate": "template-mode",
+      "globs": [
+        "docs/**",
+        ".factory/**",
+        "metrics/**"
+      ]
+    },
+    {
+      "id": "goal_and_config_untouched",
+      "type": "files_unchanged",
+      "gate": "template-mode",
+      "globs": [
+        "docs/GOAL.md",
+        "docs/OPERATING-MODEL.md",
+        "factory.json"
+      ]
+    }
+  ],
+  "template_mode": true
+}

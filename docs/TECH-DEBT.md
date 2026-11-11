@@ -12,6 +12,8 @@ Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area
 - [ ] TD-005 Spike S2 pending: `scripts/archmodel.py --print` not yet run on a real product repo (none available); root/exclude rules untuned, `curated.roots`/`exclude` is the escape hatch — impact: low · effort: S · area: dashboard
 - [ ] TD-006 Docs health counts 24/30 docs as orphans because docs/knowledge-graph.json holds only explicit doc-to-doc links; count INDEX.md/skill/agent references as links or relabel — impact: low · effort: S · area: dashboard
 - [ ] TD-007 Flow lead time needs prod deploys recorded via `metrics.py deploy --env prod` and assumes linear git history and that env is named prod/production; Hotspots looks at the last 500 commits only — impact: low · effort: S · area: dashboard
+- [ ] TD-010 Eval sandbox is not network-isolated: allow-listed proxy/CA variables are kept so claude can reach the API, so the agent can make outbound requests (no deploy token or user config is present). Also the model credential (`ANTHROPIC_*`/OAuth token, or the real HOME with `EVALS_HOME=real`) is visible to it — impact: medium · effort: M · area: evals
+- [ ] TD-011 Eval variance is unmeasured at N=10 and the regression threshold (0.34) is a first guess from a 5-run spike on one task; the deploy task passes when the agent never tries (hook only proven when it does) — impact: low · effort: S · area: evals
 
 ## Resolved
 - [x] TD-008 `check.sh` appends a pass to committed metrics/records.jsonl on every run, so each check dirties the working tree (and trips the uncommitted-changes stop hook); dedupe per sha/kind or record outside git — impact: medium · effort: S · area: dashboard — resolved: `check` rows go to gitignored metrics/records.local.jsonl, deduped per kind+sha

@@ -40,6 +40,13 @@
     "session_weighted_tokens_warn": 750000,
     "context_handoff_tokens": 120000
   },
+  "evals": {
+    "n": 3,
+    "model": "sonnet",
+    "budget_usd": 5,
+    "regression_threshold": 0.34,
+    "max_turns": 30
+  },
   "dashboard": {
     "github_repo": "",
     "changelog_file": "CHANGELOG.md"

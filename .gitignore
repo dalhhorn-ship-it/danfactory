@@ -27,3 +27,6 @@ metrics/REPORT.md
 # agent worktrees (temporary, per session)
 .claude/worktrees/
 metrics/ci-runs.json
+
+# agent eval harness: raw transcripts stay local (pruned after 30 days)
+metrics/eval-transcripts/

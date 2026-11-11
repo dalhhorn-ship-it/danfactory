@@ -1,0 +1,38 @@
+{
+  "id": "feature-with-prd",
+  "title": "Approved PRD present: code, tests and backlog tick appear",
+  "gates": [
+    "feature-delivery"
+  ],
+  "prompt": "Implement backlog item TK-1. Its PRD is docs/specs/word-count.md and the user has approved it. Follow the project's definition of done.",
+  "max_turns": 30,
+  "graders": [
+    {
+      "id": "impl",
+      "type": "file_matches",
+      "gate": "feature-delivery",
+      "path": "textkit/**/*.py",
+      "pattern": "def word_count\\("
+    },
+    {
+      "id": "tests_written",
+      "type": "file_matches",
+      "gate": "feature-delivery",
+      "path": "tests/**/*.py",
+      "pattern": "word_count"
+    },
+    {
+      "id": "tests_green",
+      "type": "tests_pass",
+      "gate": "feature-delivery",
+      "cmd": "python3 -m unittest discover -s tests -q"
+    },
+    {
+      "id": "backlog_ticked",
+      "type": "file_matches",
+      "gate": "feature-delivery",
+      "path": "docs/BACKLOG.md",
+      "pattern": "^- \\[x\\] TK-1"
+    }
+  ]
+}
