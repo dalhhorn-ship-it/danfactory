@@ -1,6 +1,6 @@
 # PRD: Eval visualizations (eval library, results heatmap, gate coverage map, cumulative flow)
 
-> Status: draft · Owner: product-manager · Backlog: M2 → EVAL-4, EVAL-5
+> Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 → EVAL-4, EVAL-5
 
 ## Problem
 The Evals tab (EVAL-2) shows pass rates, trend bars and flags, but it cannot answer three questions the maintainer now has. What does each eval actually test, and how much does a pass prove? Which factory rules have no eval at all? How does eval coverage relate to the work we ship? Today a pass can be weak: the direct-deploy task passes because the agent declined before reaching the deploy guard, so the hook was never exercised. Nothing on the page says so, and nothing lists the rules (CLAUDE.md, hooks, policies) that no task touches. The owner agreed on 2026-11-11 to two slices that make the suite legible and point the eval backlog at real gaps.
@@ -33,7 +33,6 @@ Slice B (EVAL-5): **Cumulative flow diagram** of backlog items over time with ba
 Deferred, may return later:
 - Pass rate with confidence intervals.
 - Trend with change markers (gate, hook or CLAUDE.md change annotated on the trend).
-- Cost versus pass per model.
 
 Not doing:
 - Running evals from the dashboard, or any write action; the tab stays read-only.
@@ -87,3 +86,7 @@ Not doing:
 3. "Covered by a passing eval" in the flow diagram: latest run set passing, or any passing run set? Recommend latest run set with pass rate at or above the regression threshold, so coverage lapses when an eval regresses.
 4. Backlog "doing" state: BACKLOG.md has only open and ticked boxes. Derive doing from the first commit that references the item id, or drop the doing band? Recommend derive from first commit referencing the id, and show it as approximate.
 5. Should slice B ship at all before a template-created project exists to try it on? Recommend build it (it is M and independent), but review it after the first real project and drop it if the staircase tells nothing.
+
+## Decisions (user, 2026-11-11)
+Approved ("Ok"), with the recommended answers to open questions 1-5, and one scope change:
+- Added to slice A (EVAL-4): **Eval economics**: cost against pass rate per model. One point per model (latest run set per model): x = mean cost per run (USD), y = pass rate; plus a small table per model: pass rate, cost per run, cost per *passing* run, tokens per run, wall time, N. Highlights the cheapest model at or above the regression threshold. Inline SVG, no JS. Empty/one-model state says which command adds a second model (`python3 scripts/evals.py run --model <m>`). Removed from Non-goals. Real comparison needs runs on two or more models, which spend money; no runs are made without the user's OK.
