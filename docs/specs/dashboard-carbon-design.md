@@ -1,6 +1,6 @@
 # PRD: Dashboard in the IBM Carbon design language
 
-> Status: draft · Owner: product-manager · Backlog: Unplanned → DASH-3
+> Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: Unplanned → DASH-3
 
 ## Problem
 The dashboard (`scripts/dashboard.py` plus the tabs in `scripts/obs/*.py`) uses a home-grown inline style. The owner asked on 2026-11-11 to "design the dashboard in IBM Carbon". They already publish "Tech Operating Model 1.5 · Key (Carbon light)", so they know and prefer that look. The page has hard constraints that rule out simply installing Carbon: one offline static HTML file, no JS, CSS-only radio tabs, no network requests (no CDN fonts or CSS), light and dark, phone width. It is published as a private claude.ai artifact, and a copy is shipped on the landing page repo lpdan (`public/dashboard/index.html`). "Carbon" here therefore means reimplementing Carbon's visual language with inline CSS, not using Carbon's packages.
@@ -76,3 +76,6 @@ One slice, restyle only, no change to data or content:
 2. Light theme: Carbon White (white page, g10 tiles) or g10 (light grey page, white tiles)? Recommend White, because your Tech Operating Model artifact is "Carbon light" and White is the standard Carbon default; tell me if that artifact uses g10.
 3. Does the public lpdan copy (`public/dashboard/index.html`) switch to Carbon as well? Recommend yes, same build, no fork, once the artifact version is accepted; the lpdan sync stays blocked on push access to `dalhhorn-ship-it/lpdan` as for EVAL-3.
 4. Sequencing: restyle now or after EVAL-4/EVAL-5 charts land? Recommend after, to avoid restyling the new charts twice; if you want it first, the new charts adopt the Carbon palette from the start.
+
+## Decisions (user, 2026-11-11)
+Approved with the recommended answers: fonts = local fallback stack first plus a one-tab A/B screenshot of embedded Plex for the user to decide; light theme = Carbon White; lpdan dashboard copy switches too (same build, via the lpdan handover file); sequencing question moot (EVAL-4/5 already landed).

@@ -1,6 +1,6 @@
 # PRD: Roadmap view options (6-month timeline, proposed Gantt, release view)
 
-> Status: draft · 2026-11-11 · Owner: product-manager · Backlog: Unplanned → DASH-4
+> Status: approved · 2026-11-11 · by user in chat · 2026-11-11 · Owner: product-manager · Backlog: Unplanned → DASH-4
 
 ## Problem
 The Roadmap tab has one view: lanes × milestones with a global build sequence (docs/specs/dashboard-roadmap-v2.md). It answers "what is next and why" but not "when" or "in which release". The product owner asked on 2026-11-11 for "more fancy roadmap views as an option, e.g. 6 month view, Gantt chart proposed, release version view". Today the data is thin: BACKLOG.md has sizes, order and IDs; milestone `(target: YYYY-MM-DD)` dates are all empty; items carry no dates; there are no git tags. Any new view must be honest about that.
@@ -85,3 +85,6 @@ Recommended defaults are marked; unanswered questions are built with them.
 3. Release marker syntax: recommend an optional `(release: v0.2)` on an item or milestone heading, plus git tags `vX.Y.Z` for shipped releases; an item without a marker belongs to the first tag created after its done date. Or do you prefer tags only?
 4. 6-month window anchor: recommend today minus 1 month through today plus 5 months (rolling), so recent history and the next half-year are visible. Alternative: current month plus 5, or calendar half-years.
 5. Default view: recommend "Sequence" stays the default; the other views are opt-in via the sub-tabs or `dashboard.roadmap_view`. Should any project default to a different view?
+
+## Decisions (user, 2026-11-11)
+Approved with the recommended answers: S=1, M=3, L=8 working days (`dashboard.size_days`); WIP=1 (`dashboard.wip`); optional `(release: vX.Y)` marker plus git tags vX.Y.Z; rolling window today-1 month to +5 months; Sequence stays the default view. Build after DASH-3 using its Carbon tokens.
