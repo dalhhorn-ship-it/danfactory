@@ -101,7 +101,7 @@ class CarbonTest(unittest.TestCase):
         self.assertNotRegex(self.css, r"box-shadow|gradient")
         rules = re.findall(r"([^{}]+)\{([^{}]*)\}", re.sub(r"/\*.*?\*/", "", self.css, flags=re.S))
         radii = [(sel.strip(), body) for sel, body in rules if re.search(r"border-radius:\s*(?!0[;\s]|0px)", body)]
-        tags = {".tag", ".steps li", ".chip", ".imp", ".pf", ".rm-card .size", ".rm-card .state", ".rm-card .prd"}
+        tags = {".tag", ".steps li", ".chip", ".imp", ".pf", ".rm-card .size", ".rm-card .state", ".rm-card .prd", ".rv-st", ".rv-list .state"}
         for sel, _b in radii:
             self.assertTrue({s.strip() for s in sel.split(",")} <= tags, "rounded non-tag: " + sel)
 

@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
-from obs import (theme, delivery, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
+from obs import (theme, delivery, roadmap_data, roadmap_views, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
                  tab_hotspots, tab_traceability)
 
 OUT = os.path.join(ROOT, "dashboard")
@@ -50,6 +50,8 @@ DEBT_RE = re.compile(r"^\s*[-*]\s+\[(.)\]\s+(TD-\d+)\s+(.*?)(?:\s+[—-]\s+(.*))
 CLOSED_RE = re.compile(r"^(done|resolved|fixed|closed|dropped|wontfix|paid)\b", re.I)
 SEVERITY_TO_IMPACT = {"critical": "high", "major": "high", "high": "high", "medium": "medium", "minor": "low", "low": "low"}
 SEQUENCE_RE = re.compile(r"^>\s*Sequence:\s*(.+)$")
+RELEASE_RE = re.compile(r"\s*\(release:\s*([\w.-]+)\s*\)")
+AFTER_RE = re.compile(r"\s*\(after:\s*([A-Z][A-Z0-9]{1,5}-\d+)\s*\)")
 SPEC_RE = re.compile(r"docs/specs/[\w.-]+\.md")
 NEXT_UP = 3
 MARKER_RE = r"\b(TODO|FIXME|HACK|XXX)\b"
@@ -89,9 +91,13 @@ def strip_code(text):
 def parse_backlog(text):
     milestones, current = [], None
     for line in strip_code(text).splitlines():
+        rel = RELEASE_RE.search(line) if line.startswith("## ") else None
+        if rel:
+            line = RELEASE_RE.sub("", line).rstrip()
         m = MILESTONE_RE.match(line)
         if line.startswith("## ") and m:
-            current = {"name": m.group(1).strip(), "target": m.group(2) or "", "items": [], "sequence": ""}
+            current = {"name": m.group(1).strip(), "target": m.group(2) or "", "items": [], "sequence": "",
+                       "release": rel.group(1) if rel else ""}
             milestones.append(current)
             continue
         sm = SEQUENCE_RE.match(line)
@@ -106,12 +112,15 @@ def parse_backlog(text):
             title = re.sub(r"\[([^\]]+)\]\(docs/specs/[\w.-]+\.md\)", r"\1", title)
             title = re.sub(r"\s*\(?docs/specs/[\w.-]+\.md\)?", "", title)
             size = re.search(r"\((S|M|L)\)", title)
+            rel, aft = RELEASE_RE.search(title), AFTER_RE.search(title)
+            title = AFTER_RE.sub("", RELEASE_RE.sub("", title))  # optional DASH-4 markers never show in titles
             current["items"].append({
                 "state": STATES.get(im.group(1), "todo"),
                 "title": re.sub(r"\s*\((S|M|L)\)|\s*#[\w-]+", "", title).strip(),
                 "size": size.group(1) if size else "",
                 "tags": re.findall(r"#([\w-]+)", title),
                 "spec": spec.group(0) if spec else "",
+                "release": rel.group(1) if rel else "", "after": aft.group(1) if aft else "",
             })
     for ms in milestones:
         live = [i for i in ms["items"] if i["state"] != "dropped"]
@@ -352,6 +361,7 @@ def collect():
                  "by_impact": {k: sum(d["impact"] == k for d in open_debt) for k in ("high", "medium", "low")},
                  "signals": debt_signals(f)},
         "roadmap": roadmap(backlog, open_debt),
+        "roadmap_views": roadmap_data.collect(ROOT, backlog, f.get("dashboard")),
         "metrics": metric_view(f),
         "delivery": delivery.collect(ROOT, {"deploy": f.get("integrations", {}).get("deploy", {}),
                                             "dashboard_conf": f.get("dashboard")}),
@@ -570,7 +580,7 @@ def render(d):
         tree=e(d["template"].get("decision_tree_version", "")), tiles=tiles, milestones=ms_rows,
         backlog=backlog, debt=debt_html, tags=tag_rows, deploys=dep_rows,
         commits=commits or '<li class="muted">No commits yet.</li>', alerts=alerts, ideas=ideas,
-        commit_count=v["commit_count"], theme_css=theme.css(), roadmap=render_roadmap(d["roadmap"]), delivery=delivery.render(d["delivery"]), **tab_parts(d))
+        commit_count=v["commit_count"], theme_css=theme.css(), roadmap=roadmap_views.render(d["roadmap_views"], render_roadmap(d["roadmap"])), delivery=delivery.render(d["delivery"]), **tab_parts(d))
 
 
 def md(x):
@@ -679,7 +689,7 @@ def build():
     with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as fh:
         fh.write(render(d))
     with open(os.path.join(OUT, "data.json"), "w", encoding="utf-8") as fh:
-        json.dump(d, fh, indent=1)
+        json.dump(d, fh, indent=1, default=str)
     with open(os.path.join(OUT, "SUMMARY.md"), "w", encoding="utf-8") as fh:
         fh.write(summary(d))
     return d
