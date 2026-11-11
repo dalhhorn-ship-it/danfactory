@@ -31,6 +31,8 @@ GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--e
 COMMIT_VALUE_LETTERS = set("mFCctu")
 WRANGLER = re.compile(r"^(?:@cloudflare/)?wrangler(?:@[^/]*)?$")
 ASSIGN = re.compile(r"^([A-Za-z_]\w*)=")
+PIPE_TO_SHELL = re.compile(r"\|\s*(?:\S*/)?(?:ba|z|da|k)?sh\b")  # `... | sh`: the text before the pipe is executed
+QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
 HEREDOC = re.compile(r"<<-?\s*(['\"]?)(\w+)\1.*?^\s*\2\s*$", re.S | re.M)
 SINGLE_QUOTED = re.compile(r"'[^']*'")
 SUBST = re.compile(r"\$\(([^()]*)\)|`([^`]*)`")
@@ -108,14 +110,21 @@ def analyze(cmd, depth=0, seen=frozenset(), secrets=True):
     def drop(m):
         first_line = cmd[cmd.rfind("\n", 0, m.start()) + 1:m.start()]
         words = first_line.split()
-        if words and os.path.basename(words[0]) in SHELLS:  # heredoc fed to a shell is code
+        opener = m.group(0).split("\n", 1)[0]  # the rest of the heredoc line: `cat <<EOF | bash`
+        if (words and os.path.basename(words[0]) in SHELLS) or PIPE_TO_SHELL.search(opener):  # heredoc fed to a shell is code
             bodies.append("\n".join(m.group(0).split("\n")[1:-1]))
         return ""
 
     cmd = HEREDOC.sub(drop, cmd)
     for body in bodies:
         analyze(body, depth + 1, seen, secrets)
-    for seg in split_segments(cmd):
+    segs = split_segments(cmd)
+    if PIPE_TO_SHELL.search(QUOTED.sub("''", cmd)):  # SEC-003: echo "npx wrangler deploy" | sh runs the echoed text
+        for seg in segs:
+            toks = shlex.split(seg)
+            if toks and os.path.basename(toks[0]) in ("echo", "printf"):
+                analyze(" ".join(t for t in toks[1:] if not t.startswith("-")), depth + 1, seen, secrets)
+    for seg in segs:
         for m in SUBST.finditer(SINGLE_QUOTED.sub("''", seg)):
             analyze(m.group(1) or m.group(2) or "", depth + 1, seen, secrets)
         inspect(shlex.split(seg), depth, seen, secrets, set(), True)

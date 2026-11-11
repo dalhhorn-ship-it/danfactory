@@ -75,6 +75,13 @@ class AdoptSecurity(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertEqual(open(victim).read(), "orig\n")
 
+    def test_scan_report_sanitises_repo_text(self):  # upstreamed from lpdan (its SEC-001)
+        write(os.path.join(self.target, "package.json"), json.dumps({"name": "x\n## INJECT"}))
+        r = subprocess.run([sys.executable, SCAN, "--target", self.target, "--print"], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.splitlines()[0], "# Adoption report: x ## INJECT")
+        self.assertFalse([l for l in r.stdout.splitlines() if l.startswith("## INJECT")])
+
     def test_scan_ignores_target_git_config(self):
         write(os.path.join(self.target, "package.json"), "{}")
         git_commit(self.target)

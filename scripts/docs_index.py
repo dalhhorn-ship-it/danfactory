@@ -138,7 +138,8 @@ def render(docs, curated):
 
 def graph(docs):
     """Compact JSON (one node/edge per line) so it stays small and grep-able."""
-    nodes = [json.dumps({"id": d["file"], "title": d["title"], "lines": d["lines"]}) for d in docs]
+    nodes = [json.dumps({"id": d["file"], "title": d["title"], "lines": d["lines"],
+                         "summary": cell(d["summary"] or d["title"], 90)}) for d in docs]
     edges = [json.dumps({"from": d["file"], "to": t}) for d in docs for t in d["links"]]
     def block(items):
         return "[\n  " + ",\n  ".join(items) + "\n ]" if items else "[]"
@@ -146,11 +147,49 @@ def graph(docs):
             + block(nodes) + ',\n "edges": ' + block(edges) + "\n}\n")
 
 
+def related(g, doc):
+    """Docs linked to or from `doc` in a knowledge graph: [(direction, id, summary)] sorted, or None if unknown."""
+    nodes = {n["id"]: n for n in g.get("nodes", [])}
+    if doc not in nodes:
+        return None
+    out = {(("to" if e["from"] == doc else "from"), e["to"] if e["from"] == doc else e["from"])
+           for e in g.get("edges", []) if doc in (e["from"], e["to"]) and e["from"] != e["to"]}
+    def about(i):
+        n = nodes.get(i) or {}
+        return n.get("summary") or n.get("title") or ("(generated index)" if i == rel(INDEX) else "")
+    return sorted((way, other, about(other)) for way, other in out)
+
+
+def cmd_related(doc):
+    try:
+        with open(GRAPH, encoding="utf-8") as fh:
+            old = fh.read()
+        g = json.loads(old)
+    except (OSError, ValueError):
+        print("no docs/knowledge-graph.json: run python3 scripts/docs_index.py")
+        return 2
+    doc = rel(os.path.abspath(doc)) if os.path.exists(doc) else doc.lstrip("./")
+    rows = related(g, doc)
+    if rows is None:
+        print("%s is not a doc in docs/knowledge-graph.json (paths are repo-relative, e.g. docs/GOAL.md)" % doc)
+        return 2
+    if graph([parse(p) for p in collect()]) != old:
+        print("warning: docs/knowledge-graph.json is stale; run python3 scripts/docs_index.py")
+    if not rows:
+        print("no related docs for %s" % doc)
+    for way, other, summary in rows:
+        print("%s %s  %s" % ("->" if way == "to" else "<-", other, summary))
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--related", metavar="DOC", help="list docs linked to (<-) or from (->) DOC, with summaries")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args()
+    if a.related:
+        return cmd_related(a.related)
     curated = DEFAULT_CURATED
     old_index = old_graph = ""
     if os.path.isfile(INDEX):

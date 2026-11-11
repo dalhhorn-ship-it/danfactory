@@ -82,6 +82,13 @@ class BashPolicy(unittest.TestCase):
                     "git push origin main --no-verify", "git commit -n -m x"):
             self.assertEqual(self.check(cmd), 2, cmd)
 
+    def test_blocks_text_piped_to_a_shell(self):  # upstreamed from lpdan (its SEC-003)
+        w = "wrangler " + "deploy"
+        for cmd in ('echo "npx %s" | sh' % w, "printf 'npx %s' | bash" % w, "cat <<EOF | bash\nnpx %s\nEOF" % w):
+            self.assertEqual(self.check(cmd), 2, cmd)
+        self.assertEqual(self.check('echo "npx %s" > notes.txt' % w), 0)
+        self.assertEqual(self.check("echo 'a | sh' && ls"), 0)
+
     def test_ignores_text_being_written(self):
         w = "wrangler " + "deploy"
         self.assertEqual(self.check("cat > notes.md <<'EOF'\nnever run npx %s\nEOF" % w), 0)
