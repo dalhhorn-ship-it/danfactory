@@ -1,5 +1,7 @@
 """Flow tab: lead time, cycle time, WIP, deploy frequency, change failure rate.
 Lead time = PRD approval date -> first prod deploy containing a commit that has `Refs: <ITEM-ID>`.
+"Containing" follows first-parent history: a commit merged from a branch counts at its merge commit.
+Prod env names come from factory.json dashboard.prod_envs (default prod, production).
 Cycle time = first commit with that Refs -> the commit that first ticks the item in docs/BACKLOG.md.
 Deploys come from metrics/history.jsonl (`metrics.py deploy --env prod`). Missing data shows as "–" or "n/a: needs N events"."""
 import datetime
@@ -14,7 +16,7 @@ from . import sources as S
 MIN_EVENTS = 3  # aggregates (median, frequency, failure rate) need at least this many events
 WINDOW_DAYS = 28
 CAP = 20
-PROD = ("prod", "production")
+DEFAULT_PROD = ("prod", "production")
 REFS_RE = re.compile(r"(?mi)^refs:\s*(.+)$")
 EMPTY = ("No backlog items yet: flow appears once docs/BACKLOG.md has items with IDs, commits carry `Refs: <ITEM-ID>` "
          "and deploys are recorded with `python3 scripts/metrics.py deploy --env prod`.")
@@ -24,17 +26,53 @@ def e(x):
     return html.escape(str(x), quote=True)
 
 
+def prod_envs(root):
+    """Lower-cased env names that count as production: dashboard.prod_envs (non-empty list of strings), else prod/production."""
+    v = S.dash_conf(root).get("prod_envs")
+    names = [x.strip().lower() for x in v if isinstance(x, str) and x.strip()] if isinstance(v, list) else []
+    return tuple(names) or DEFAULT_PROD
+
+
+def mainline_pos(parents):
+    """{sha: position} on the first-parent line (oldest = 0); side-branch commits take their merge commit's position.
+
+    `parents` maps sha -> [parent shas]; the tip of the line is the one commit nobody lists as a parent."""
+    child = {p for ps in parents.values() for p in ps}
+    heads = [c for c in parents if c not in child]
+    line = []
+    cur = heads[0] if heads else None  # the repo's tip (a lone branch tip when history is linear or merged)
+    while cur in parents:
+        line.append(cur)
+        cur = parents[cur][0] if parents[cur] else None
+    line.reverse()
+    pos = {c: i for i, c in enumerate(line)}
+    for i, f in enumerate(line):  # oldest merge first claims the side commits it brought in
+        stack = list(parents[f][1:])
+        while stack:
+            x = stack.pop()
+            if x in pos or x not in parents:
+                continue
+            pos[x] = i
+            stack.extend(parents[x])
+    return pos
+
+
 def commits(root):
-    """Oldest-first [{sha, ts, refs}] for all commits (one git call)."""
-    out = S.git(root, "log", "--reverse", "--format=%x1e%h%x1f%ct%x1f%B")
-    res = []
+    """Oldest-first [{sha, ts, refs, pos}] for all commits (one git call); pos = first-parent position."""
+    out = S.git(root, "log", "--reverse", "--format=%x1e%h%x1f%ct%x1f%p%x1f%B")
+    res, parents = [], {}
     for rec in out.split("\x1e")[1:]:
         sha, _, rest = rec.partition("\x1f")
-        ts, _, body = rest.partition("\x1f")
+        ts, _, rest = rest.partition("\x1f")
+        par, _, body = rest.partition("\x1f")
+        parents[sha.strip()] = par.split()
         refs = []
         for m in REFS_RE.finditer(body):
             refs += [t for t in re.split(r"[,\s]+", m.group(1).strip()) if S.ID_RE.match(t)]
         res.append({"sha": sha.strip(), "ts": int(ts) if ts.strip().isdigit() else 0, "refs": refs})
+    pos = mainline_pos(parents)
+    for i, c in enumerate(res):
+        c["pos"] = pos.get(c["sha"], i)
     return res
 
 
@@ -88,9 +126,10 @@ def fmt_days(v):
 
 def collect(root, base):
     cs = commits(root)
-    order = {c["sha"]: i for i, c in enumerate(cs)}
+    order = {c["sha"]: c["pos"] for c in cs}
     dep = deploys(root)
-    prod = [r for r in dep if str(r.get("env", "")).lower() in PROD]
+    envs = prod_envs(root)
+    prod = [r for r in dep if str(r.get("env", "")).strip().lower() in envs]
     prds = {p["slug"]: p for p in S.prds(root)}
     prd_of = {}
     for ch in (base.get("traceability") or {}).get("chains", []):

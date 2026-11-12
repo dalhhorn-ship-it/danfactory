@@ -168,9 +168,27 @@ def tables(root):
     return sorted(names)
 
 
-def git_log(root, limit=500):
+DEFAULT_HOTSPOT_COMMITS = 500
+
+
+def dash_conf(root):
+    """The `dashboard` block of factory.json ({} when missing or malformed)."""
+    try:
+        c = json.loads(read(root, "factory.json")).get("dashboard")
+    except (ValueError, AttributeError):
+        return {}
+    return c if isinstance(c, dict) else {}
+
+
+def hotspot_window(root):
+    """Commits the Hotspots tab looks at: dashboard.hotspot_commits (positive int), default 500."""
+    n = dash_conf(root).get("hotspot_commits")
+    return n if isinstance(n, int) and not isinstance(n, bool) and n >= 1 else DEFAULT_HOTSPOT_COMMITS
+
+
+def git_log(root, limit=DEFAULT_HOTSPOT_COMMITS):
     """Newest-first commits: sha, subject, body, files, version (first tag at or after the commit).
-    Assumes linear history."""
+    Walks the whole history (merge commits list no files); the tag carry assumes tags run in log order."""
     raw = git(root, "log", "-n%d" % limit, "--name-only", "--format=%x1e%H%x1f%s%x1f%b%x1f%D%x1f")
     commits = []
     for rec in raw.split("\x1e")[1:]:

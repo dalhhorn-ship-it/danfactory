@@ -399,6 +399,65 @@ class Slice3(unittest.TestCase):
         self.assertIn("lead n/a", tab_flow.line(d))
         self.assertEqual(tab_flow.median([1, 2, 6]), 2)
 
+    def test_flow_prod_env_names_and_merge_history(self):
+        r = tempfile.mkdtemp()
+        sh(r, "git", "init", "-q", "-b", "main")
+        env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+
+        def run(day, *args):
+            e = dict(env, GIT_AUTHOR_DATE=day, GIT_COMMITTER_DATE=day)
+            subprocess.run(["git", *args], cwd=r, check=True, capture_output=True, env=e)
+            return sources.git(r, "log", "-1", "--format=%h").strip()
+
+        put(r, "docs/specs/p.md", "# PRD: P\n\n> Status: approved · 2026-01-01 · by user · Owner: pm · Backlog: M1 — M\n")
+        put(r, "docs/BACKLOG.md", "## Milestone: M1 — M\n- [x] DEM-1 Build it (S)\n")
+        put(r, "factory.json", json.dumps({"dashboard": {"prod_envs": ["live", "Release"]}}))
+        run("2026-01-01T00:00:00+00:00", "add", "-A")
+        run("2026-01-01T00:00:00+00:00", "commit", "-qm", "docs")
+        run("2026-01-02T00:00:00+00:00", "checkout", "-qb", "feat")
+        put(r, "a.txt", "1")
+        run("2026-01-02T00:00:00+00:00", "add", "-A")
+        side = run("2026-01-02T00:00:00+00:00", "commit", "-qm", "work\n\nRefs: DEM-1")
+        run("2026-01-03T00:00:00+00:00", "checkout", "-q", "main")
+        put(r, "b.txt", "1")
+        run("2026-01-03T00:00:00+00:00", "add", "-A")
+        early = run("2026-01-03T00:00:00+00:00", "commit", "-qm", "unrelated")
+        merge = run("2026-01-04T00:00:00+00:00", "merge", "--no-ff", "-qm", "Merge feat", "feat")
+        self.assertNotEqual(side, merge)
+        hist = [{"ts": "2026-01-03T12:00:00+00:00", "kind": "deploy", "env": "live", "sha": early, "ok": True},  # before the merge
+                {"ts": "2026-01-06T00:00:00+00:00", "kind": "deploy", "env": "release", "sha": merge, "ok": True},
+                {"ts": "2026-01-07T00:00:00+00:00", "kind": "deploy", "env": "prod", "sha": merge, "ok": True}]  # not configured
+        put(r, "metrics/history.jsonl", "\n".join(json.dumps(x) for x in hist) + "\n")
+        base = {"progress": {"milestones": [{"name": "M1", "items": [{"title": "DEM-1 Build it", "state": "done"}]}]},
+                "traceability": {"chains": [{"prd": {"slug": "p", "status": "approved"}, "items": [{"title": "Build it"}]}]}}
+        d = tab_flow.collect(r, base)
+        self.assertEqual((d["deploys"]["prod"], d["deploys"]["other"]), (2, 1))
+        self.assertEqual(tab_flow.prod_envs(r), ("live", "release"))
+        self.assertEqual(d["items"][0]["lead_days"], 5.0)  # first deploy containing the merged commit: 01-06, not the 01-03 one
+
+    def test_flow_prod_envs_default_and_bad_config(self):
+        r = tempfile.mkdtemp()
+        self.assertEqual(tab_flow.prod_envs(r), ("prod", "production"))
+        for bad in ('{"dashboard": {"prod_envs": "prod"}}', '{"dashboard": {"prod_envs": []}}', '{"dashboard": 3}', "nope"):
+            put(r, "factory.json", bad)
+            self.assertEqual(tab_flow.prod_envs(r), ("prod", "production"), bad)
+
+    def test_hotspot_window_configurable(self):
+        r = tempfile.mkdtemp()
+        sh(r, "git", "init", "-q")
+        for i in range(4):
+            put(r, "src/a.py", "x = 1\n" * (i + 1))
+            sh(r, "git", "add", "-A")
+            sh(r, "git", "commit", "-qm", "c%d" % i)
+        self.assertEqual(sources.hotspot_window(r), 500)
+        self.assertEqual(tab_hotspots.collect(r, {})["files"][0]["commits"], 4)
+        put(r, "factory.json", json.dumps({"dashboard": {"hotspot_commits": 2}}))
+        self.assertEqual(sources.hotspot_window(r), 2)
+        self.assertEqual(tab_hotspots.collect(r, {})["files"][0]["commits"], 2)
+        for bad in (0, -5, "9", True, 1.5):
+            put(r, "factory.json", json.dumps({"dashboard": {"hotspot_commits": bad}}))
+            self.assertEqual(sources.hotspot_window(r), 500, bad)
+
     def test_hotspots_rank_by_churn_times_size(self):
         r = tempfile.mkdtemp()
         sh(r, "git", "init", "-q")

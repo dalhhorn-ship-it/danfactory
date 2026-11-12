@@ -58,7 +58,9 @@
     "changelog_file": "CHANGELOG.md",
     "roadmap_view": "sequence",
     "size_days": {"S": 1, "M": 3, "L": 8},
-    "wip": 1
+    "wip": 1,
+    "prod_envs": ["prod", "production"],
+    "hotspot_commits": 500
   },
   "integrations": {
     "codegraph": false,

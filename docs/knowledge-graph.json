@@ -80,6 +80,8 @@
   {"from": "docs/OPERATING-MODEL.md", "to": "docs/BACKLOG.md"},
   {"from": "docs/OPERATING-MODEL.md", "to": "docs/operating-model/AGENT-ROUTING.md"},
   {"from": "docs/TECH-DEBT.md", "to": "docs/INDEX.md"},
+  {"from": "docs/TECH-DEBT.md", "to": "docs/decisions/0000-template.md"},
+  {"from": "docs/TECH-DEBT.md", "to": "docs/policies/documentation.md"},
   {"from": "docs/TECH-DEBT.md", "to": "docs/policies/security.md"},
   {"from": "docs/decisions/0001-use-danfactory-template.md", "to": "docs/GOAL.md"},
   {"from": "docs/decisions/0001-use-danfactory-template.md", "to": "docs/OPERATING-MODEL.md"},

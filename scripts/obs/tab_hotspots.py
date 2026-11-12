@@ -1,4 +1,4 @@
-"""Hotspots tab: source files that change often and are large (churn x lines), from git history of the last 500 commits."""
+"""Hotspots tab: source files that change often and are large (churn x lines), from git history of the last N commits (factory.json dashboard.hotspot_commits, default 500)."""
 import html
 from collections import Counter
 
@@ -18,7 +18,7 @@ def collect(root, base):
     present = set(S.project_files(root))
     tests = [p for p in present if S.is_test(p)]
     churn = Counter()
-    for c in S.git_log(root):
+    for c in S.git_log(root, S.hotspot_window(root)):
         for f in set(c["files"]):
             churn[f] += 1
     rows = []
