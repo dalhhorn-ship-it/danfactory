@@ -6,7 +6,7 @@
 - Before merging: `python3 scripts/gate.py` (add `--json` for machines, `--only security,protected` for a subset, `--no-record` to skip the local history row).
 - CI runs the same script as job `gate` in .github/workflows/ci.yml. Require `gate` in branch protection for `main`.
 - Exit code: 0 pass, 1 fail, 2 usage error. A `warn` never fails the verdict.
-- Base: `--base`, else the merge-base with `origin/<gate.base_branch>`, else `HEAD~1`. With no usable base the diff checks (`protected`, `review`, `security`) report `skip`.
+- Base: `--base`, else the merge-base with `origin/<gate.base_branch>`, else `HEAD~1`. With no usable base the diff checks (`protected`, `review`, `security`) report `skip`. When `--base` is unresolvable or empty or a fallback is used, the verdict carries `base_note` and the text output and CI summary print `base-fallback: <why>` (informational, never a failure).
 
 ## Checks, in order
 | Check | What it runs | Codes |
@@ -48,7 +48,9 @@ Tests live in `tests/acceptance/<slug>/` (protected path), test id `<slug>/<modu
 | security_ignore | `[".factory/tests/**", "evals/**"]` | globs the security scan skips (fixtures) |
 
 ## Security scan notes
-The patterns are conservative: private key blocks, common cloud and Git host tokens, long quoted `api_key`/`token` values, `.env*` and `.dev.vars*` files, workflow `uses:` without a 40-hex SHA, and `curl|wget ... | sh` outside Markdown. Findings name `path:line`, never the matched text.
+The patterns are conservative: private key blocks, common cloud and Git host tokens (AWS, GitHub, GitLab, Anthropic, OpenAI `sk-`/`sk-proj-`, Stripe `sk_live_`/`rk_live_`, Slack, Google), `api_key`/`secret`/`token`/`password`/`passwd` assignments with a literal value (also as the tail of a name such as `GITHUB_TOKEN`), `.env*` and `.dev.vars*` files, workflow `uses:` without a 40-hex SHA, and pipe-to-shell outside Markdown (`curl|wget ... | [sudo] sh`, `bash <(curl ...)`, `sh -c "$(curl ...)"`, `eval "$(curl ...)"`). Findings name `path:line`, never the matched text.
+- Assignment values: at least 24 characters for key/token names, 8 for password/secret; at least two of lower/upper/digit; not dotted lowercase words (i18n keys), attribute chains, env lookups or placeholders (`<...>`, `${VAR}`, `changeme`, `xxx`, `your`, `example`). Unquoted values (`api_key: v`, `API_KEY=v`) count only in config-like files (`.env*`, yml, ini, toml, conf, properties, sh) and need a digit.
+- Paths: git runs with `core.quotepath=off` and `-z` for name lists. A `+++ ` line is a file header only before the first hunk of a file, so added content starting `++ ` cannot reset the path.
 
 ## Honest limits
 - Trailers are self-asserted: they stop honest mistakes and make bypasses visible, not impossible (TD-012; the runner will refuse fixer commits with `Acceptance-Change`).

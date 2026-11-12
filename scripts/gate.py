@@ -53,7 +53,7 @@ def sh(cmd, root, shell=False):
 
 
 def git(root, *args):
-    rc, out = sh(["git"] + list(args), root)
+    rc, out = sh(["git", "-c", "core.quotepath=off"] + list(args), root)
     return out if rc == 0 else None
 
 
@@ -156,14 +156,11 @@ def valid_acceptance_change(root, tr):
 
 def changes(root, base):
     """[(status, path)] of tracked changes against base (A, M, D, ...) plus untracked, not ignored files as A."""
-    out = git(root, "diff", "--name-status", "--no-renames", base) or ""
-    res = []
-    for ln in out.splitlines():
-        parts = ln.split("\t", 1)
-        if len(parts) == 2:
-            res.append((parts[0][:1], parts[1]))
-    for p in (git(root, "ls-files", "--others", "--exclude-standard") or "").splitlines():
-        res.append(("?", p))
+    toks = (git(root, "diff", "--name-status", "-z", "--no-renames", base) or "").split("\0")
+    res = [(toks[i][:1], toks[i + 1]) for i in range(0, len(toks) - 1, 2) if toks[i]]
+    for p in (git(root, "ls-files", "--others", "--exclude-standard", "-z") or "").split("\0"):
+        if p:
+            res.append(("?", p))
     return res
 
 
@@ -355,34 +352,93 @@ def c_review(ctx):
     return "warn", ["review-missing"], "no Review trailer in range (advisory)"
 
 
+_B = r"(?<![A-Za-z0-9])"  # \b fails next to "_" (GITHUB_TOKEN_AKIA...), so use explicit alnum look-arounds
+_E = r"(?![A-Za-z0-9])"
 SECRET_PATTERNS = [
     re.compile(r"-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----"),
-    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b"),
-    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{50,}\b"),
-    re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"),
-    re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}"),
-    re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}"),
-    re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
-    re.compile(r"(?i)\b(?:api[_-]?key|secret[_-]?key|access[_-]?token|auth[_-]?token|token)[\"']?\s*[:=]\s*[\"']"
-               r"(?![^\"']*(?:example|placeholder|your|xxxx|changeme))[A-Za-z0-9+/_.\-]{24,}[\"']"),
+    re.compile(_B + r"AKIA[0-9A-Z]{16}" + _E),
+    re.compile(_B + r"gh[pousr]_[A-Za-z0-9]{36,}" + _E),
+    re.compile(_B + r"github_pat_[A-Za-z0-9_]{50,}" + _E),
+    re.compile(_B + r"glpat-[A-Za-z0-9_-]{20,}"),
+    re.compile(_B + r"sk-ant-[A-Za-z0-9_-]{20,}"),
+    re.compile(_B + r"sk-proj-[A-Za-z0-9_-]{20,}"),
+    re.compile(_B + r"sk-[A-Za-z0-9]{32,}" + _E),
+    re.compile(_B + r"[sr]k_live_[A-Za-z0-9]{16,}"),
+    re.compile(_B + r"xox[abprs]-[A-Za-z0-9-]{10,}"),
+    re.compile(_B + r"AIza[0-9A-Za-z_-]{35}" + _E),
 ]
-PIPE_SHELL = re.compile(r"\b(?:curl|wget)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba|z)?sh\b")
+# keyword = value assignments: the value is judged by secret_value() (length, character mix, placeholders)
+ASSIGN = re.compile(r"(?i)(?P<k>[\w.-]*(?:api[_-]?key|secret|token|password|passwd))[\"']?\s*(?::=|[:=])\s*"
+                    r"(?:\"(?P<dq>[^\"]*)\"|'(?P<sq>[^']*)'|(?P<raw>[^\s\"',;#]+))")
+PLACEHOLDER = re.compile(r"(?i)example|placeholder|your|xxx|changeme|change-me|dummy|sample|redacted|\*\*\*|todo|fake|<|\$|\{|\}|^(?:process\.env|os\.environ|env\.|secrets\.|vars\.)")
+VALUE_CHARS = re.compile(r"[A-Za-z0-9+/_.=!@#%^&*~:-]+")
+RAW_OK = (".env", ".yml", ".yaml", ".ini", ".cfg", ".conf", ".toml", ".properties", ".sh")  # unquoted values count only here
+
+
+def secret_value(keyword, value, quoted):
+    """True if `value` assigned to a secret-looking `keyword` looks like a literal credential."""
+    need = 24 if re.search(r"(?i)key|token", keyword) else 8
+    if len(value) < need or not VALUE_CHARS.fullmatch(value) or PLACEHOLDER.search(value):
+        return False
+    if re.fullmatch(r"[a-z0-9_-]+(?:\.[a-z0-9_-]+)+", value):  # dotted lowercase words: i18n keys, module paths
+        return False
+    if re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+", value):  # attribute chain: config.db.password
+        return False
+    classes = sum(bool(re.search(c, value)) for c in ("[a-z]", "[A-Z]", "[0-9]"))
+    return classes >= 2 and (quoted or bool(re.search(r"[0-9]", value)))
+
+
+def secret_in(path, text):
+    if any(p.search(text) for p in SECRET_PATTERNS):
+        return True
+    base = os.path.basename(path)
+    raw_ok = base.startswith((".env", ".dev.vars")) or base.endswith(RAW_OK)
+    for m in ASSIGN.finditer(text):
+        v = m.group("dq") if m.group("dq") is not None else m.group("sq")
+        if v is None and raw_ok and m.start() == len(text) - len(text.lstrip()) + (len("export ") if text.lstrip().startswith("export ") else 0):
+            v = m.group("raw")
+            if secret_value(m.group("k"), v, False):
+                return True
+        elif v is not None and secret_value(m.group("k"), v, True):
+            return True
+    return False
+
+
+_SH = r"(?:sudo(?:\s+-\S+)*\s+)?(?:ba|z|da|k)?sh\b"
+PIPE_SHELL = re.compile(r"\b(?:curl|wget)\b[^\n|]*\|\s*" + _SH
+                        + r"|\b" + _SH + r"(?:\s+-\w+)*\s+<\(\s*(?:curl|wget)\b"
+                        + r"|\b" + _SH + r"(?:\s+-\w+)*\s+-c\s+[\"']?(?:\$\(|`)\s*(?:curl|wget)\b"
+                        + r"|\beval\s+[\"']?(?:\$\(|`)\s*(?:curl|wget)\b")
 USES = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)")
 PINNED = re.compile(r"@[0-9a-f]{40}$")
 ENV_OK = (".example", ".sample", ".template")
 
 
+def _unquote(name):
+    """Undo git's C-style quoting of a diff header path (only present for names with quotes, tabs, newlines)."""
+    if len(name) >= 2 and name[0] == name[-1] == '"':
+        try:
+            return name[1:-1].encode("utf-8").decode("unicode_escape").encode("latin-1").decode("utf-8", "replace")
+        except (UnicodeError, ValueError):
+            return name[1:-1]
+    return name
+
+
 def added_lines(diff):
-    """[(path, lineno, text)] for the added lines of a `git diff --unified=0` output."""
-    path, n, res = None, 0, []
+    """[(path, lineno, text)] for the added lines of a `git diff --unified=0` output.
+    A `+++ ` line is a file header only before the first hunk of a `diff --git` block; inside a hunk it is content."""
+    path, n, res, header = None, 0, [], False
     for ln in diff.splitlines():
-        if ln.startswith("+++ "):
-            path = ln[6:] if ln.startswith("+++ b/") else None
+        if ln.startswith("diff --git "):
+            path, header = None, True
+        elif header and ln.startswith("+++ "):
+            name = _unquote(ln[4:].rstrip("\t"))
+            path = name[2:] if name.startswith("b/") else None
         elif ln.startswith("@@"):
+            header = False
             m = re.search(r"\+(\d+)", ln)
             n = int(m.group(1)) if m else 0
-        elif ln.startswith("+") and path:
+        elif not header and ln.startswith("+") and path:
             res.append((path, n, ln[1:]))
             n += 1
     return res
@@ -394,7 +450,7 @@ def scan(lines, ignore):
     for path, n, text in lines:
         if matches(path, ignore):
             continue
-        if any(p.search(text) for p in SECRET_PATTERNS):
+        if secret_in(path, text):
             found.append(("secret-in-diff", "%s:%d" % (path, n)))
         if path.endswith((".yml", ".yaml")) and not text.lstrip().startswith("#"):
             m = USES.match(text)
@@ -430,16 +486,22 @@ CHECKS = (("structure", c_structure), ("build", c_build), ("lint", c_lint), ("te
 # ---------------------------------------------------------------- run
 
 def resolve_base(root, gate, given):
-    """Short sha of the base commit, or None."""
+    """(short sha of the base commit or None, note on why a fallback was used or "")."""
+    note = ""
     if given and not re.fullmatch(r"0+", given.strip()):
         out = git(root, "rev-parse", "--verify", "--quiet", given.strip() + "^{commit}")
         if out:
-            return out.strip()
+            return out.strip(), ""
+        note = "--base %s does not resolve to a commit" % given.strip()
+    elif given:
+        note = "--base is all zeros (first push)"
     mb = git(root, "merge-base", "HEAD", "origin/%s" % gate.get("base_branch", "main"))
     if mb and mb.strip() != (git(root, "rev-parse", "HEAD") or "").strip():
-        return mb.strip()
+        return mb.strip(), (note + "; used merge-base with origin/%s" % gate.get("base_branch", "main")) if note else ""
     out = git(root, "rev-parse", "--verify", "--quiet", "HEAD~1^{commit}")
-    return out.strip() if out else None
+    if out:
+        return out.strip(), (note + "; " if note else "") + "no origin/%s merge-base, used HEAD~1" % gate.get("base_branch", "main")
+    return None, (note + "; " if note else "") + "no base commit available, diff checks skipped"
 
 
 def is_template(root):
@@ -455,7 +517,7 @@ def is_template(root):
 
 def run_gate(root, base=None, only=None):
     factory, gate = config(root)
-    base_sha = resolve_base(root, gate, base)
+    base_sha, base_note = resolve_base(root, gate, base)
     ctx = {"root": root, "factory": factory, "gate": gate, "base": base_sha, "template": is_template(root)}
     t_all, checks = time.monotonic(), []
     for cid, fn in CHECKS:
@@ -476,6 +538,8 @@ def run_gate(root, base=None, only=None):
          "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
          "seconds": round(time.monotonic() - t_all, 2), "checks": checks,
          "codes": list(dict.fromkeys(c for ch in checks for c in ch["codes"]))}
+    if base_note:
+        v["base_note"] = base_note.lstrip("; ")
     if only:
         v["only"] = sorted(only)
     return v
@@ -493,6 +557,8 @@ def summary_md(v):
     for c in v["checks"]:
         rows.append("| %s | %s | %s | %.1f |" % (c["id"], c["status"], ", ".join(c["codes"]) or "-", c["seconds"]))
     bad = [c for c in v["checks"] if c["status"] in ("fail", "warn")]
+    if v.get("base_note"):
+        rows += ["", "base-fallback: %s" % v["base_note"]]
     if bad:
         rows += [""] + ["- `%s`: %s" % (c["id"], c["detail"].replace("|", "/")) for c in bad]
     return "\n".join(rows) + "\n"
@@ -501,6 +567,8 @@ def summary_md(v):
 def human(v):
     out = ["gate: %s (%.1fs) base=%s sha=%s%s" % (v["verdict"].upper(), v["seconds"], v["base"] or "none", v["sha"] or "?",
                                                    "  codes: " + ", ".join(v["codes"]) if v["codes"] else "")]
+    if v.get("base_note"):
+        out.append("  base-fallback: %s" % v["base_note"])
     for c in v["checks"]:
         out.append("  %-4s %-10s %5.1fs  %s%s" % (c["status"], c["id"], c["seconds"],
                                                   ("[%s] " % ",".join(c["codes"])) if c["codes"] else "", c["detail"]))

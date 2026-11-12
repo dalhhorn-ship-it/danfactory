@@ -22,6 +22,7 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python3 scripts/gate.py --base "$BASE" --summary "$GITHUB_STEP_SUMMARY"
       - name: Refresh CI history (best effort, read-only GitHub API call)
+        if: always()
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}

