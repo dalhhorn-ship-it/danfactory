@@ -1,6 +1,6 @@
 # PRD: Gated autonomy (a path from supervised agents to agents that find, fix and merge on their own)
 
-> Status: approved · 2026-11-12 · by user in chat (slice A only: C1 and C2; C3 to C7 need a new approval before build) · Owner: product-manager · Backlog: M3 — Gated autonomy → AUTO-1, AUTO-2
+> Status: approved · 2026-11-12 · by user in chat (slice A: C1 and C2; C3 approved 2026-11-12 "move to next build"; C4 to C7 need a new approval before build) · Owner: product-manager · Backlog: M3 — Gated autonomy → AUTO-1, AUTO-2, AUTO-3
 
 ## Problem
 Danfactory is a strong template for agents that work with a human present. It is not yet a template for agents that work without one. The article "How we built the agents that built AWS Emulator" (Amazon News, 2026-11-11) describes a team whose agents wrote 100% of a product with no human code review. Trust came from guardrails, not from reading code. This PRD says what danfactory has, what it lacks to follow that approach at a realistic scale, and how to close the gap in seven steps.
