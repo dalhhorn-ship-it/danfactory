@@ -24,7 +24,7 @@ Exit codes: 0 ok, 1 a check failed (rejected tests, unmapped with --strict, fail
    "collection_errors": [{"module", "error"}]}
 `message` and `where` appear on fail/error tests of the default runner: the first line of the assertion or exception
 message (max 200 chars) and the deepest traceback frame inside the project but outside the acceptance dir, as
-"path:line:function" ("" if none). Custom (JUnit) runners give `message` only, from the failure/error element.
+"path:line:function" ("" if none). Custom (JUnit) runners give `message` (failure/error element) and `where` as "path:line" (first project frame in its text).
 """
 import argparse
 import ast
@@ -310,46 +310,150 @@ def _tail(text, n=4):
     return " | ".join(lines[-n:])[-300:]
 
 
-def parse_junit(path, slugs):
-    """{"tests": [...], "collection_errors": [...]} from a JUnit XML file. A testcase id is built from classname and name:
-    the part of the classname from the slug folder on gives `<slug>/<module>::<Class>.<name>`. A testcase with an empty
-    classname that errored is a collection error (what pytest reports for an import error)."""
+_EXTS = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rb", ".java", ".kt", ".rs", ".php", ".cs")
+_LOC_RES = (
+    re.compile(r'File "([^"]+)", line (\d+)'),                      # python traceback
+    re.compile(r"\(?((?:[A-Za-z]:)?[^\s():'\"<>]+\.\w{1,5}):(\d+)(?::\d+)?\)?"),  # pytest, node stack, go
+)
+_NOISE = ("node_modules", "site-packages", "dist-packages", "<frozen", "/usr/lib/", "/usr/local/lib/", "/lib/python", "/_pytest/", "/pluggy/")
+
+
+def _pathlike(s):
+    return bool(s) and re.match(r"^[\w@.+~/\\:-]+$", s) is not None and ("/" in s or "\\" in s or s.endswith(_EXTS))
+
+
+def _split_slug(path, slugs):
+    """(slug, segments after it) for a path or dotted name containing a slug folder, else None."""
+    sep = "/" if ("/" in path or "\\" in path or path.endswith(_EXTS)) else "."
+    parts = [p for p in path.replace("\\", "/").split(sep) if p and p != "."]
+    for i, p in enumerate(parts):
+        if p in slugs:
+            return p, parts[i + 1:]
+    return None
+
+
+def _junit_id(cls, name, file, slugs):
+    """`<slug>/<module>::<Class>.<name>` from the classname/name (pytest, vitest, jest-junit, go-junit-report) and the file
+    attribute or path-like classname when present; falls back to `<classname>::<name>` when no slug folder is in it."""
+    hit = _split_slug(cls, slugs) if cls and not _pathlike(cls) else None
+    if hit:  # dotted classname (pytest): module then class
+        slug, rest = hit
+        return "%s/%s::%s" % (slug, rest[0] if rest else slug, ".".join(rest[1:] + [name]))
+    for src in (file, cls):
+        hit = _split_slug(src, slugs) if _pathlike(src or "") else None
+        if hit:
+            slug, rest = hit
+            if rest and rest[-1].endswith(_EXTS):  # test file path (vitest, jest, pytest xunit1)
+                rest[-1] = os.path.splitext(rest[-1])[0]
+            return "%s/%s::%s" % (slug, "/".join(rest) or slug, name)  # go: package folder is the module
+    return "%s::%s" % (cls, name)
+
+
+def _module_of(name, slugs):
+    """`<slug>/<module>` when `name` is a module or file path inside the slug folders, else None."""
+    if not name or not re.match(r"^[\w@.+~/\\:-]+$", name) or not ("." in name or "/" in name or "\\" in name):
+        return None
+    hit = _split_slug(name.replace("\\", "/"), slugs)
+    if not hit or not hit[1]:
+        return None
+    rest = hit[1]
+    if rest[-1].endswith(_EXTS):
+        rest = rest[:-1] + [os.path.splitext(rest[-1])[0]]
+        return "%s/%s" % (hit[0], "/".join(rest))
+    return "%s/%s" % (hit[0], rest[0])
+
+
+def _where(text, root, accdir):
+    """First frame in the project (relative path, outside the acceptance dir) found in failure text, as path:line."""
+    root_abs = os.path.abspath(root) if root else ""
+    acc_abs = os.path.abspath(accdir) + os.sep if accdir else None
+    for line in (text or "").splitlines():
+        for rx in _LOC_RES:
+            for m in rx.finditer(line):
+                f, n = m.group(1).replace("\\", "/"), m.group(2)
+                if any(x in f for x in _NOISE):
+                    continue
+                if os.path.isabs(f):
+                    a = os.path.normpath(f)
+                    if not root_abs or not (a + os.sep).startswith(root_abs + os.sep):
+                        continue
+                    f = os.path.relpath(a, root_abs).replace(os.sep, "/")
+                elif f.startswith("../") or "://" in f:
+                    continue
+                f = f[2:] if f.startswith("./") else f
+                if acc_abs and (os.path.abspath(os.path.join(root_abs, f)) + os.sep).startswith(acc_abs):
+                    continue
+                return "%s:%s" % (f, n)
+    return ""
+
+
+def _first_line(el):
+    msg = (el.get("message") or "").strip() or (el.text or "").strip()
+    return ((msg.splitlines() or [""])[0] or el.get("type") or "")[:200]
+
+
+def parse_junit(path, slugs, root=None, accdir=None):
+    """{"tests": [...], "collection_errors": [{"module", "error"}]} from a JUnit XML file (pytest --junitxml, vitest/jest
+    junit reporters, go-junit-report, nested <testsuites>). A testcase id is `<slug>/<module>::<Class>.<name>`, anchored on
+    the slug folder in the `file` attribute, a path-like classname (vitest, jest) or a dotted classname (pytest); a Go
+    package classname gives the package folder as module. <failure> is fail, <error> is error, <skipped> is skip; the first
+    line of the element's message and the first project frame in its text (`where`, path:line) are kept. Collection errors
+    (reported as `broken-test` by admit) are: a <testsuite>-level <error>, and an errored testcase with an empty classname
+    or named like a module or file in a slug folder (pytest import errors, jest "Test suite failed to run")."""
     import xml.etree.ElementTree as ET
     try:
         tree = ET.parse(path)
     except (ET.ParseError, OSError) as ex:
         raise RunnerError("cannot read JUnit XML: %s" % ex)
-    tests, errors, msgs = {}, [], {}
-    for tc in tree.getroot().iter("testcase"):
+    tests, errors, info = {}, [], {}
+
+    def collection(module, err):
+        if module not in {e["module"] for e in errors}:
+            errors.append({"module": module, "error": err[:300]})
+
+    def walk(el, suite_hint):
+        for ch in el:
+            if ch.tag == "testsuite":
+                hint = ch.get("file") or (ch.get("name") if _module_of(ch.get("name") or "", slugs) else None) or suite_hint
+                for e in ch.findall("error"):
+                    collection(_module_of(hint or "", slugs) or ch.get("name") or "", _first_line(e))
+                walk(ch, hint)
+            elif ch.tag == "testsuites":
+                walk(ch, suite_hint)
+            elif ch.tag == "testcase":
+                case(ch, suite_hint)
+
+    def case(tc, suite_hint):
         cls, name = tc.get("classname") or "", tc.get("name") or ""
-        if tc.find("failure") is not None:
-            st = "fail"
-        elif tc.find("error") is not None:
-            st = "error"
-        elif tc.find("skipped") is not None:
-            st = "skip"
-        else:
-            st = "pass"
-        if not cls:
-            if st == "error":
-                errors.append({"module": name, "error": (tc.find("error").get("message") or "")[:300]})
-            continue
-        parts = cls.split(".")
-        idx = next((i for i, p in enumerate(parts[:-1]) if p in slugs), None)
-        if idx is None:
-            tid = "%s::%s" % (cls, name)
-        else:
-            tid = "%s/%s::%s" % (parts[idx], parts[idx + 1], ".".join(parts[idx + 2:] + [name]))
+        fail, err, skip = tc.find("failure"), tc.find("error"), tc.find("skipped")
+        st = "error" if err is not None else "fail" if fail is not None else "skip" if skip is not None else "pass"
+        if st == "error":
+            mod = _module_of(name, slugs)
+            if not cls or mod:
+                collection(mod or name, _first_line(err))
+                return
+        if not cls and not tc.get("file"):
+            return
+        tid = _junit_id(cls, name, tc.get("file") or (suite_hint if not _pathlike(cls) else None), slugs)
         if tid not in tests or SEVERITY[st] > SEVERITY[tests[tid]]:
             tests[tid] = st
-            el = tc.find("failure") if st == "fail" else tc.find("error") if st == "error" else None
+            info.pop(tid, None)
+            el = fail if st == "fail" else err if st == "error" else None
             if el is not None:
-                msgs[tid] = ((el.get("message") or el.text or "").strip().splitlines() or [""])[0][:200]
+                info[tid] = (_first_line(el), _where("\n".join(filter(None, (el.get("message"), el.text))), root, accdir))
+
+    top = tree.getroot()
+    if top.tag == "testcase":
+        case(top, None)
+    else:
+        holder = ET.Element("holder")
+        holder.append(top)
+        walk(holder, None)
     rows = []
     for i, s in sorted(tests.items()):
         row = {"id": i, "status": s}
-        if i in msgs:
-            row["message"] = msgs[i]
+        if i in info:
+            row["message"], row["where"] = info[i]
         rows.append(row)
     return {"tests": rows, "collection_errors": errors}
 
@@ -370,7 +474,7 @@ def run_custom(root, command, ref=None):
         p = subprocess.run(command, cwd=root, shell=True, env=env, capture_output=True, text=True, errors="replace")
         if not os.path.isfile(junit):
             raise RunnerError("command wrote no JUnit file at $ACCEPTANCE_JUNIT (exit %d): %s" % (p.returncode, _tail(p.stdout + p.stderr)))
-        return parse_junit(junit, slugs)
+        return parse_junit(junit, slugs, root, accdir)
     finally:
         try:
             os.unlink(junit)

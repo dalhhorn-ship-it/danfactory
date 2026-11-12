@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="3" failures="1">
+	<testsuite name="example.com/proj/tests/acceptance/demo" tests="3" failures="1" errors="0" id="0">
+		<testcase name="TestC1Add" classname="example.com/proj/tests/acceptance/demo" time="0.000"></testcase>
+		<testcase name="TestC2Sub" classname="example.com/proj/tests/acceptance/demo" time="0.000">
+			<failure message="Failed" type="">calc_test.go:12: sub(3,1) = 1, want 2
+    calc.go:8: called from here</failure>
+		</testcase>
+		<testcase name="TestC3Mul/neg" classname="example.com/proj/tests/acceptance/demo" time="0.000"><skipped message="skip"></skipped></testcase>
+	</testsuite>
+</testsuites>

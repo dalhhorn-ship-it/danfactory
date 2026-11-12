@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="3" failures="1" errors="0">
+  <testsuite name="calc" errors="0" failures="1" skipped="0" timestamp="2026-11-12T00:00:00" time="1" tests="2">
+    <testcase classname="calc test_c1_add" name="calc test_c1_add" time="0.001" file="tests/acceptance/demo/calc.test.js"></testcase>
+    <testcase classname="calc test_c2_sub" name="calc test_c2_sub" time="0.002" file="tests/acceptance/demo/calc.test.js">
+      <failure>Error: expect(received).toBe(expected)
+    at Object.toBe (/work/repo/node_modules/expect/build/index.js:1:1)
+    at sub (/work/repo/src/calc.js:3:11)
+    at Object.&lt;anonymous&gt; (/work/repo/tests/acceptance/demo/calc.test.js:5:3)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Test suite failed to run" errors="1" failures="0" tests="1">
+    <testcase classname="Test suite failed to run" name="tests/acceptance/demo/broken.test.js"><error>Cannot find module '../../../src/calc' from 'tests/acceptance/demo/broken.test.js'</error></testcase>
+  </testsuite>
+</testsuites>

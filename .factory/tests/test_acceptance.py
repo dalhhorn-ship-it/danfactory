@@ -209,11 +209,81 @@ class RunBaseline(Base):
         st = {t["id"]: t["status"] for t in res["tests"]}
         self.assertEqual(next(t for t in res["tests"] if t["status"] == "fail")["message"], "x")
         self.assertEqual(st, {"demo/test_calc::T.test_c1_add": "pass", "demo/test_calc::T.test_c2_sub": "fail", "demo/test_calc::T.test_c2_trivial": "skip"})
-        self.assertEqual(res["collection_errors"][0]["module"], "tests.acceptance.demo.test_bad")
+        self.assertEqual(res["collection_errors"][0]["module"], "demo/test_bad")
         p.w("factory.json", json.dumps({"acceptance": {"command": "true"}}))
         with self.assertRaises(acceptance.RunnerError):
             acceptance.run_suite(p.root)
         self.assertEqual(json.loads(p.cli("run", "--json")[1])["tests"], [])
+
+
+FIX = os.path.join(os.path.dirname(__file__), "fixtures", "junit")
+
+
+def junit(name, root=None):
+    return acceptance.parse_junit(os.path.join(FIX, name), {"demo"}, root, os.path.join(root, "tests/acceptance") if root else None)
+
+
+class JunitProducers(Base):
+    def rows(self, res):
+        return {t["id"]: t for t in res["tests"]}
+
+    def test_pytest(self):
+        r = junit("pytest.xml", "/work/repo")
+        t = self.rows(r)
+        self.assertEqual({k: v["status"] for k, v in t.items()}, {
+            "demo/test_calc::TestCalc.test_c1_add": "pass", "demo/test_calc::TestCalc.test_c2_sub": "fail",
+            "demo/test_calc::TestCalc.test_c3_mul": "error", "demo/test_calc::test_c4_fn": "skip"})
+        f = t["demo/test_calc::TestCalc.test_c2_sub"]
+        self.assertEqual((f["message"], f["where"]), ("assert 1 == 2", "src/calc.py:4"))  # acceptance-dir frame skipped
+        e = t["demo/test_calc::TestCalc.test_c3_mul"]
+        self.assertEqual(e["where"], "src/calc.py:7")  # site-packages frame skipped
+        self.assertEqual([c["module"] for c in r["collection_errors"]], ["demo/test_bad"])
+
+    def test_vitest_paths_and_frames(self):
+        t = self.rows(junit("vitest.xml", "/work/repo"))
+        self.assertEqual({k: v["status"] for k, v in t.items()}, {
+            "demo/calc.test::calc > test_c1_add": "pass", "demo/calc.test::calc > test_c2_sub": "fail", "demo/calc.test::calc > test_c3_mul": "skip"})
+        f = t["demo/calc.test::calc > test_c2_sub"]
+        self.assertEqual((f["message"], f["where"]), ("expected 1 to be 2", "src/calc.ts:12"))
+
+    def test_jest_file_attr_collection_error_and_absolute_where(self):
+        r = junit("jest.xml", "/work/repo")
+        t = self.rows(r)
+        self.assertEqual({k: v["status"] for k, v in t.items()}, {
+            "demo/calc.test::calc test_c1_add": "pass", "demo/calc.test::calc test_c2_sub": "fail"})
+        self.assertEqual(t["demo/calc.test::calc test_c2_sub"]["where"], "src/calc.js:3")  # node_modules frame skipped
+        self.assertEqual([c["module"] for c in r["collection_errors"]], ["demo/broken.test"])
+
+    def test_go_package_classname_and_subtests(self):
+        t = self.rows(junit("go.xml", "/work/repo"))
+        self.assertEqual({k: v["status"] for k, v in t.items()}, {
+            "demo/demo::TestC1Add": "pass", "demo/demo::TestC2Sub": "fail", "demo/demo::TestC3Mul/neg": "skip"})
+        f = t["demo/demo::TestC2Sub"]
+        self.assertEqual((f["message"], f["where"]), ("Failed", "calc_test.go:12"))
+
+    def test_nested_suites_and_suite_level_error(self):
+        r = junit("nested.xml")
+        self.assertEqual(r["tests"], [{"id": "demo/test_ok::T.test_c1_x", "status": "pass"}])
+        self.assertEqual([c["module"] for c in r["collection_errors"]], ["demo/test_calc"])
+        self.assertIn("ImportError", r["collection_errors"][0]["error"])
+
+    def test_admit_rejects_junit_collection_error_as_broken_test(self):
+        p = self.proj()
+        shutil.copy(os.path.join(FIX, "nested.xml"), os.path.join(p.root, "junit.xml"))
+        p.w("factory.json", json.dumps({"acceptance": {"command": "cp junit.xml \"$ACCEPTANCE_JUNIT\""}}))
+        rc, out, _ = p.cli("admit", "demo")
+        self.assertEqual(rc, 1)
+        self.assertIn("[broken-test]", out)
+        self.assertIn("ImportError", out)
+
+    def test_error_beats_failure_and_unreadable_xml(self):
+        p = self.proj()
+        p.w("a.xml", '<testsuite><testcase classname="demo.test_x.T" name="test_c1"><failure message="f"/><error message="e"/></testcase></testsuite>')
+        r = acceptance.parse_junit(os.path.join(p.root, "a.xml"), {"demo"})
+        self.assertEqual(r["tests"], [{"id": "demo/test_x::T.test_c1", "status": "error", "message": "e", "where": ""}])
+        p.w("b.xml", "<testsuite")
+        with self.assertRaises(acceptance.RunnerError):
+            acceptance.parse_junit(os.path.join(p.root, "b.xml"), {"demo"})
 
 
 MAN = {"prds": {"demo": {"prd": "docs/specs/demo.md", "criteria": {"1": ["demo/t::T.test_c1_a"]}}},

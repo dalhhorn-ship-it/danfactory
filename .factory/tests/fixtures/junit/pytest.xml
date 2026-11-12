@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites><testsuite name="pytest" errors="1" failures="1" skipped="1" tests="5">
+<testcase classname="tests.acceptance.demo.test_calc.TestCalc" name="test_c1_add" time="0.001"/>
+<testcase classname="tests.acceptance.demo.test_calc.TestCalc" name="test_c2_sub" time="0.001"><failure message="assert 1 == 2">self = &lt;test_calc.TestCalc&gt;
+
+    def test_c2_sub(self):
+&gt;       assert sub(3, 1) == 2
+E       assert 1 == 2
+
+tests/acceptance/demo/test_calc.py:9: AssertionError
+
+During handling:
+src/calc.py:4: in sub
+    return a - b - 1</failure></testcase>
+<testcase classname="tests.acceptance.demo.test_calc.TestCalc" name="test_c3_mul"><error message="failed on setup with &quot;KeyError: 'x'&quot;">/usr/lib/python3/site-packages/_pytest/runner.py:10: KeyError
+src/calc.py:7: KeyError</error></testcase>
+<testcase classname="tests.acceptance.demo.test_calc" name="test_c4_fn"><skipped type="pytest.skip" message="later"/></testcase>
+<testcase classname="" name="tests.acceptance.demo.test_bad"><error message="collection failure">ImportError: No module named calc</error></testcase>
+</testsuite></testsuites>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="3" failures="1" errors="0">
+    <testsuite name="tests/acceptance/demo/calc.test.ts" timestamp="2026-11-12T00:00:00.000Z" hostname="h" tests="3" failures="1" errors="0" skipped="1" time="0.01">
+        <testcase classname="tests/acceptance/demo/calc.test.ts" name="calc &gt; test_c1_add" time="0.001"></testcase>
+        <testcase classname="tests/acceptance/demo/calc.test.ts" name="calc &gt; test_c2_sub" time="0.002">
+            <failure message="expected 1 to be 2" type="AssertionError">AssertionError: expected 1 to be 2
+ ❯ src/calc.ts:12:9
+ ❯ tests/acceptance/demo/calc.test.ts:6:20</failure>
+        </testcase>
+        <testcase classname="tests/acceptance/demo/calc.test.ts" name="calc &gt; test_c3_mul" time="0"><skipped/></testcase>
+    </testsuite>
+</testsuites>

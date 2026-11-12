@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<testsuites><testsuite name="outer"><testsuite name="tests/acceptance/demo/test_calc.py" file="tests/acceptance/demo/test_calc.py">
+<error message="ImportError: cannot import name 'calc'"/>
+</testsuite>
+<testsuite name="inner"><testcase classname="tests.acceptance.demo.test_ok.T" name="test_c1_x"/></testsuite></testsuite></testsuites>
