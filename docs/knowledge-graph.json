@@ -16,7 +16,7 @@
   {"id": "docs/decisions/0008-issue-ledger-and-finder.md", "title": "0008 \u2014 Issue ledger and finder", "lines": 33, "summary": "Status: accepted \u00b7 Date: 2026-11-12 \u00b7 PRD: docs/specs/gated-autonomy.md (C3, step 3,\u2026"},
   {"id": "docs/operating-model/AGENT-ROUTING.md", "title": "Agent routing", "lines": 81, "summary": "Which agent gets involved when. The main agent coordinates and decides; subagents are\u2026"},
   {"id": "docs/operating-model/DECISION-TREE.md", "title": "Decision tree", "lines": 73, "summary": "Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live\u2026"},
-  {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 50, "summary": "Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`\u2026"},
+  {"id": "docs/operating-model/LEARNINGS.md", "title": "Learnings", "lines": 53, "summary": "Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`\u2026"},
   {"id": "docs/operating-model/paths/adopt-existing.md", "title": "Path: adopt-existing", "lines": 59, "summary": "Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into\u2026"},
   {"id": "docs/operating-model/paths/automation-script.md", "title": "Path: automation-script", "lines": 25, "summary": "Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1."},
   {"id": "docs/operating-model/paths/data-spreadsheet.md", "title": "Path: data-spreadsheet", "lines": 32, "summary": "Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default\u2026"},

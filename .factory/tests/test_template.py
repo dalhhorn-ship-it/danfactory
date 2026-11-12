@@ -694,6 +694,12 @@ class ShortContexts(unittest.TestCase):
     def project_copy(self):
         d = os.path.join(tempfile.mkdtemp(), "proj")
         subprocess.run(["cp", "-r", ROOT, d], check=True)
+        if os.path.isfile(os.path.join(d, ".git")):  # a git worktree's .git is a pointer: the copy would commit into the original branch
+            os.remove(os.path.join(d, ".git"))
+            git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+            subprocess.run(["git", "init", "-q"], cwd=d, check=True)
+            subprocess.run(["git", "add", "-A"], cwd=d, check=True, capture_output=True)
+            subprocess.run(git + ["commit", "-q", "--no-verify", "-m", "snapshot"], cwd=d, check=True, capture_output=True)
         env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
         return d, os.path.join(d, ".claude", "hooks"), env, os.path.join(d, ".factory", "HANDOFF.md")
 
