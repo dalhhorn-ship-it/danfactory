@@ -212,6 +212,27 @@ class Env(unittest.TestCase):  # AC9
         env = evals.scrubbed_env({"HOME": "/root", "EVALS_HOME": "real"}, "/tmp/h", "/tmp/t")
         self.assertEqual(env["HOME"], "/root")
 
+    def test_bash_sandbox_on_by_default_with_no_network_and_credential_scrub(self):  # TD-010
+        cmd = evals.claude_cmd("haiku", 5)
+        cfg = json.loads(cmd[cmd.index("--settings") + 1])["sandbox"]
+        self.assertTrue(cfg["enabled"] and cfg["failIfUnavailable"])
+        self.assertFalse(cfg["allowUnsandboxedCommands"])
+        self.assertEqual(cfg["network"]["allowedDomains"], [])  # nothing reachable from the agent's commands
+        self.assertIn("~/.claude", cfg["filesystem"]["denyRead"])
+        self.assertNotIn("--dangerously-skip-permissions", cmd)
+        self.assertEqual(evals.scrubbed_env({"PATH": "/bin"}, "/h", "/t")["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"], "1")
+        off = {"PATH": "/bin", "EVALS_SANDBOX": "off"}
+        self.assertNotIn("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", evals.scrubbed_env(off, "/h", "/t"))
+        self.assertNotIn("--settings", evals.claude_cmd("haiku", 5, sandbox=False))
+
+    def test_sandbox_preflight_names_missing_tools_and_honours_opt_out(self):
+        have = lambda t: "/usr/bin/" + t if t == "bwrap" else None  # noqa: E731
+        self.assertIn("socat", evals.sandbox_problem({}, which=have, platform="linux"))
+        self.assertNotIn("bwrap", evals.sandbox_problem({}, which=have, platform="linux"))
+        self.assertIsNone(evals.sandbox_problem({}, which=lambda t: "/x", platform="linux"))
+        self.assertIsNone(evals.sandbox_problem({}, which=lambda t: None, platform="darwin"))
+        self.assertIsNone(evals.sandbox_problem({"EVALS_SANDBOX": "off"}, which=lambda t: None, platform="linux"))
+
     def test_agent_runs_with_scrubbed_env_in_temp_dir(self):
         seen = {}
 
