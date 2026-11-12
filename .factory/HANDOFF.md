@@ -1,30 +1,25 @@
-# Handoff — 2026-11-12 — Gated-autonomy PRD drafted; waiting on user approval
+# Handoff — 2026-11-12 — M3 slice A: AUTO-1 building (background developer), spike done, AUTO-2 next
 
 ## Task
-User (PM, portfolio) asked: evaluate danfactory for full agentic engineering against the article "How we built the agents that built AWS Emulator" (Amazon News, 2026-11-11); what is great, what is missing; a PRD MD on the missing capabilities and why they matter; how to apply the article's thinking in steps; keep it on point and consistent.
+User approved gated-autonomy SLICE A (AUTO-1 merge gate, AUTO-2 locked acceptance suite) and asked to build it, adding dashboard visibility for anything meaningful. Answers: rework cap 3, 5 USD/day, staging branch first, pilot on both (textkit fixture + a downstream library project). User keeps control of PRD approval, which builds start, and push to main. AUTO-3..7 need a new approval.
 
 ## State
-- Done: draft PRD docs/specs/gated-autonomy.md (0871921), written by product-manager, consistency-edited by main agent; docs index regenerated; check.sh green (241 tests). Presented to user in chat with approve / change / drop.
-- In progress: nothing. PRD is `Status: draft`. No backlog items added (policy: only on approval).
-- Branch: claude/intelligent-lamport-2g08xu, pushed; uncommitted: none.
-
-## Decisions (and why)
-- Verdict: danfactory is strong "supervised agentic" (L-B); article is swarm (L-D); target is gated autonomy (L-C) with 2 to 4 fixers.
-- C1..C7 = steps 1..7 = AUTO-1..AUTO-7: merge gate, locked acceptance suite, issue ledger + finder, fixer loop with rework, auto-merge + release train, safe unattended running + parallelism, learning from rejections.
-- PRD gate stays: issues from failing acceptance tests of an approved PRD fall under the existing bug-fix exemption (docs/policies/prd-approval.md).
-- Recommended slice A = steps 1+2 (11 working days by size_days), spike on evals/base first.
+- Done: PRD approved for slice A + Decisions section (f177159); M3 in docs/BACKLOG.md (AUTO-3..7 "awaits approval", no PRD link on purpose); ADR 0007 design; risk 1 spike done and recorded (98747be): evals/spikes/acceptance-admission/ (7/7 mapped, 21/21 fail first, 11/12 bugs caught, 1 wrong test + 1 silent ambiguity) → ADR 0007 admission now needs a "second reading" (`admit --reference-dir`) and manifest `questions` → gate warn `open-prd-questions`.
+- In progress: background `developer` building AUTO-1 (scripts/gate.py, ci.yml job renamed `gate`, Gates tab Merge gate block incl. first-try pass rate, docs/policies/merge-gate.md, TD-012, tests .factory/tests/test_gate.py). It commits locally with Refs: AUTO-1 and does NOT push.
+- Branch: claude/intelligent-lamport-2g08xu; pushed up to 0871921 only.
 
 ## Next steps
-1. Wait for the user's answer on the PRD and its 5 open questions (recommended: slice A; cap 3; 5 USD/day; staging branch; pilot on a small library or evals/base).
-2. On approval: set Status approved, add M3 with AUTO-n items to docs/BACKLOG.md, software-architect design + ADR, then build slice A via background `developer`.
-3. Still open from before: git tag v0.1.0 (asked, no answer); EVAL-3 `[!]` blocked on lpdan push access; TD-001..011.
+1. When AUTO-1 reports: verify (`python3 scripts/gate.py`, `bash scripts/check.sh`), quick reviewer pass, push.
+2. Launch developer for AUTO-2 per ADR 0007 (acceptance.py map/admit/run/baseline/status, test-writer agent .claude/agents/test-writer.md, developer.md: never edit tests/acceptance, AGENT-ROUTING + prd-approval flow step, Acceptance coverage block on Gates tab + --print row incl. open PRD questions; wire into gate acceptance check). Use evals/spikes/acceptance-admission as a test fixture: admission with impl A as reference must reject test_c5_trailing_comma_removed.
+3. Republish dashboard (factory.json dashboard_url, same link) after both; send link.
+4. Tell user: pilot 2 (library project) runs downstream after slice A; ask which repo.
 
 ## Watch out
-- TEMPLATE repo: never build a project here.
-- metrics/history.jsonl IS tracked (one row at caeb33a). Don't delete it; if a test run changes it, `git checkout HEAD -- metrics/history.jsonl` before committing.
-- Don't edit the working tree while an eval run is going (runs copy it).
+- TEMPLATE repo: never build a project here. metrics/history.jsonl is tracked: `git checkout HEAD -- metrics/history.jsonl` before commits if tests changed it.
+- Don't edit files the background developer owns while it runs (gate.py, ci.yml, tab_gates.py, dashboard.py, policies, README, TECH-DEBT, BACKLOG tick).
+- Spike scorer: parse `FAIL:`/`ERROR:` lines (subTest failures don't show in the per-test line).
+- Commit attribution now: Co-Authored-By: Claude Opus 5.5.
 - User not technical on infra: plain words, one recommendation.
-- Coverage budgets only alert in metrics.py report (lines ~242-247); they fail nothing. CI runs only check.sh + project tests.
 
 ## Pointers
-- docs/specs/gated-autonomy.md (PRD), docs/operating-model/AGENT-ROUTING.md (ladder), docs/policies/evals.md, .github/workflows/ci.yml, scripts/evals.py (sandbox pattern to reuse for the runner)
+- docs/specs/gated-autonomy.md, docs/decisions/0007-merge-gate-and-acceptance-suite.md, evals/spikes/acceptance-admission/README.md, docs/operating-model/AGENT-ROUTING.md
