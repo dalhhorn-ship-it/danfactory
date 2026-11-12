@@ -67,6 +67,7 @@
 | docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |
 | docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
+| docs/specs/gated-autonomy.md | 143 | Status: draft · 2026-11-12 · Owner: product-manager · Backlog: proposed M3 — Gated… — sections: Problem:5, Goal and success measure:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Open questions:138 |
 | docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat · 2026-11-11 · Owner: product-manager ·… |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |
