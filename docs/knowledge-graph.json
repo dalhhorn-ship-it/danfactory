@@ -136,6 +136,7 @@
   {"from": "docs/policies/documentation.md", "to": "docs/GOAL.md"},
   {"from": "docs/policies/documentation.md", "to": "docs/INDEX.md"},
   {"from": "docs/policies/documentation.md", "to": "docs/OPERATING-MODEL.md"},
+  {"from": "docs/policies/documentation.md", "to": "docs/decisions/0000-template.md"},
   {"from": "docs/policies/documentation.md", "to": "docs/operating-model/LEARNINGS.md"},
   {"from": "docs/policies/evals.md", "to": "CLAUDE.md"},
   {"from": "docs/policies/evals.md", "to": "docs/BACKLOG.md"},
