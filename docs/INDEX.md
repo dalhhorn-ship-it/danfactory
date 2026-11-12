@@ -16,6 +16,7 @@
 | What's planned / in progress? | docs/BACKLOG.md |
 | Can I start building this feature? | only with an approved PRD: docs/policies/prd-approval.md |
 | Can this change merge? What does a gate reason code mean? | docs/policies/merge-gate.md (`python3 scripts/gate.py`) |
+| What is broken right now and who fixes it? | docs/policies/issue-ledger.md (`python3 scripts/issues.py status`) |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
 | Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
@@ -42,7 +43,7 @@
 | docs/decisions/0006-agent-eval-harness.md | 22 | Status: accepted · Date: 2026-11-11 · PRD: docs/specs/agent-eval-harness.md |
 | docs/decisions/0007-merge-gate-and-acceptance-suite.md | 60 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (slice A: C1, C2) |
 | docs/decisions/0008-issue-ledger-and-finder.md | 33 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (C3, step 3,… |
-| docs/operating-model/AGENT-ROUTING.md | 83 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
+| docs/operating-model/AGENT-ROUTING.md | 85 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 50 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
@@ -57,7 +58,8 @@
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
 | docs/policies/evals.md | 34 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
-| docs/policies/merge-gate.md | 59 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
+| docs/policies/issue-ledger.md | 23 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
+| docs/policies/merge-gate.md | 62 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |

@@ -52,6 +52,9 @@ The patterns are conservative: private key blocks, common cloud and Git host tok
 - Assignment values: at least 24 characters for key/token names, 8 for password/secret; at least two of lower/upper/digit; not dotted lowercase words (i18n keys), attribute chains, env lookups or placeholders (`<...>`, `${VAR}`, `changeme`, `xxx`, `your`, `example`). Unquoted values (`api_key: v`, `API_KEY=v`) count only in config-like files (`.env*`, yml, ini, toml, conf, properties, sh) and need a digit.
 - Paths: git runs with `core.quotepath=off` and `-z` for name lists. A `+++ ` line is a file header only before the first hunk of a file, so added content starting `++ ` cannot reset the path.
 
+## Issue ledger
+Failing admitted acceptance tests become issues the finder files and the fixer loop works from: see docs/policies/issue-ledger.md.
+
 ## Honest limits
 - Trailers are self-asserted: they stop honest mistakes and make bypasses visible, not impossible (TD-012; the runner will refuse fixer commits with `Acceptance-Change`).
 - The scan is a tripwire, not a secret scanner. It does not replace `security-audit-run`.

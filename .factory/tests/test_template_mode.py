@@ -14,7 +14,7 @@ from _common import origin_slug, template_mode  # noqa: E402
 
 SRC = "dalhhorn-ship-it/danfactory"
 COPY = [".claude/hooks/_common.py", ".claude/hooks/session_start.py", ".claude/hooks/record_tokens.py",
-        "scripts/dashboard.py", "scripts/metrics.py", "scripts/evals.py", "scripts/evals_graders.py"] + sorted(  # dashboard imports its tab modules
+        "scripts/dashboard.py", "scripts/metrics.py", "scripts/evals.py", "scripts/evals_graders.py", "scripts/issues.py"] + sorted(  # dashboard imports its tab modules
     os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "scripts", "obs", "*.py")))
 BACKLOG = "# Backlog\n\n## Milestone: M0 (target: )\n- [ ] One #process\n\n## Unplanned\n- [ ] Maintain thing #foundation\n"
 DEBT = "# Debt\n\n## Open\n- [ ] TD-001 Fix the thing \u2014 impact: low \u00b7 effort: S\n"
