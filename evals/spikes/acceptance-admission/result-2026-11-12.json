@@ -1,0 +1,126 @@
+{
+ "A": {
+  "total": 21,
+  "failing": [
+   "test_c5_trailing_comma_removed"
+  ]
+ },
+ "B": {
+  "total": 21,
+  "failing": [
+   "test_c5_each_listed_punctuation_removed",
+   "test_c5_trailing_comma_removed"
+  ]
+ },
+ "mutants": {
+  "M1-equal-len-truncated": {
+   "criterion": 1,
+   "killed": true,
+   "by": [
+    "test_c1_exactly_width_unchanged",
+    "test_c1_unchanged_with_custom_suffix",
+    "test_c5_trailing_comma_removed"
+   ]
+  },
+  "M2-suffix-not-counted": {
+   "criterion": 2,
+   "killed": true,
+   "by": [
+    "test_c2_long_word_ends_with_suffix_and_fits",
+    "test_c2_one_char_over_width",
+    "test_c3_cuts_at_last_space",
+    "test_c3_cuts_at_last_space_other_text"
+   ]
+  },
+  "M3-no-word-boundary": {
+   "criterion": 3,
+   "killed": true,
+   "by": [
+    "test_c3_cuts_at_last_space",
+    "test_c3_cuts_at_last_space_other_text",
+    "test_c3_no_word_is_split",
+    "test_c5_multiple_trailing_spaces_and_punctuation_removed"
+   ]
+  },
+  "M4-no-hard-cut-guard": {
+   "criterion": 4,
+   "killed": true,
+   "by": [
+    "test_c4_hard_cut_exact_width",
+    "test_c4_hard_cut_exact_width_other_width",
+    "test_c4_hard_cut_with_custom_suffix",
+    "test_c5_trailing_comma_removed"
+   ]
+  },
+  "M5-no-strip": {
+   "criterion": 5,
+   "killed": true,
+   "by": [
+    "test_c5_each_listed_punctuation_removed",
+    "test_c5_multiple_trailing_spaces_and_punctuation_removed",
+    "test_c5_trailing_comma_removed"
+   ]
+  },
+  "M6-strip-spaces-only": {
+   "criterion": 5,
+   "killed": true,
+   "by": [
+    "test_c5_each_listed_punctuation_removed",
+    "test_c5_multiple_trailing_spaces_and_punctuation_removed",
+    "test_c5_trailing_comma_removed"
+   ]
+  },
+  "M7-no-valueerror": {
+   "criterion": 6,
+   "killed": true,
+   "by": [
+    "test_c5_trailing_comma_removed",
+    "test_c6_width_smaller_than_custom_suffix",
+    "test_c6_width_smaller_than_default_suffix"
+   ]
+  },
+  "M8-valueerror-off-by-one": {
+   "criterion": 6,
+   "killed": true,
+   "by": [
+    "test_c5_trailing_comma_removed",
+    "test_c6_width_equal_to_suffix_length_is_allowed"
+   ]
+  },
+  "M9-suffix-ignored": {
+   "criterion": 7,
+   "killed": true,
+   "by": [
+    "test_c4_hard_cut_with_custom_suffix",
+    "test_c5_trailing_comma_removed",
+    "test_c7_custom_suffix_used",
+    "test_c7_empty_suffix_hard_cut"
+   ]
+  },
+  "M10-suffix-on-short-text": {
+   "criterion": 1,
+   "killed": true,
+   "by": [
+    "test_c1_exactly_width_unchanged",
+    "test_c1_shorter_than_width_unchanged",
+    "test_c1_unchanged_with_custom_suffix",
+    "test_c5_trailing_comma_removed"
+   ]
+  },
+  "M11-drops-complete-last-word": {
+   "criterion": 3,
+   "killed": false,
+   "by": []
+  },
+  "M12-empty-suffix-defaulted": {
+   "criterion": 7,
+   "killed": true,
+   "by": [
+    "test_c5_trailing_comma_removed",
+    "test_c7_empty_suffix_hard_cut",
+    "test_c7_empty_suffix_word_boundary"
+   ]
+  }
+ },
+ "kill_rate": "11/12"
+}

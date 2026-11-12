@@ -45,3 +45,6 @@ minespel's dashboard branch forked 41 commits before main, which had since rebui
 
 ### 2026-11-07 — Doc graph missed plain-text links  [all] [docs] [upstream] (from lpdan)
 docs_index.py only counted Markdown links and backticked docs/ paths, so 22 of 36 docs showed as orphans on the Docs health tab although they were referenced in plain text. Bare `.md` paths that resolve to a file now count; the generated INDEX.md is not a link source, so it cannot hide orphans. Template: 13 -> 111 edges, 2 real orphans left. Fix (from lpdan): scripts/docs_index.py LINK_RE, test .factory/tests/test_docs_links.py.
+
+### 2026-11-12 — Agent-written acceptance tests need a second reading  [all] [practice] [upstream]
+Spike on textkit (evals/spikes/acceptance-admission/): a fresh test-writer turned 7 PRD criteria into 21 tests that all failed before the build and caught 11 of 12 seeded bugs, but one test contradicted a criterion (and hid the uncaught bug) and one silently settled an ambiguity. "Must fail first" would have admitted both. Now ADR 0007 admission also requires the tests to pass on a throwaway implementation written from the PRD by a separate agent, and ambiguities become PRD questions for the user. Expected effect: wrong tests are caught before they become the goal.

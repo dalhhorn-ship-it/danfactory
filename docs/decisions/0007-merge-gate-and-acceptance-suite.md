@@ -36,11 +36,14 @@ Option 2.
   - `prds`: `{slug: {prd, criteria: {"<n>": [test ids]}}}`, which ties each test to the criterion it proves.
   - `admitted`: `{id: {prd, criterion, date, sha, before: "fail", reference: "pass"|null}}`, the admission record for each test.
 - `map <slug>`: parses the numbered list under `## Acceptance criteria` and reports criteria with no test and tests mapped to no criterion. With `--strict`, unmapped criteria exit 1.
-- `admit <slug>`: runs every mapped, not yet admitted test on the current tree, before the behaviour is built. A test is admitted only if it fails on an assertion. The rejection reasons are:
-  - `passes-without-behaviour`: the test already passes.
-  - `broken-test`: the test errors at collection or import.
-  - `skipped`: the test is skipped.
-  - `fails-on-reference`: an `acceptance.reference_command` exists and the test does not pass against it.
+- `admit <slug> [--reference-dir DIR]`: admission has two checks, and a test must pass both.
+  - **Fails before the build.** Every mapped, not yet admitted test runs on the current tree. It must fail, either on an assertion or on an error inside the test body: tests import the code under test lazily, so a missing feature errors inside the body. The rejection reasons are:
+    - `passes-without-behaviour`: the test already passes.
+    - `broken-test`: the module errors at collection or import.
+    - `skipped`: the test is skipped.
+  - **Passes on a second reading.** A separate agent, not the test-writer and not the builder, writes a throwaway implementation from the PRD alone into `DIR`. Every test must pass with `DIR` first on the import path (`PYTHONPATH`, or `$ACCEPTANCE_REFERENCE` for a custom `acceptance.command`). A failure gives `fails-on-reference`: the test or the PRD is wrong, so the case goes to the user. A real reference (`acceptance.reference_command`, for example the old app on the adopt-existing path) replaces the second reading when one exists.
+  - The manifest records `before: "fail"` and `reference: "second-reading"|"reference"` per admitted test. The second reading is never committed as product code.
+- Ambiguities: the test-writer lists every point the PRD leaves open under `questions` for that PRD in the manifest. It does not test those points, and it never settles one silently. `acceptance.py status` and the gate (`open-prd-questions`, warn) show the open questions until the user answers them in a PRD revision.
 - `run [--json]` gives the outcome per test. `baseline` writes the passing admitted ids to `metrics/acceptance-baseline.json`, which is tracked and only grows unless `--allow-shrink` is given. `status [--json]` gives criteria, mapped, admitted, passing and failing per PRD.
 - Roles: a new `test-writer` agent writes and admits the tests from the approved PRD alone, then commits them with the `Acceptance-Change` trailer. `developer` never edits `tests/acceptance/`, the manifest or the baseline. If a test looks wrong, it stops and the question goes back to the user as a PRD revision.
 - Scope: the acceptance suite is required at rigor L2 and above, and in autonomy mode. It is optional at L1 and not used at L0.
@@ -52,6 +55,6 @@ Option 2.
 
 ## Consequences
 - Trailers and the protected-path check stop honest mistakes and make bypasses visible in the verdict. They do not stop a determined agent that writes its own trailer. The runner (C4) will refuse fixer commits that carry `Acceptance-Change`. Until then the user sees that trailer in every verdict (tracked as tech debt).
-- Admission proves a test can fail, not that it tests the right thing. The risk 1 spike (PRD) measures how strong admitted tests are on textkit.
+- Risk 1 spike (evals/spikes/acceptance-admission/, 2026-11-12): the agent-written tests covered 7 of 7 criteria, all 21 failed before the build, and they caught 11 of 12 seeded bugs. But 1 test was wrong (it contradicted a criterion and hid the one uncaught bug), and 1 settled a PRD ambiguity. "Fails before the build" alone would have admitted both. A second reading catches both, which is why it is part of admission.
 - Gate history is local per machine and per CI run, so cloud sessions start with an empty history. Durable signals (the manifest, the baseline, PRDs) are tracked in git.
 - CI keeps a single job. Repos that required the old `check` job in branch protection must require `gate` instead.
