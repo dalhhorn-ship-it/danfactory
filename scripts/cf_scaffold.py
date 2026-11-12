@@ -4,10 +4,13 @@
   python3 scripts/cf_scaffold.py [--name my-app] [--no-lock]
 
 Writes (only if absent): wrangler.jsonc, worker/index.ts (with /version and /health),
-.github/workflows/deploy-cloudflare.yml, and for projects without one a minimal package.json +
-public/index.html. Fills factory.json -> integrations.deploy. Detects Vite/Lovable SPAs
-(assets from ./dist, SPA fallback). Never deploys anything itself: GitHub Actions creates the
-Worker on the first merge to main (route B; needs CLOUDFLARE_API_TOKEN as a `production` environment secret).
+and for projects without one a minimal package.json + public/index.html. Fills factory.json ->
+integrations.deploy. Detects Vite/Lovable SPAs (assets from ./dist, SPA fallback).
+
+Default is route A (Cloudflare dashboard Git integration): no GitHub Actions workflow is written and
+GitHub holds no Cloudflare key. `--route-b` opts in to route B and also writes
+.github/workflows/deploy-cloudflare.yml (needs CLOUDFLARE_API_TOKEN as a `production` environment
+secret). Never deploys anything itself.
 """
 import argparse
 import datetime
@@ -80,6 +83,8 @@ def write_if_absent(rel, content, done):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--name", help="Worker name (default: factory.json project.name)")
+    ap.add_argument("--route-b", action="store_true",
+                    help="opt in to route B: also write the GitHub Actions deploy workflow (default: route A, dashboard Git)")
     ap.add_argument("--no-lock", action="store_true", help="don't run npm to create package-lock.json")
     a = ap.parse_args()
     factory = load("factory.json", {})
@@ -110,8 +115,9 @@ def main():
     write_if_absent("wrangler.jsonc", "// Cloudflare Worker config (danfactory scaffold). Deploys only via git.\n"
                     + json.dumps(config, indent=2) + "\n", done)
     write_if_absent("worker/index.ts", WORKER, done)
-    with open(os.path.join(ROOT, "templates", "deploy-cloudflare.yml"), encoding="utf-8") as fh:
-        write_if_absent(".github/workflows/deploy-cloudflare.yml", fh.read(), done)
+    if a.route_b:
+        with open(os.path.join(ROOT, "templates", "deploy-cloudflare.yml"), encoding="utf-8") as fh:
+            write_if_absent(".github/workflows/deploy-cloudflare.yml", fh.read(), done)
 
     if not a.no_lock and not os.path.exists(os.path.join(ROOT, "package-lock.json")) and shutil.which("npm") \
             and not any(os.path.exists(os.path.join(ROOT, l)) for l in ("pnpm-lock.yaml", "yarn.lock", "bun.lockb", "bun.lock")):
@@ -121,7 +127,7 @@ def main():
 
     if factory:
         d = factory.setdefault("integrations", {}).setdefault("deploy", {})
-        d.update({"provider": "cloudflare", "method": "git", "route": "B-github-actions", "product": "workers",
+        d.update({"provider": "cloudflare", "method": "git", "route": "B-github-actions" if a.route_b else "A-dashboard-git", "product": "workers",
                   "worker_name": name, "project_name": name})
         cmds = factory.setdefault("commands", {})
         cmds.setdefault("build", "")
@@ -133,12 +139,14 @@ def main():
         done.append("update  factory.json integrations.deploy (worker_name=%s)" % name)
 
     print("\n".join(done))
-    print("""
-Worker '{name}' is scaffolded ({kind}). Next:
-  Recommended (route A, default): connect the repo in the Cloudflare dashboard (Workers & Pages -> Create ->
-     Import a repository). Cloudflare builds production and previews; GitHub holds no Cloudflare key.
-     Then you can delete .github/workflows/deploy-cloudflare.yml. See .claude/skills/ship/SKILL.md.
-  Route B (GitHub Actions, written to .github/workflows/deploy-cloudflare.yml):
+    steps_a = """
+Worker '{name}' is scaffolded ({kind}), route A (default). Next:
+  Connect the repo in the Cloudflare dashboard (Workers & Pages -> Create -> Import a repository).
+  Cloudflare builds production and previews; GitHub holds no Cloudflare key. Build/deploy commands and
+  watch paths: .claude/skills/ship/SKILL.md. Prefer GitHub Actions instead? Re-run with --route-b.
+"""
+    steps_b = """
+Worker '{name}' is scaffolded ({kind}), route B (GitHub Actions, .github/workflows/deploy-cloudflare.yml). Next:
   1. GitHub repo -> Settings -> Environments -> production: restrict deployment branches to main
      (required reviewers optional; recommended for teams). Add CLOUDFLARE_API_TOKEN there as an
      environment secret, not a repo-wide one ("Edit Cloudflare Workers" API token, not R2 keys).
@@ -146,7 +154,8 @@ Worker '{name}' is scaffolded ({kind}). Next:
   2. Branch protection on main: require the "test" check. Commit package-lock.json (production needs it).
   3. Commit, open a PR, merge -> Worker created. Route B has no PR previews (use route A or `wrangler dev`).
   4. Put the URL from the deploy log into factory.json integrations.deploy (workers_subdomain, production_url)
-""".format(name=name, kind="SPA from ./dist" if spa else "static assets from ./public"))
+"""
+    print((steps_b if a.route_b else steps_a).format(name=name, kind="SPA from ./dist" if spa else "static assets from ./public"))
     return 0
 
 

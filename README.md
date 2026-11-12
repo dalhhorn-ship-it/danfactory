@@ -10,7 +10,7 @@
    ```
 2. Bootstrap. Add `--codegraph` to install the local code graph:
    ```bash
-   bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (auto-created Worker)
+   bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (Worker scaffold, route A: connect the repo in the Cloudflare dashboard)
    ```
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 

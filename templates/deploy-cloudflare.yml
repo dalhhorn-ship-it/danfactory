@@ -1,7 +1,7 @@
 # Route B (see .claude/skills/ship/SKILL.md): GitHub Actions -> Cloudflare production deploys.
 # Route A (Cloudflare dashboard Git integration / Workers Builds) is the DEFAULT: it builds production and
 # preview versions itself, so GitHub holds no Cloudflare key. Use this file only when you choose route B.
-# The first merge to main CREATES the Worker (scaffold: python3 scripts/cf_scaffold.py).
+# The first merge to main CREATES the Worker (scaffold: python3 scripts/cf_scaffold.py --route-b).
 #  - NO preview job here: pull_request runs never get a Cloudflare credential. Previews come from
 #    route A or local `wrangler dev`.
 #  - docs-only PRs skip the work but still report a green "test" check, so a required check never blocks

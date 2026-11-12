@@ -822,7 +822,7 @@ class ShortContexts(unittest.TestCase):
 
 
 class CloudflareScaffold(unittest.TestCase):
-    def scaffold(self, files):
+    def scaffold(self, files, *flags):
         d = os.path.join(tempfile.mkdtemp(), "proj")
         os.makedirs(os.path.join(d, "scripts"))
         os.makedirs(os.path.join(d, "templates"))
@@ -834,7 +834,7 @@ class CloudflareScaffold(unittest.TestCase):
         for rel, body in files.items():
             with open(os.path.join(d, rel), "w") as fh:
                 fh.write(body)
-        r = subprocess.run([sys.executable, "scripts/cf_scaffold.py", "--no-lock"], cwd=d, capture_output=True, text=True)
+        r = subprocess.run([sys.executable, "scripts/cf_scaffold.py", "--no-lock", *flags], cwd=d, capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
         return d
 
@@ -850,8 +850,18 @@ class CloudflareScaffold(unittest.TestCase):
         self.assertEqual(c["assets"]["not_found_handling"], "single-page-application")
         self.assertIn("/version", c["assets"]["run_worker_first"])
         self.assertIn("/version", open(os.path.join(d, "worker", "index.ts")).read())
+        dep = json.load(open(os.path.join(d, "factory.json")))["integrations"]["deploy"]
+        self.assertEqual(dep["worker_name"], "my-cool-app")
+        self.assertEqual(dep["route"], "A-dashboard-git")
+
+    def test_default_is_route_a_without_workflow(self):
+        d = self.scaffold({})
+        self.assertFalse(os.path.exists(os.path.join(d, ".github", "workflows", "deploy-cloudflare.yml")))
+
+    def test_route_b_is_opt_in(self):
+        d = self.scaffold({}, "--route-b")
         self.assertTrue(os.path.isfile(os.path.join(d, ".github", "workflows", "deploy-cloudflare.yml")))
-        self.assertEqual(json.load(open(os.path.join(d, "factory.json")))["integrations"]["deploy"]["worker_name"], "my-cool-app")
+        self.assertEqual(json.load(open(os.path.join(d, "factory.json")))["integrations"]["deploy"]["route"], "B-github-actions")
 
     def test_bare_project_and_idempotent(self):
         d = self.scaffold({})

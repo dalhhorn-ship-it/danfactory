@@ -5,7 +5,6 @@
 Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area: <area>` under **Open**; move to **Resolved** with `[x]` when paid down. A table with the header `Id | Severity | Item | Where | Size | Source | Status` is read too (severity major counts as high; a status starting with done/resolved/fixed/closed/dropped/wontfix/paid is closed; use `\|` or a code span for a literal pipe).
 
 ## Open
-- [ ] TD-001 cf_scaffold.py still writes the route B (GitHub Actions) workflow and sets route B in factory.json, while docs and the ship skill now default to route A (Cloudflare dashboard Git integration) — impact: medium · effort: S · area: deploy
 - [ ] TD-002 Deploy guard is advisory: `python -c`, `echo … | sh` and generated scripts can still deploy; secret-file check is name-based (`grep -r x .` can read secrets) — impact: medium · effort: M · area: guardrails
 - [ ] TD-003 Audit run-1 deferred units unchecked: adopt_scan report writes (now symlink-guarded, unverified by audit) and kept foreign scripts/hooks executed by adopt steps 4/6/8 — impact: low · effort: M · area: adopt
 - [ ] TD-004 Architecture import edges come from a regex scan, not codegraph (spike S1: codegraph CLI is not installed here, so no file-level import output could be verified) — impact: low · effort: S · area: dashboard
@@ -17,5 +16,6 @@ Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area
 - [ ] TD-012 Merge-gate trailers (`Acceptance-Change`, `Review`) are self-asserted: an agent can write its own, so the protected-path and review checks stop honest mistakes and make bypasses visible, not impossible. Fix: the runner (AUTO-4, C4) refuses fixer commits carrying `Acceptance-Change` — impact: medium · effort: M · area: gate
 
 ## Resolved
+- [x] TD-001 cf_scaffold.py still writes the route B (GitHub Actions) workflow and sets route B in factory.json, while docs and the ship skill now default to route A (Cloudflare dashboard Git integration) — impact: medium · effort: S · area: deploy — resolved: cf_scaffold.py defaults to route A (no workflow, route A-dashboard-git); `--route-b` opts in to the Actions workflow
 - [x] TD-008 `check.sh` appends a pass to committed metrics/records.jsonl on every run, so each check dirties the working tree (and trips the uncommitted-changes stop hook); dedupe per sha/kind or record outside git — impact: medium · effort: S · area: dashboard — resolved: `check` rows go to gitignored metrics/records.local.jsonl, deduped per kind+sha
 - [x] TD-009 Cost tab shows all sessions as unattributed: token rows (metrics/tokens.jsonl) carry no item or commit sha (spike S3); have the SessionEnd hook record the current branch/HEAD sha or an explicit `item` — impact: medium · effort: S · area: dashboard — resolved: the hook records `shas` (commits made during the session); Cost attributes a session when they reference exactly one item, else counts it as mixed
