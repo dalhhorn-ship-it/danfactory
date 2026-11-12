@@ -55,7 +55,7 @@
 | docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
-| docs/policies/evals.md | 35 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
+| docs/policies/evals.md | 37 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/merge-gate.md | 48 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |

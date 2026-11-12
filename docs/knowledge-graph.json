@@ -28,7 +28,7 @@
   {"id": "docs/operating-model/paths/software-product.md", "title": "Path: software-product", "lines": 40, "summary": "Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live\u2026"},
   {"id": "docs/policies/async-delivery.md", "title": "Policy: asynchronous delivery (no waiting on git, CI or Cloudflare)", "lines": 23, "summary": "The agent's time is the most expensive part of a deploy. Push, hand off, keep working;\u2026"},
   {"id": "docs/policies/documentation.md", "title": "Policy: documentation", "lines": 11, "summary": "Docs are part of done. Small, true, linked \u2014 and indexed so agents never read more than\u2026"},
-  {"id": "docs/policies/evals.md", "title": "Policy: agent evals", "lines": 35, "summary": "Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in\u2026"},
+  {"id": "docs/policies/evals.md", "title": "Policy: agent evals", "lines": 37, "summary": "Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in\u2026"},
   {"id": "docs/policies/merge-gate.md", "title": "Policy: merge gate", "lines": 48, "summary": "One command, one verdict with reason codes, the same locally and in CI. Design:\u2026"},
   {"id": "docs/policies/prd-approval.md", "title": "Policy: PRD before build", "lines": 25, "summary": "No feature work starts until the product-manager has written a PRD and the user has\u2026"},
   {"id": "docs/policies/security.md", "title": "Policy: security", "lines": 31, "summary": "Secure defaults always; guards are advisory unless backed by credential scoping; full\u2026"},

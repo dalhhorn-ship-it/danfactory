@@ -76,7 +76,8 @@
    "kind": "deny",
    "source": ".claude/settings.json (permissions.deny)",
    "gates": [
-    "deploy-guard"
+    "deploy-guard",
+    "deploy-guard-forced"
    ]
   },
   {

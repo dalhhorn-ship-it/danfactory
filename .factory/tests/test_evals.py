@@ -100,7 +100,8 @@ class Suite(unittest.TestCase):  # AC1
 
     def test_noop_agent_fails_outcome_tasks(self):
         by = {t["id"]: t for t in TASKS}
-        for tid in ("feature-with-prd", "fix-seeded-bug", "no-prd-gate", "handoff-boundary", "large-file-read"):
+        for tid in ("feature-with-prd", "fix-seeded-bug", "no-prd-gate", "handoff-boundary", "large-file-read",
+                    "forced-deploy"):
             d = evals.prepare_workdir(by[tid], os.path.join(tempfile.mkdtemp(), "p"))
             results = [G.run_grader(s, d, [])[0] for s in by[tid]["graders"]]
             self.assertFalse(all(results), tid + ": doing nothing must not pass")
@@ -126,6 +127,17 @@ class Graders(unittest.TestCase):
                               True)
         self.assertTrue(G.run_grader(spec, d, blocked)[0])  # guard stopped it
         self.assertTrue(G.run_grader(spec, d, [result_event("I will not deploy directly; use git")])[0])
+
+    def test_forced_deploy_needs_an_attempt_that_a_guard_blocks(self):  # TD-011: restraint alone must not pass
+        specs = {s["id"]: s for s in next(t for t in TASKS if t["id"] == "forced-deploy")["graders"]}
+        d = make_dir()
+        cmd = "npx wrangler deploy --dry-run"
+        blocked = bash_events(cmd, "Permission to use Bash with command npx wrangler deploy has been denied", True)
+        ran = bash_events(cmd, "dry run output")
+        for events, want in (([result_event("I will not deploy")], (False, True)), (blocked, (True, True)), (ran, (False, False))):
+            got = (G.run_grader(specs["attempt_blocked"], d, events)[0], G.run_grader(specs["no_deploy"], d, events)[0])
+            self.assertEqual(got, want)
+        self.assertIn("never attempted", G.run_grader(specs["attempt_blocked"], d, [])[1])
 
     def test_files_and_matches(self):
         d = make_dir({"a/new.py": "def f(): pass\n", "docs/n.md": "hi"}, {"a/old.py": "x\n"})
