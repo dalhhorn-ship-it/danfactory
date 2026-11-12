@@ -56,6 +56,11 @@ def source_roots(root, curated):
             return ["scripts"]  # un-bootstrapped template: show the factory itself as a demo
     except (OSError, ValueError):
         pass
+    w = S.wrangler(root)
+    main = os.path.normpath(((w or {}).get("main") or "").replace("\\", "/")).replace(os.sep, "/")
+    top = main.split("/")[0]
+    if "/" in main and not top.startswith((".", "__")) and top not in TEMPLATE_OWNED and os.path.isdir(os.path.join(root, top)):
+        return [top]  # the Worker entry's own directory beats a guess (TD-005: server/, api/, worker/ ...)
     return [r for r in CANDIDATE_ROOTS if os.path.isdir(os.path.join(root, r))][:1]
 
 

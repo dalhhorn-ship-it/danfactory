@@ -54,7 +54,7 @@ Wiring in dashboard.py:
 - Each ADR `docs/decisions/NNNN-*.md` (not 0000) becomes a `principle`. Attr: status. Where the ADR text mentions a component path, it gets an `influence` relation to that component.
 
 **Application**
-- **Source roots:** curated `roots`, or else the first that exists of `src/ app/ worker/ lib/ packages/ functions/`.
+- **Source roots:** curated `roots`, or else the top-level directory of the wrangler `main` entry (e.g. `worker/index.ts` gives `worker/`; not for a root-level entry or a template-owned dir), or else the first that exists of `src/ app/ worker/ lib/ packages/ functions/`.
   - Paths owned by the template are excluded (`.claude/ .factory/ docs/ scripts/ templates/ dashboard/ metrics/ node_modules/`).
   - Exception: in the un-bootstrapped template (`project.name` empty), the root is `scripts/`, so the factory shows up as a demo (Q2, PM confirmed 2026-11-07).
 - **Components:** each immediate child of a root, either a directory or a source file (`.py .ts .tsx .js .mjs`). For example `app:src/billing` or `app:scripts/dashboard.py`.
@@ -134,7 +134,7 @@ Wiring in dashboard.py:
 ## Risks and spikes
 - **S1 (30 min, Slice 1):** find out which codegraph CLI output gives file-level imports. If none is usable, use the scan only and log TD.
 - **S1 outcome (2026-11-07):** codegraph was not installed, so the regex scan shipped (TD-004). **Resolved:** `bash scripts/install-codegraph.sh` (pinned 1.6.2, npm) works; `codegraph node -f <file> --symbols-only` lists dependents but is one process per file and counts calls, so the `imports` edges in `.codegraph/codegraph.db` are used instead (39 file pairs on scripts/).
-- **S2 (30 min, end of Slice 1), PENDING (TD-005; no product repo available when Slice 1 was built):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
+- **S2 (30 min, end of Slice 1), done (TD-005, 2026-11-12):** `archmodel.py --print` on a copy of lpdan (Worker in `worker/index.ts`, static `public/`, `tests/`, `evals/`, template `scripts/`): 15 elements (1 goal, 4 requirements, 6 principles, 1 component, 1 interface, 1 node, 1 service), 8 relations, drift 0, 0.08 s. The default root rule already gave the single sensible component and nothing from tests/evals/scripts/public. One tuning: the wrangler `main` directory now beats the candidate-root guess (a Worker in `server/` or `api/` would otherwise be missed). Regression tests use an lpdan-shaped fixture (`ProductLayout`). `curated.roots`/`exclude` stays the escape hatch.
 - **S3 (Slice 3, before Cost):** attribution spike on `metrics/tokens.jsonl` (PRD risk 1).
 - **S3 outcome (2026-11-07):** token rows (`kind: session`) hold `ts`, `session_id` and token counts only: no sha, no item. The `session_id` is the transcript id, not the `Claude-Session` commit trailer, and a timestamp window would be a guess (sessions span items; subagents overlap). Decision: attribute only when a row has an explicit `item` or a `sha` of a commit with `Refs:`; rows had no link at the time (TD-009). Resolved: the SessionEnd hook now writes `shas` (commits made during the session); a row is attributed when they reference exactly one item, and sessions with several items are counted as "mixed" and left unattributed.
 - **Page size:** measure `index.html` after each slice (target under 400 KB).

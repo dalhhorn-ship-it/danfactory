@@ -151,6 +151,48 @@ class Codegraph(unittest.TestCase):
         self.assertEqual(model.generate(r)["source"], "scan")
 
 
+class ProductLayout(unittest.TestCase):
+    """TD-005: layout of a real product repo (lpdan: Worker in worker/, static public/, tests/, evals/, template scripts)."""
+    LPDAN = {
+        "factory.json": '{"project": {"name": "Landing"}}',
+        "wrangler.jsonc": '{"name": "site", "main": "worker/index.ts", "assets": {"directory": "./public", "binding": "ASSETS"}}',
+        "worker/index.ts": "export default { fetch() { return new Response('ok'); } };\n",
+        "public/copy.js": "document.title = 'x';\n",
+        "tests/smoke.mjs": "import assert from 'node:assert';\n",
+        "tests/check_page.py": "import sys\n",
+        "evals/base/textkit/core.py": "def f(): pass\n",
+        "scripts/metrics.py": "import json\n",
+        "scripts/obs/model.py": "import os\n",
+        "node_modules/x/index.js": "module.exports = 1;\n",
+    }
+
+    def _components(self, files):
+        r = tempfile.mkdtemp()
+        for rel, text in files.items():
+            put(r, rel, text)
+        g = model.generate(r)
+        return g, [e["id"] for e in g["elements"] if e["type"] == "application-component"]
+
+    def test_lpdan_layout_gives_one_worker_component_and_no_noise(self):
+        g, app = self._components(self.LPDAN)
+        self.assertEqual(app, ["app:worker/index.ts"])
+        ids = {e["id"] for e in g["elements"]}
+        self.assertTrue({"if:http", "node:site", "svc:ASSETS"} <= ids, ids)
+        rels = {(r["type"], r["source"], r["target"]) for r in g["relations"]}
+        self.assertIn(("serving", "app:worker/index.ts", "if:http"), rels)
+        self.assertEqual(g["source"], "scan")
+
+    def test_worker_entry_directory_beats_candidate_guess(self):
+        files = dict(self.LPDAN, **{"src/legacy.ts": "export const x = 1;\n", "server/api.ts": "export const y = 2;\n",
+                                    "wrangler.jsonc": '{"name": "site", "main": "server/api.ts"}'})
+        del files["worker/index.ts"]
+        self.assertEqual(self._components(files)[1], ["app:server/api.ts"])
+        files["wrangler.jsonc"] = '{"name": "site", "main": "index.ts"}'  # entry at the repo root: fall back to candidates
+        self.assertEqual(self._components(files)[1], ["app:src/legacy.ts"])
+        files["wrangler.jsonc"] = '{"name": "site", "main": "scripts/x.ts"}'  # template-owned dir is never a root
+        self.assertEqual(self._components(files)[1], ["app:src/legacy.ts"])
+
+
 class Repo(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
