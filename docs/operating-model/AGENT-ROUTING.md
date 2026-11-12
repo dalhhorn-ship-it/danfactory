@@ -28,7 +28,7 @@
 | UI changed | user-facing screens or flows touched | `ui-comprehensive-tester` | sonnet |
 | Task done? | see ladder | `task-completion-validator` | sonnet |
 | Too complex? | see ladder | `code-quality-pragmatist` | sonnet |
-| Ready to merge | see ladder | `reviewer` | sonnet |
+| Ready to merge | see ladder; run `python3 scripts/gate.py` (docs/policies/merge-gate.md); the reviewer adds a `Review: ship` or `Review: fix-first` trailer | `reviewer` | sonnet |
 | Follows our rules? | see ladder; drift suspected | `claude-md-compliance-checker` | haiku |
 | Milestone done? | milestone claimed complete | `karen` (runs it) then, if spec-heavy, `jenny` | sonnet |
 | Context getting long | context-watch nudge, or a logical boundary after a long session | `handoff` skill (main agent), commit the note, keep working; auto-compaction resets and the note reloads (`/clear` optional) | – |

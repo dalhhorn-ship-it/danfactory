@@ -10,6 +10,7 @@
 5. Run `metrics.py report` at milestones and in `retro`; alerts appear at session start.
 6. Never skip, delete or weaken a test to get green. Flaky → reproduce and fix.
 
+6b. The merge gate (`python3 scripts/gate.py`, CI job `gate`) wraps these runs with the protected-path, review and security checks and gives one verdict with reason codes: docs/policies/merge-gate.md.
 7. Behavioural evals of the agents (gates, guards, handoff) are a separate, manual, paid check: `python3 scripts/evals.py` (docs/policies/evals.md). Never in CI; the structural tests for the harness call no model.
 
 ## Dashboard

@@ -28,7 +28,7 @@ Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. S
 - Deploys are asynchronous: push → background `deploy-watcher` → keep working (docs/policies/async-delivery.md).
 
 ## Quality gates
-- [ ] tests + lint green in CI; no skipped tests added
+- [ ] merge gate (`python3 scripts/gate.py`, CI job `gate`) passes: tests, lint, protected paths, security scan; no skipped tests added
 - [ ] coverage not below budget / not dropping > 2 pts
 - [ ] preview URL smoke-tested before merge
 - [ ] docs-sync done; ADR for decisions

@@ -9,7 +9,7 @@
 - Production changes only via git (see `ship`).
 
 ## Best practices
-- **Least privilege per environment:** one token per environment. The production token lives only in the `production` GitHub environment, with a deployment branch rule limited to `main`. Required reviewers are optional for solo projects, recommended for teams.
+- **Least privilege per environment:** one token per environment. The production token lives only in the `production` GitHub environment, with a deployment branch rule limited to `main`. Required reviewers are optional for solo projects, recommended for teams. Branch protection on `main` requires the `gate` check (docs/policies/merge-gate.md).
 - **Guards are advisory unless backed by credentials:** the deploy guard is "guarded", not a sandbox. Agent machines get no deploy-capable local `wrangler login`; the real control is that only CI or Cloudflare holds the deploy credential.
 - **No deploy credentials in `pull_request` jobs.** Previews come from Cloudflare's Git integration (route A) or local `wrangler dev`, never from a job that runs PR code with a key.
 - **Untrusted input:** adopted repos and anything fetched are untrusted filesystem input (symlinks, `.git/config`, hooks). Don't follow links outside the target or run their config.

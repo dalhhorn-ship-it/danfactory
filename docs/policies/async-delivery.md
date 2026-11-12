@@ -12,7 +12,7 @@
 ## Keep builds short
 | Lever | Where |
 |---|---|
-| Test once: tests on the PR, main only builds + deploys | templates/deploy-cloudflare.yml; required check in branch protection |
+| Test once: tests on the PR, main only builds + deploys | templates/deploy-cloudflare.yml; require the `gate` check (docs/policies/merge-gate.md) in branch protection |
 | Skip docs/metrics-only builds | Workers Builds watch paths / `paths-ignore` |
 | Cache dependencies; `npm ci` with lockfile | Workers Builds build cache / setup-node cache |
 | Cancel superseded runs | `concurrency.cancel-in-progress` |

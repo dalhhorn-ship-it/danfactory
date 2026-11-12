@@ -40,6 +40,12 @@
     "session_weighted_tokens_warn": 750000,
     "context_handoff_tokens": 120000
   },
+  "gate": {
+    "base_branch": "main",
+    "protected": ["tests/acceptance/**"],
+    "review": "advisory",
+    "security_ignore": [".factory/tests/**", "evals/**"]
+  },
   "evals": {
     "n": 3,
     "model": "sonnet",

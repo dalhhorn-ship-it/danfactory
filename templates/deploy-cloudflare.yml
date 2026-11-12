@@ -11,7 +11,7 @@
 # (repo Settings -> Environments -> production), NOT a repository secret. Give that environment a
 # deployment branch rule limited to `main`; required reviewers are optional (recommended for teams).
 # CLOUDFLARE_ACCOUNT_ID is optional (inferred for single-account tokens; if set: Account ID, NOT a Zone ID).
-# Branch protection on main: require "test". See docs/policies/security.md.
+# Branch protection on main: require "gate" (the merge gate, .github/workflows/ci.yml) and, on route B, "test". See docs/policies/security.md.
 name: deploy-cloudflare
 on:
   pull_request:
