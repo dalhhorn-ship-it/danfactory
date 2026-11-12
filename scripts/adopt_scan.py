@@ -4,7 +4,9 @@
   python3 scripts/adopt_scan.py --target /path/to/existing-repo [--out docs/ADOPTION-REPORT.md]
 
 Read-only on the target except for the report files it writes there
-(docs/ADOPTION-REPORT.md + docs/adoption-scan.json; refused when the path goes through a symlink).
+(docs/ADOPTION-REPORT.md + docs/adoption-scan.json; refused when the path goes through a symlink,
+checked for both files before either is written). Scripts, hooks and lifecycle commands found in the
+target are listed in the report ("Foreign scripts and hooks"), never executed.
 Stdlib only, no network. The target is untrusted and its code is never run: git is invoked with
 the target's own config neutralised (fsmonitor, hooks, pager off; no system/global config; no
 prompts; no optional locks) and the files are only read as text. Detects origin, stack, scripts, tests, CI, hosting, size, hot spots, and
@@ -29,6 +31,8 @@ CODE_EXT = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".vue", ".svelte", ".p
             ".php", ".java", ".kt", ".swift", ".sql", ".css", ".scss", ".html"}
 TEST_RE = re.compile(r"(^|/)(__tests__|tests?|e2e|spec)/|\.(test|spec)\.[a-z]+$")
 BOT_RE = re.compile(r"lovable|gpt-engineer|bolt|stackblitz|v0|vercel\[bot\]", re.I)
+EXEC_PREFIXES = ("scripts/", ".githooks/", ".husky/", ".claude/hooks/", ".git-hooks/")
+LIFECYCLE = ("preinstall", "install", "postinstall", "prepare", "prepublishOnly", "prepack", "postpack")
 SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
 
@@ -164,6 +168,8 @@ def scan(root):
     tables = len(re.findall(r"create table", migrations))
     rls = len(re.findall(r"enable row level security", migrations))
 
+    foreign_exec = foreign_executables(root, files, scripts)
+
     findings = []
 
     def add(sev, area, title, detail=""):
@@ -222,8 +228,25 @@ def scan(root):
         "large_files": large,
         "git": {"commits": len(log), "first": log[-1].split("|")[2] if log else "", "last": log[0].split("|")[2] if log else "",
                 "top_authors": authors.most_common(5), "bot_commits": bot_commits},
+        "foreign_exec": foreign_exec,
         "findings": findings,
     }
+
+
+def foreign_executables(root, files, scripts):
+    """Code in the target that would run automatically or on request: never run by adopt, only listed."""
+    out = [{"kind": "file", "what": f} for f in files if f.startswith(EXEC_PREFIXES)]
+    out += [{"kind": "npm lifecycle script", "what": "%s: %s" % (k, scripts[k])} for k in LIFECYCLE if k in scripts]
+    try:
+        hooks = json.loads(read(root, ".claude/settings.json")).get("hooks", {}) or {}
+    except (ValueError, AttributeError):
+        hooks = {}
+    for event, groups in hooks.items() if isinstance(hooks, dict) else []:
+        for g in groups if isinstance(groups, list) else []:
+            for h in (g.get("hooks", []) if isinstance(g, dict) else []):
+                if isinstance(h, dict) and h.get("command"):
+                    out.append({"kind": "Claude hook (runs automatically)", "what": "%s: %s" % (event, h["command"])})
+    return out
 
 
 def clean(v):
@@ -259,6 +282,15 @@ def report(s):
               for f in s["findings"]] or ["| – | – | none | |"]
     lines += ["", "## Where the code is", "", "| Top-level dir | Lines |", "|---|---:|"]
     lines += ["| %s | %s |" % (clean(d), "{:,}".format(n)) for d, n in s["size"]["by_top_dir"]]
+    fe = s.get("foreign_exec", [])
+    if fe:
+        lines += ["", "## Foreign scripts and hooks (not run)", "",
+                  "> The adopt skill never executes these. Review them, and run any you trust yourself. "
+                  "Anything under `scripts/`, `.githooks/` or `.claude/hooks/` that danfactory also ships is kept, not replaced.", "",
+                  "| Kind | What |", "|---|---|"]
+        lines += ["| %s | %s |" % (clean(x["kind"]), "`%s`" % clean(x["what"]).replace("|", "\\|").replace("`", "'")) for x in fe[:60]]
+        if len(fe) > 60:
+            lines.append("| ... | %d more |" % (len(fe) - 60))
     if s["large_files"]:
         lines += ["", "## Largest files", ""] + ["- %s (%d lines)" % (clean(f), n) for f, n in s["large_files"]]
     lines += ["", "## Suggested factory.json commands", "", "```json", json.dumps(s["suggested_commands"], indent=2), "```"]
