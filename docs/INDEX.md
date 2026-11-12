@@ -31,7 +31,7 @@
 | docs/BACKLOG.md | 54 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 23 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/TECH-DEBT.md | 24 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
