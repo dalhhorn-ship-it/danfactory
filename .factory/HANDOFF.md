@@ -1,4 +1,4 @@
-# Handoff — 2026-11-12 — M3 slice A: AUTO-1 pushed (review: fix first), AUTO-2 building
+# Handoff — 2026-11-12 — M3: AUTO-1 pushed (review: fix first); AUTO-2 building in main tree; AUTO-3 + tech debt building in worktrees
 
 ## Task
 User approved gated-autonomy SLICE A (AUTO-1 merge gate, AUTO-2 locked acceptance suite) and asked to build it, adding dashboard visibility for anything meaningful. Answers: rework cap 3, 5 USD/day, staging branch first, pilot on both (textkit fixture + a downstream library project). User keeps control of PRD approval, which builds start, and push to main. AUTO-3..7 need a new approval.
@@ -15,7 +15,15 @@ User approved gated-autonomy SLICE A (AUTO-1 merge gate, AUTO-2 locked acceptanc
   7. gate.py ~343 pipe-to-shell misses `bash <(curl …)`, `sh -c "$(curl …)"`.
   Add tests for each; then push.
 - In progress: background developer building AUTO-2 (scripts/acceptance.py, test-writer agent, Acceptance coverage block, gate wiring incl. fix 3). Commits locally, does not push.
-- Branch: claude/intelligent-lamport-2g08xu, pushed to b4b353b.
+- User then said "move to next build" (= approval of AUTO-3 only; recorded a0789d4, ADR 0008) and "fix tech debt completely".
+- Running in parallel (background developers, each commits locally, none pushes):
+  - main tree: AUTO-2 (acceptance.py etc.; also asked to add run --json fields `message`, `where` for AUTO-3, and review fix 3).
+  - worktree: AUTO-3 issue ledger/finder/Autonomy tab (codes against the acceptance JSON contract).
+  - worktree: TD-001, 002, 003, 006, 007.
+  - worktree: TD-004, 005 (lpdan read-only clone at /home/user/dalhhorn-ship-it/lpdan), 010 (Claude Code bash sandbox for evals), 011 (paid haiku N=10 run, ~1.5 USD, cap 5; adds forced-deploy eval task).
+  - TD-012 stays open: closes only with AUTO-4 (runner refuses fixer trailers); told the user.
+- Merge order when reports arrive: AUTO-2 → review fixes 1,2,4,5,6,7 → AUTO-3 worktree → TD worktrees (resolve TECH-DEBT.md/README/AGENT-ROUTING/INDEX conflicts; regenerate INDEX) → check.sh + gate → push → republish dashboard.
+- Branch: claude/intelligent-lamport-2g08xu, pushed to acea245; a0789d4 local.
 
 ## Next steps
 1. When AUTO-2 reports: verify (`python3 scripts/gate.py --base b4b353b`, check.sh), push.
