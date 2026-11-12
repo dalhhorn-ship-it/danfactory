@@ -49,7 +49,7 @@ Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)
 
-The 18 agents are routed by moment and rigor, not all run every time. A verification ladder decides how many checkers a task gets (none at L0, up to five at L3).
+The 19 agents are routed by moment and rigor, not all run every time. A verification ladder decides how many checkers a task gets (none at L0, up to five at L3).
 
 | Role | Agents |
 |---|---|

@@ -16,7 +16,7 @@ Exempt (say so in chat when you use an exemption):
 2. **Present it in chat**: post the PRD (or for long ones: problem, scope, acceptance criteria, non-goals, open questions, effort) plus the file path, and ask: *approve, change, or drop?*
 3. **Stop and wait.** End the turn. Silence, "looks interesting", or answering an open question is not approval.
 4. **Changes requested** → the product-manager revises, the main agent re-presents. Repeat.
-5. **Approved** (an explicit "approve", "go", "build it" or similar) → set `Status: approved · <YYYY-MM-DD> · by user in chat`, add or update the item in docs/BACKLOG.md with a link to the PRD, then build.
+5. **Approved** (an explicit "approve", "go", "build it" or similar) → set `Status: approved · <YYYY-MM-DD> · by user in chat`, add or update the item in docs/BACKLOG.md with a link to the PRD, then, at rigor L2+ or in autonomy mode, the acceptance tests before any build: `test-writer` writes them from the PRD, a separate fresh agent writes a throwaway implementation from the PRD alone (second reading), `python3 scripts/acceptance.py admit <slug> --reference-dir DIR` admits them. Ambiguities the test-writer finds come back to the user as PRD questions (a PRD revision), never settled silently. Then build.
 6. **Scope drift during build** → a change to acceptance criteria or scope goes back to step 2 as a PRD revision. Implementation details inside the agreed scope don't.
 
 ## Enforcement

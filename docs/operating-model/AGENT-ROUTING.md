@@ -16,6 +16,7 @@
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
 | Plan | after choose-path; milestone start; backlog messy; after every slice (re-propose the build sequence before the dashboard refresh) | `product-manager` | sonnet |
 | PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
+| Acceptance tests | after PRD approval at L2+ and in autonomy mode, before build: the test-writer writes and maps the tests, a separate fresh agent writes a throwaway implementation from the PRD alone into a scratch dir (the second reading), the coordinator runs `acceptance.py admit <slug> --reference-dir DIR`; ambiguities go back to the user as PRD questions | `test-writer`, then a fresh `developer` (scratch dir) or general-purpose agent | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
 | Design (spreadsheet/data) | data-spreadsheet path; restructuring a model | `spreadsheet-architect` | sonnet |
 | Build: small change (< ~50 lines, one area) | – | main agent | – |
@@ -64,8 +65,8 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 
 | Path | Roster |
 |---|---|
-| software-product | product-manager, software-architect, developer, code-writer, test-runner, reviewer, task-completion-validator, ui-comprehensive-tester, karen, deploy-watcher, doc-keeper |
-| library-cli | product-manager, software-architect, developer, code-writer, test-runner, reviewer, code-quality-pragmatist, doc-keeper |
+| software-product | product-manager, software-architect, test-writer, developer, code-writer, test-runner, reviewer, task-completion-validator, ui-comprehensive-tester, karen, deploy-watcher, doc-keeper |
+| library-cli | product-manager, software-architect, test-writer, developer, code-writer, test-runner, reviewer, code-quality-pragmatist, doc-keeper |
 | data-spreadsheet | product-manager, spreadsheet-architect, data-builder, test-runner, reviewer, karen, doc-keeper |
 | documents-content | product-manager, reviewer, jenny, doc-keeper |
 | research-analysis | product-manager, bulk-reader, reviewer, jenny |
@@ -77,5 +78,6 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 `bulk-reader`, `test-runner` and `ultrathink-debugger` are available on every path when their trigger fires.
 
 ## Changelog
+- 1.2.0 — 19 agents: `test-writer` and the Acceptance tests moment (AUTO-2).
 - 1.1.0 — adopt-existing moment and roster.
 - 1.0.0 — 18 agents, ladder by rigor, tie-breakers, path rosters. Verifiers adapted from darcyegb/ClaudeCodeAgents (MIT).

@@ -80,6 +80,73 @@ def gate_stats(rows, budget):
                                  "seconds": _num(c.get("seconds"))} for c in last["checks"] if isinstance(c, dict)]}}
 
 
+ACC_EMPTY = "No acceptance suite yet: at L2+, the test-writer adds one after a PRD is approved (docs/policies/merge-gate.md)."
+
+
+def acceptance_stats(root, rows):
+    """Per PRD in tests/acceptance/manifest.json: criteria, criteria with an admitted test, admitted tests, passing, open
+    questions, second-reading share; plus overall spec coverage. None when the manifest has no PRD."""
+    import sys
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if here not in sys.path:
+        sys.path.append(here)
+    try:
+        import acceptance as A
+    except ImportError:
+        return None
+    man = A.load_manifest(root)
+    if not man["prds"]:
+        return None
+    passing, src = None, "baseline"
+    for r in reversed(rows):
+        ch = next((c for c in r["checks"] if isinstance(c, dict) and c.get("id") == "acceptance"), None)
+        if ch and isinstance(ch.get("passing"), list):
+            passing, src = set(str(x) for x in ch["passing"]), "latest gate run"
+            break
+    if passing is None:
+        passing = set(str(x) for x in (A.read_json(os.path.join(root, A.BASELINE), {}) or {}).get("passing") or [])
+    prds, crit_all, cov_all = [], 0, 0
+    for slug, rec in sorted(man["prds"].items()):
+        crit = A.criteria_of(root, slug)
+        adm = {i: r for i, r in man["admitted"].items() if isinstance(r, dict) and r.get("prd") == slug}
+        covered = {str(r.get("criterion")) for r in adm.values()} & set(crit)
+        qs = [str(q) for q in man["questions"].get(slug) or []]
+        prds.append({"slug": slug, "criteria": len(crit), "covered": len(covered), "admitted": len(adm),
+                     "passing": sum(1 for i in adm if i in passing), "questions": qs,
+                     "second_reading": sum(1 for r in adm.values() if r.get("reference"))})
+        crit_all += len(crit)
+        cov_all += len(covered)
+    return {"prds": prds, "criteria": crit_all, "covered": cov_all, "source": src,
+            "coverage_pct": round(100.0 * cov_all / crit_all) if crit_all else None,
+            "questions": sum(len(p["questions"]) for p in prds)}
+
+
+def acceptance_line(a):
+    if not a:
+        return "no suite yet"
+    adm = sum(p["admitted"] for p in a["prds"])
+    return "spec coverage %s (%d/%d criteria with an admitted test), %d/%d admitted passing, %d open PRD question(s)" % (
+        "n/a" if a["coverage_pct"] is None else "%d%%" % a["coverage_pct"], a["covered"], a["criteria"],
+        sum(p["passing"] for p in a["prds"]), adm, a["questions"])
+
+
+def render_acceptance(a):
+    if not a:
+        return '<div class="card"><h2>Acceptance coverage</h2><p class="muted">%s</p></div>' % e(ACC_EMPTY)
+    rows = "".join('<tr><td class="mono">%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td><span class="imp %s">%d</span></td><td>%s</td></tr>' % (
+        e(p["slug"]), p["criteria"], p["covered"], p["admitted"], p["passing"], "medium" if p["questions"] else "low", len(p["questions"]),
+        ("%d%%" % round(100.0 * p["second_reading"] / p["admitted"])) if p["admitted"] else "–") for p in a["prds"])
+    qs = "".join("<li><span class=\"mono\">%s</span>: %s</li>" % (e(p["slug"]), e(q)) for p in a["prds"] for q in p["questions"])
+    facts = [("Spec coverage (criteria with an admitted test)", "%s (%d of %d)" % (
+        "n/a" if a["coverage_pct"] is None else "%d%%" % a["coverage_pct"], a["covered"], a["criteria"])),
+        ("Passing counted from", a["source"])]
+    kv = "".join("<tr><td>%s</td><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts)
+    return ('<div class="card"><h2>Acceptance coverage</h2><table><tbody>%s</tbody></table><div class="scroll"><table><thead><tr>'
+            '<th>PRD</th><th>Criteria</th><th>With admitted test</th><th>Admitted tests</th><th>Passing</th><th>Open questions</th>'
+            '<th>Second reading</th></tr></thead><tbody>%s</tbody></table></div>%s</div>'
+            % (kv, rows, ('<h3>Open PRD questions: answer them in a PRD revision</h3><ul>%s</ul>' % qs) if qs else ""))
+
+
 def collect(root, base):
     now = time.time()
     by_title = {}
@@ -108,7 +175,7 @@ def collect(root, base):
     deps = sorted(({"path": p, "days": _age(times[p], now)} for p in MANIFESTS if p in times), key=lambda d: d["path"])
     m = base.get("metrics") or {}
     gate = gate_stats(gate_rows(root), (m.get("test_budget")))
-    return {"gate": gate, "items": items[:CAP], "items_total": len(items),
+    return {"gate": gate, "acceptance": acceptance_stats(root, gate_rows(root)), "items": items[:CAP], "items_total": len(items),
             "items_no_prd": sum(i["prd_status"] != "approved" for i in items),
             "components": comps[:CAP], "components_total": len(comps), "components_untested": sum(c["tests"] == 0 for c in comps),
             "coverage": m.get("coverage"), "coverage_min": m.get("coverage_min"),
@@ -161,7 +228,7 @@ def line(d):
 
 def render(d):
     if not d["items_total"] and not d["components_total"]:
-        return '<div class="stack"><div class="card"><h2>Gates</h2><p class="muted">%s</p></div>%s</div>' % (e(EMPTY), render_gate(d.get("gate")))
+        return '<div class="stack"><div class="card"><h2>Gates</h2><p class="muted">%s</p></div>%s</div>' % (e(EMPTY), render_gate(d.get("gate")) + render_acceptance(d.get("acceptance")))
     cov = ("%.1f%% (min %s%%)" % (d["coverage"], d["coverage_min"])) if d["coverage"] is not None else NOT_YET
     deps = ", ".join("%s: %dd" % (x["path"], x["days"]) for x in d["deps"]) or "no dependency manifests in the repo"
     facts = [("Last check.sh pass", _when(d["check"])), ("Last security audit", _when(d["security"])),
@@ -177,7 +244,7 @@ def render(d):
         if d["items_total"] > len(d["items"]) else ""
     capc = '<p class="muted small">Top %d of %d components; full list in data.json.</p>' % (len(d["components"]), d["components_total"]) \
         if d["components_total"] > len(d["components"]) else ""
-    return ('<div class="stack">' + render_gate(d.get("gate")) + '<div class="card"><h2>Gates</h2><table><tbody>%s</tbody></table></div>'
+    return ('<div class="stack">' + render_gate(d.get("gate")) + render_acceptance(d.get("acceptance")) + '<div class="card"><h2>Gates</h2><table><tbody>%s</tbody></table></div>'
             '<div class="card"><h2>PRD approved per item (%d without)</h2><div class="scroll"><table><thead><tr><th>ID</th><th>Item</th><th>State</th><th>PRD</th></tr></thead>'
             '<tbody>%s</tbody></table></div>%s</div>'
             '<div class="card"><h2>Tests per component (matched by file name)</h2><div class="scroll"><table><tbody>%s</tbody></table></div>%s</div></div>'

@@ -262,7 +262,12 @@ def c_coverage(ctx):
 
 def c_acceptance(ctx):
     root = ctx["root"]
-    if not (os.path.isfile(os.path.join(root, "scripts", "acceptance.py")) and os.path.isfile(os.path.join(root, MANIFEST))):
+    have = os.path.isfile(os.path.join(root, "scripts", "acceptance.py")) and os.path.isfile(os.path.join(root, MANIFEST))
+    baseline = read_json(os.path.join(root, BASELINE), {})
+    if not have:
+        if isinstance(baseline, dict) and baseline.get("passing"):
+            return "fail", ["acceptance-error"], "baseline lists %d passing test(s) but scripts/acceptance.py or %s is missing" % (
+                len(baseline["passing"]), MANIFEST)
         return "skip", [], "no acceptance suite"
     rc, out = sh(["python3", "scripts/acceptance.py", "run", "--json"], root)
     try:
@@ -271,8 +276,30 @@ def c_acceptance(ctx):
             raise ValueError
     except ValueError:
         return "fail", ["acceptance-error"], "acceptance.py run --json gave no valid JSON (exit %d): %s" % (rc, tail(out, 3))
-    codes, detail = compare_acceptance(result, read_json(os.path.join(root, BASELINE), {}))
-    return ("fail" if codes else "pass"), codes, detail
+    if result.get("error") or result.get("collection_errors"):
+        why = result.get("error") or "; ".join("%s: %s" % (e.get("module"), e.get("error")) for e in result["collection_errors"][:3])
+        return "fail", ["acceptance-error"], "suite did not load: " + str(why)[:TAIL]
+    ctx["acceptance_passing"] = sorted(t["id"] for t in result.get("tests") or [] if isinstance(t, dict) and t.get("status") == "pass")
+    codes, detail = compare_acceptance(result, baseline)
+    if codes:
+        return "fail", codes, detail
+    warn, bits = [], []
+    man = read_json(os.path.join(root, MANIFEST), {}) or {}
+    nq = sum(len(v) for v in (man.get("questions") or {}).values() if isinstance(v, list))
+    if nq:
+        warn.append("open-prd-questions")
+        bits.append("%d open PRD question(s): answer them in a PRD revision" % nq)
+    try:
+        import acceptance
+        miss = acceptance.unmapped_criteria(root)
+    except Exception:  # noqa: BLE001
+        miss = {}
+    if miss:
+        warn.append("acceptance-unmapped")
+        bits.append("criteria without a test: " + ", ".join("%s #%s" % (k, ",".join(v)) for k, v in sorted(miss.items())))
+    if warn:
+        return "warn", warn, detail + "; " + "; ".join(bits)
+    return "pass", [], detail
 
 
 def c_protected(ctx):
@@ -439,7 +466,10 @@ def run_gate(root, base=None, only=None):
             st, codes, detail = fn(ctx)
         except Exception as ex:  # noqa: BLE001 - a crashing check must fail the gate, not hide
             st, codes, detail = "fail", [cid + "-failed"], "check crashed: %s" % ex
-        checks.append({"id": cid, "status": st, "codes": codes, "detail": detail, "seconds": round(time.monotonic() - t0, 2)})
+        row = {"id": cid, "status": st, "codes": codes, "detail": detail, "seconds": round(time.monotonic() - t0, 2)}
+        if cid == "acceptance" and "acceptance_passing" in ctx:
+            row["passing"] = ctx["acceptance_passing"]  # the dashboard reads it
+        checks.append(row)
     sha = (git(root, "rev-parse", "--short", "HEAD") or "").strip() or None
     v = {"verdict": "fail" if any(c["status"] == "fail" for c in checks) else "pass", "sha": sha,
          "base": base_sha[:7] if base_sha else None,

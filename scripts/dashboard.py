@@ -613,6 +613,7 @@ def summary(d):
     for key, label, mod in TABS:
         if mod:
             lines.append("| %s | %s |" % (label, mod.line(d[key])))
+    lines.append("| Acceptance | %s |" % tab_gates.acceptance_line((d.get("gates") or {}).get("acceptance")))
     ci_line = delivery.line(d["delivery"])
     if ci_line:
         lines.append("| CI | %s |" % ci_line)

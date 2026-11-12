@@ -46,6 +46,11 @@
     "review": "advisory",
     "security_ignore": [".factory/tests/**", "evals/**"]
   },
+  "acceptance": {
+    "dir": "tests/acceptance",
+    "command": "",
+    "reference_command": ""
+  },
   "evals": {
     "n": 3,
     "model": "sonnet",
