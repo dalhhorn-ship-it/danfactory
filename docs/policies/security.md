@@ -1,6 +1,6 @@
 # Policy: security
 
-> Secure defaults always; guards are advisory unless backed by credential scoping; full audits on request or before L3 releases.
+> Secure defaults always; guards block known forms and credential scoping covers the rest; full audits on request or before L3 releases.
 
 ## Always
 - Secrets only in env / secret stores (`wrangler secret put`, GitHub environment secrets). Never in repo, docs, chat, or `wrangler.jsonc`. `.env*` and `.dev.vars*` (at any depth) are git-ignored and read-denied.
@@ -10,7 +10,7 @@
 
 ## Best practices
 - **Least privilege per environment:** one token per environment. The production token lives only in the `production` GitHub environment, with a deployment branch rule limited to `main`. Required reviewers are optional for solo projects, recommended for teams. Branch protection on `main` requires the `gate` check (docs/policies/merge-gate.md).
-- **Guards are advisory unless backed by credentials:** the deploy guard is "guarded", not a sandbox. Agent machines get no deploy-capable local `wrangler login`; the real control is that only CI or Cloudflare holds the deploy credential.
+- **Guards block the listed forms; credentials are the real control:** the Bash guard (`.claude/hooks/guard_bash_policy.py`) blocks `wrangler deploy`/`pages deploy` however it is wrapped (`npx`, package scripts, `bash -c`/`sh -c`, `echo ... | sh`, `python -c`/`node -e` text, a local script file whose content deploys), git hook skips, direct reads of `.env*`/`.dev.vars*`, and recursive content reads (`grep -r`, `rg --hidden`, `find -exec cat`, `cat .*`) that would reach a real secret file unless they exclude it. Residual risk, accepted: a program the agent generates and then runs can still assemble a deploy command or read a secret in a way no text scan sees. That risk is covered by credential scoping (ADR 0003): agent machines get no deploy-capable local `wrangler login`, and only CI or Cloudflare holds the deploy credential.
 - **No deploy credentials in `pull_request` jobs.** Previews come from Cloudflare's Git integration (route A) or local `wrangler dev`, never from a job that runs PR code with a key.
 - **Untrusted input:** adopted repos and anything fetched are untrusted filesystem input (symlinks, `.git/config`, hooks). Don't follow links outside the target or run their config.
 - **Pin remote code:** actions by full commit SHA (with a `# vX` comment), skills by commit, packages by version, no `curl | sh`.

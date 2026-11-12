@@ -16,7 +16,6 @@
 | What's planned / in progress? | docs/BACKLOG.md |
 | Can I start building this feature? | only with an approved PRD: docs/policies/prd-approval.md |
 | Can this change merge? What does a gate reason code mean? | docs/policies/merge-gate.md (`python3 scripts/gate.py`) |
-| What is broken right now and who fixes it? | docs/policies/issue-ledger.md (`python3 scripts/issues.py status`) |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
 | Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
@@ -45,7 +44,7 @@
 | docs/decisions/0008-issue-ledger-and-finder.md | 33 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (C3, step 3,… |
 | docs/operating-model/AGENT-ROUTING.md | 85 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
-| docs/operating-model/LEARNINGS.md | 50 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
+| docs/operating-model/LEARNINGS.md | 53 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
 | docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
 | docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default… |
@@ -61,7 +60,7 @@
 | docs/policies/issue-ledger.md | 23 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
 | docs/policies/merge-gate.md | 62 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
+| docs/policies/security.md | 31 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |

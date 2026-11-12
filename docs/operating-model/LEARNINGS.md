@@ -48,3 +48,6 @@ docs_index.py only counted Markdown links and backticked docs/ paths, so 22 of 3
 
 ### 2026-11-12 — Agent-written acceptance tests need a second reading  [all] [practice] [upstream]
 Spike on textkit (evals/spikes/acceptance-admission/): a fresh test-writer turned 7 PRD criteria into 21 tests that all failed before the build and caught 11 of 12 seeded bugs, but one test contradicted a criterion (and hid the uncaught bug) and one silently settled an ambiguity. "Must fail first" would have admitted both. Now ADR 0007 admission also requires the tests to pass on a throwaway implementation written from the PRD by a separate agent, and ambiguities become PRD questions for the user. Expected effect: wrong tests are caught before they become the goal.
+
+### 2026-11-12 — Tests that `cp -r` the repo commit into the original branch inside a git worktree  [all] [practice]
+In a worktree `.git` is a file pointing at the shared gitdir, so the hook tests' project copy (`project_copy`) committed `chore: unrelated` / `chore: handoff` onto the real branch on every `check.sh`. The copy now gets its own `git init` when `.git` is a file. Any test that copies the repo and runs git in the copy needs the same care.

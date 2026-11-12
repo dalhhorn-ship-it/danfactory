@@ -41,9 +41,11 @@ python3 "$FACTORY/scripts/adopt.py" --target . --apply  # after the user says ye
 - `CLAUDE.md` gets a danfactory block appended below the project's own rules.
 - Settings, `.gitignore` and `.gitattributes` are merged.
 - `TECH-DEBT.md` and `BACKLOG.md` are seeded from the scan.
-- Symlinks in the project are never followed: those paths show as `skip ... symlink` and nothing is written through them. Foreign files already in `.githooks/` or `scripts/` show as `note` lines; read them before approving, since a foreign hook runs via `core.hooksPath`.
+- Symlinks in the project are never followed: those paths show as `skip ... symlink` and nothing is written through them. Foreign files already in `.githooks/` or `scripts/` show as `note` lines, and a template-named file the project already had shows as `keep`.
+- **Never execute project-owned code.** If `adopt.py` prints a `REVIEW BEFORE RUNNING` list (foreign or kept scripts/hooks, extra `.claude/settings.json` hooks), `core.hooksPath` is not set and you must not run any repo-local script in steps 4, 6 and 8. Show the user the list (the scan report has the same "Foreign scripts and hooks" section), and let them review and run those commands themselves.
 
 ## 4. Smart indexing
+Steps 4, 6 and 8 run repo-local scripts, so they apply only when step 3 printed no `REVIEW BEFORE RUNNING` list. Otherwise print the commands and ask the user to run them.
 1. `python3 scripts/docs_index.py` builds the docs quick reference and knowledge graph.
 2. Code repos over ~50 files: offer `bash scripts/install-codegraph.sh`. It sets up the code knowledge graph and `docs/CODEMAP.md`.
 3. `python3 scripts/docs_index.py` again so CODEMAP is indexed.
@@ -55,7 +57,7 @@ python3 "$FACTORY/scripts/adopt.py" --target . --apply  # after the user says ye
 - Optional, at L2+: `software-architect` writes `docs/architecture.md` describing the as-built system and the ADRs worth recording.
 
 ## 6. Dashboard
-Run `python3 scripts/dashboard.py`. If the Artifact tool is available, publish `dashboard/index.html` and store the URL in `factory.json → integrations.dashboard_url` (see the `dashboard` skill).
+Run `python3 scripts/dashboard.py` (only under the step 4 condition). If the Artifact tool is available, publish `dashboard/index.html` and store the URL in `factory.json → integrations.dashboard_url` (see the `dashboard` skill).
 
 ## 7. Advise on next builds
 Write `docs/NEXT-BUILDS.md`, max ~80 lines, as three horizons ranked by value ÷ effort and risk-first:
@@ -65,7 +67,7 @@ Write `docs/NEXT-BUILDS.md`, max ~80 lines, as three horizons ranked by value ÷
    - CI on PRs
    - secrets out of git
 2. **Own the delivery pipeline:**
-   - git-only deploys to Cloudflare: `python3 scripts/cf_scaffold.py` sets up the Worker (SPA mode for Vite/Lovable), then the `ship` skill
+   - git-only deploys to Cloudflare: `python3 scripts/cf_scaffold.py` sets up the Worker (SPA mode for Vite/Lovable; route A, dashboard Git; `--route-b` adds the GitHub Actions workflow), then the `ship` skill
    - preview URLs
    - metrics
 3. **Grow the product:** the next features from GOAL.md, each a thin vertical slice.
@@ -74,7 +76,7 @@ For each item give why it matters, its size, and the agent that will do it (see 
 
 ## 8. Hand over
 1. Set `factory.json` → `phase: "brainstorm"`, so the next step confirms the drafted GOAL. Then run `choose-path`.
-2. Run `bash scripts/check.sh`.
+2. Ask the user to run `bash scripts/check.sh` (it runs the project's own lint and tests, which are the target's code); report the result they give you. Don't run it yourself.
 3. Commit on the branch: `chore: adopt into danfactory`.
 4. Summarise in at most 10 bullets:
    - origin and stack

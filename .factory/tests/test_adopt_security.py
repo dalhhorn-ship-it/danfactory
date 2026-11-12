@@ -103,6 +103,69 @@ class AdoptSecurity(unittest.TestCase):
         self.assertTrue(any("note" in l and ".githooks/post-commit" in l and "foreign hook" in l for l in lines), r.stdout)
         self.assertTrue(any("note" in l and "scripts/foo.sh" in l and "foreign script" in l for l in lines), r.stdout)
 
+    def test_scan_report_symlinked_dir_or_escape_refused(self):
+        write(os.path.join(self.target, "package.json"), "{}")
+        outside = os.path.join(self.tmp, "outside")
+        os.makedirs(outside)
+        os.symlink(outside, os.path.join(self.target, "docs"))  # docs/ itself points outside the target
+        r = subprocess.run([sys.executable, SCAN, "--target", self.target], capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(os.listdir(outside), [])
+        r = subprocess.run([sys.executable, SCAN, "--target", self.target, "--out", "../escape.md"], capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "escape.md")))
+
+    def test_scan_json_symlink_refused_before_any_write(self):
+        write(os.path.join(self.target, "package.json"), "{}")
+        victim = os.path.join(self.tmp, "victim.json")
+        os.makedirs(os.path.join(self.target, "docs"))
+        os.symlink(victim, os.path.join(self.target, "docs", "adoption-scan.json"))  # dangling link
+        r = subprocess.run([sys.executable, SCAN, "--target", self.target], capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertFalse(os.path.exists(victim))
+        self.assertFalse(os.path.exists(os.path.join(self.target, "docs", "ADOPTION-REPORT.md")))
+
+    def test_scan_lists_foreign_code_without_running_it(self):
+        marker = os.path.join(self.tmp, "ran")
+        write(os.path.join(self.target, "package.json"), json.dumps({"scripts": {"postinstall": "touch %s" % marker}}))
+        write(os.path.join(self.target, "scripts", "setup.sh"), "#!/bin/sh\ntouch %s\n" % marker, 0o755)
+        write(os.path.join(self.target, ".githooks", "pre-commit"), "#!/bin/sh\ntouch %s\n" % marker, 0o755)
+        write(os.path.join(self.target, ".claude", "settings.json"),
+              json.dumps({"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "touch %s" % marker}]}]}}))
+        git_commit(self.target)
+        r = subprocess.run([sys.executable, SCAN, "--target", self.target], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        report = open(os.path.join(self.target, "docs", "ADOPTION-REPORT.md")).read()
+        self.assertIn("Foreign scripts and hooks (not run)", report)
+        for needle in ("scripts/setup.sh", ".githooks/pre-commit", "postinstall", "SessionStart"):
+            self.assertIn(needle, report)
+        self.assertFalse(os.path.exists(marker))
+
+    @unittest.skipUnless(IS_TEMPLATE, "adopt.py runs from the template only")
+    def test_apply_does_not_enable_foreign_hooks(self):
+        write(os.path.join(self.target, ".githooks", "pre-commit"), "#!/bin/sh\nexit 1\n", 0o755)
+        write(os.path.join(self.target, "scripts", "check.sh"), "#!/bin/sh\nexit 1\n", 0o755)
+        git_commit(self.target)
+        r = self.adopt("--apply")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("REVIEW BEFORE RUNNING", r.stdout)
+        self.assertIn(".githooks/pre-commit", r.stdout)
+        self.assertIn("scripts/check.sh", r.stdout)  # a kept template-named script is foreign too
+        self.assertIn("NOT set", r.stdout)
+        cfg = subprocess.run(["git", "config", "--get", "core.hooksPath"], cwd=self.target, capture_output=True, text=True)
+        self.assertEqual(cfg.stdout.strip(), "")
+        self.assertEqual(open(os.path.join(self.target, ".githooks", "pre-commit")).read(), "#!/bin/sh\nexit 1\n")
+
+    @unittest.skipUnless(IS_TEMPLATE, "adopt.py runs from the template only")
+    def test_clean_adopt_sets_hooks_and_lists_nothing(self):
+        write(os.path.join(self.target, "README.md"), "# t\n")
+        git_commit(self.target)
+        r = self.adopt("--apply")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("REVIEW BEFORE RUNNING", r.stdout)
+        cfg = subprocess.run(["git", "config", "--get", "core.hooksPath"], cwd=self.target, capture_output=True, text=True)
+        self.assertEqual(cfg.stdout.strip(), ".githooks")
+
     def test_dev_vars_flagged(self):
         write(os.path.join(self.target, "package.json"), "{}")
         write(os.path.join(self.target, ".dev.vars.staging"), "KEY=1\n")

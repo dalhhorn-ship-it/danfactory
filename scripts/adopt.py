@@ -17,8 +17,11 @@ The target is untrusted. adopt.py never executes its code (the only subprocess i
 followed: every write, copy, merge and chmod goes through safe_target_path(), which refuses a path
 when any existing component is a symlink or the real path leaves the target. Refused paths are
 listed as "skip ... symlink" in the dry run and the apply output. Foreign files already under
-.githooks/ and scripts/ are kept and listed as "note" lines, because a foreign hook will run
-through core.hooksPath once applied.
+.githooks/ and scripts/ are kept and listed as "note" lines. Foreign code is never run
+automatically: when the project already has any hook of its own under .githooks/ (foreign file, or a
+template-named hook that was kept), core.hooksPath is NOT set; the output lists everything under
+"REVIEW BEFORE RUNNING" and the user decides. The adopt skill must not run repo-local scripts while
+that list is non-empty.
 """
 import argparse
 import datetime
@@ -277,6 +280,39 @@ def foreign_files(plan, template_files):
                     plan.note("note", rel, label)
 
 
+EXEC_DIRS = (".githooks/", "scripts/", ".claude/hooks/")
+
+
+def same_as_template(plan, rel):
+    """True when the project's copy of a template-named file is byte-identical to the template's (a re-adopt)."""
+    for src, dst in COPY:
+        if rel == dst or rel.startswith(dst + "/"):
+            try:
+                with open(os.path.join(TEMPLATE, src + rel[len(dst):]), "rb") as a, open(os.path.join(plan.target, rel), "rb") as b:
+                    return a.read() == b.read()
+            except OSError:
+                return False
+    return False
+
+
+def untrusted_code(plan):
+    """Paths of project-owned code that adopt kept or found: never run by the adopt flow, listed for review."""
+    out = [rel for kind, rel, why in plan.actions
+           if rel.startswith(EXEC_DIRS) and (kind == "note" or (kind == "keep" and "not overwritten" in why
+                                                                and not same_as_template(plan, rel)))]
+    path = safe_target_path(plan.target, ".claude/settings.json")
+    if path and os.path.exists(path):
+        try:
+            hooks = json.load(open(path)).get("hooks", {}) or {}
+            cmds = [h.get("command") for gs in hooks.values() for g in gs for h in g.get("hooks", []) if h.get("command")]
+        except (OSError, ValueError, AttributeError, TypeError):
+            cmds = []
+        tpl = json.load(open(os.path.join(TEMPLATE, ".claude/settings.json"))).get("hooks", {})
+        own = {h.get("command") for gs in tpl.values() for g in gs for h in g.get("hooks", [])}
+        out += [".claude/settings.json hook: %s" % c for c in cmds if c not in own]
+    return sorted(set(out))
+
+
 def chmod_scripts(plan):
     """chmod 755 scripts and hooks without following symlinks (a link would reach outside the target)."""
     for rel in ("scripts", ".githooks", ".claude/hooks"):
@@ -337,9 +373,12 @@ def main():
         plan.write(".github/workflows/danfactory.yml", ci.replace("name: ci", "name: danfactory", 1), "create",
                    "factory checks, project tests, dashboard artifact")
 
+    foreign = untrusted_code(plan)
+    hooks_foreign = any(x.startswith(".githooks/") for x in foreign)
     if a.apply:
         chmod_scripts(plan)
-        subprocess.run(["git", "config", "core.hooksPath", ".githooks"], cwd=target, check=False)
+        if not hooks_foreign:  # a foreign hook would run on the next commit via core.hooksPath
+            subprocess.run(["git", "config", "core.hooksPath", ".githooks"], cwd=target, check=False)
 
     counts = {}
     for kind, rel, why in plan.actions:
@@ -348,6 +387,13 @@ def main():
     for kind, rel, why in plan.actions:
         if kind != "create" or not rel.startswith((".claude/", "scripts/", "docs/operating-model/", ".factory/", "templates/", "docs/policies/")):
             print("  %-6s %s%s" % (kind, rel, "  — " + why if why else ""))
+    if foreign:
+        print("\nREVIEW BEFORE RUNNING (project-owned code; adopt never runs it, and neither should the adopt flow):")
+        for x in foreign:
+            print("  %s" % x)
+        if hooks_foreign:
+            print("  core.hooksPath was NOT set. After reviewing .githooks/, run: git config core.hooksPath .githooks")
+        print("  Ask the user to review these and run any repo-local script (docs index, dashboard, check.sh) themselves.")
     if not a.apply:
         print("\nRe-run with --apply to make these changes.")
     return 0
