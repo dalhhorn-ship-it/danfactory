@@ -1,6 +1,6 @@
 # PRD: Gated autonomy (a path from supervised agents to agents that find, fix and merge on their own)
 
-> Status: draft · 2026-11-12 · Owner: product-manager · Backlog: proposed M3 — Gated autonomy (AUTO-1..AUTO-7), not added until approved
+> Status: approved · 2026-11-12 · by user in chat (slice A only: C1 and C2; C3 to C7 need a new approval before build) · Owner: product-manager · Backlog: M3 — Gated autonomy → AUTO-1, AUTO-2
 
 ## Problem
 Danfactory is a strong template for agents that work with a human present. It is not yet a template for agents that work without one. The article "How we built the agents that built AWS Emulator" (Amazon News, 2026-11-11) describes a team whose agents wrote 100% of a product with no human code review. Trust came from guardrails, not from reading code. This PRD says what danfactory has, what it lacks to follow that approach at a realistic scale, and how to close the gap in seven steps.
@@ -59,7 +59,7 @@ Seven capabilities, one per step. Each one is a thin slice that is useful on its
 
 **C4 Fixer loop with rework.** The runner takes one issue, starts one headless agent on its own branch or worktree, runs the gate, and sends the gate's reasons back for rework up to an attempt cap (suggested 3). It then hands a passing change to merge or parks the issue as blocked with notes. A budget cap applies per run and per day, using the same pattern as `evals.budget_usd`. The fixer works in a disposable copy with the eval harness's variable allow-list (no deploy token, throwaway home), and until step 6 the user starts each run by hand. It matters because bounded attempts and budgets are what make unattended work safe to start.
 
-**C5 Auto-merge and release train.** A change that passes the gate and stays inside the approved spec merges with no human review. Merged commits are re-verified together (full suite) before promotion to the production branch. A failed post-deploy smoke check reverts automatically and files a new issue. It matters because green changes can break each other.
+**C5 Auto-merge and release train.** A change that passes the gate and stays inside the approved spec merges to the staging branch with no human review of the code. Merged commits are re-verified together (full suite) on staging; promotion to the production branch is the user's action, never the runner's. A failed post-deploy smoke check reverts automatically and files a new issue. It matters because green changes can break each other.
 
 **C6 Safe unattended running and small parallelism.** This step hardens the step 4 sandbox so runs can be scheduled with nobody present: the network is limited to allow-listed hosts, the model credential is scoped, and the blast radius is written down (closes TD-010). Then 2 to 4 fixers run in parallel in separate worktrees, and the gate serialises merges. It matters because with no one watching, the sandbox is the real protection (docs/policies/security.md), and parallelism is where throughput comes from.
 
@@ -86,8 +86,8 @@ Autonomy mode is opt-in. It is chosen in choose-path through a decision-tree que
 8. C4. Given an issue that fails the gate on every attempt, when the attempt cap is reached, then the runner stops, marks the issue blocked with notes, and merges nothing.
 9. C4. Given a cumulative spend that would pass the run or daily cap, when the runner is about to start work, then it stops before the next run, keeps results so far, and prints why.
 10. C4. Given the runner starts a fixer, when the fixer's environment is inspected, then it is a disposable copy with no deploy token and no user config, and the project's own tree is written only by a merge.
-11. C5. Given a change that passes the gate and stays inside approved scope, when it merges, then no human review step is required, and the merge is recorded with its verdict.
-12. C5. Given merged commits waiting for promotion, when the release step runs, then the full suite runs on them together, and promotion happens only if it passes.
+11. C5. Given a change that passes the gate and stays inside approved scope, when it merges, then it lands on the staging branch with no human review step, and the merge is recorded with its verdict.
+12. C5. Given merged commits on staging, when the user asks to promote, then the full suite runs on them together first, promotion happens only if it passes, and no step pushes to the production branch without the user.
 13. C5. Given a failed post-deploy smoke check, when it is detected, then the release is reverted and a new issue is filed.
 14. C6. Given a scheduled run with nobody present, when it starts, then only allow-listed hosts are reachable and an attempt to read a secret fails. TD-010 is closed.
 15. C6. Given 3 issues and 3 fixers, when they run in parallel, then each works in its own worktree, and two passing changes merge one at a time with the second re-checked against the first.
@@ -135,9 +135,11 @@ Where each step leaves the project:
 
 Recommendation: approve steps 1 and 2 first as slice A, run the risk 1 spike at its start, then decide on steps 3 to 7 with evidence. Effort by the dashboard's own sizing (factory.json `size_days`: M = 3, L = 8 working days, WIP 1): slice A is 11 days; all seven steps are 5 M and 2 L, 31 days.
 
-## Open questions
-1. Approve all seven steps, or slice A (C1 and C2) first? Recommended: slice A.
-2. Rework attempt cap per issue? Recommended: 3.
-3. Daily budget for unattended runs? Recommended: start at the evals cap of 5 USD and raise it with evidence.
-4. May passing changes merge to main with no human look, or to a staging branch you promote? Recommended: a staging branch first.
-5. Which project pilots it? Recommended: a small library or CLI style project, or the `evals/base` fixture, not lpdan's live site.
+## Decisions (user, 2026-11-12)
+1. Scope: slice A (C1 merge gate, C2 acceptance suite) approved and to be built. C3 to C7 stay in this PRD as the plan; each needs the user's approval before build.
+2. Rework attempt cap per issue: 3.
+3. Daily budget for unattended runs: 5 USD.
+4. Merges go to a staging branch first; the user promotes to main.
+5. Pilot on both: the `evals/base` textkit fixture (inside this template, as the risk 1 spike) and a small library-style project downstream (danfactory is a template, so that pilot runs in its own repo once slice A has landed).
+6. Control stays with the user: the user approves every PRD, decides which builds start, and is the only one who pushes or promotes to main. No runner, gate or agent pushes to the production branch.
+7. Dashboard: every step adds visibility for what it measures (gate verdicts, acceptance coverage, and later issues, rework and cost).

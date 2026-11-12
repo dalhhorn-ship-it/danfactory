@@ -27,6 +27,16 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] EVAL-5 Eval visualizations slice B: cumulative flow of backlog items with covered-by-eval band (docs/specs/eval-visualizations.md) (M) #feature
 - [!] EVAL-3 Agent eval harness slice 3: landing page section and LLM-judge graders (docs/specs/agent-eval-harness.md) (M) (release: v0.2) #feature
 
+## Milestone: M3 — Gated autonomy (target: 2026-11-27)
+> Sequence: PRD docs/specs/gated-autonomy.md, design ADR 0007. Slice A approved 2026-11-12 (AUTO-1, AUTO-2): gate first because every later step leans on it and it helps supervised work today; acceptance suite second, opened by the risk 1 spike on the textkit fixture. AUTO-3 to AUTO-7 are the plan only: each needs the user's approval before build. The user keeps PRD approval, build starts and pushes to main.
+- [ ] AUTO-1 Merge gate: one command, one verdict with reason codes, same locally and in CI, Merge gate view on the dashboard (docs/specs/gated-autonomy.md) (M) #foundation
+- [ ] AUTO-2 Locked acceptance suite: test-writer, admission, protected paths, baseline ratchet, Acceptance coverage view; risk 1 spike first (docs/specs/gated-autonomy.md) (L) (after: AUTO-1) #foundation
+- [ ] AUTO-3 Issue ledger and finder — awaits approval (M) (after: AUTO-2) #foundation
+- [ ] AUTO-4 Fixer loop with rework (cap 3, 5 USD/day) — awaits approval (L) (after: AUTO-3) #foundation
+- [ ] AUTO-5 Auto-merge to staging and release train; user promotes to main — awaits approval (M) (after: AUTO-4) #foundation
+- [ ] AUTO-6 Safe unattended running and 2 to 4 parallel fixers — awaits approval (M) (after: AUTO-5) #foundation
+- [ ] AUTO-7 Learning from gate rejections, Autonomy view — awaits approval (M) (after: AUTO-4) #foundation
+
 ## Unplanned
 - [x] TPL-1 Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
 - [x] UPS-1 Upstream from lpdan: adopt_scan report sanitiser, pipe-to-shell deploy guard, docs_index.py --related (docs/specs/upstream-from-lpdan-2026-11.md) (S) #security

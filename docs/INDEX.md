@@ -28,7 +28,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 44 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 54 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 20 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
@@ -39,6 +39,7 @@
 | docs/decisions/0004-dashboard-observability-design.md | 45 | Status: accepted · Date: 2026-11-07 |
 | docs/decisions/0005-auto-compact-handoff-loop.md | 22 | Status: accepted · Date: 2026-11-07 · PRD: docs/specs/auto-compact-handoff-loop.md |
 | docs/decisions/0006-agent-eval-harness.md | 22 | Status: accepted · Date: 2026-11-11 · PRD: docs/specs/agent-eval-harness.md |
+| docs/decisions/0007-merge-gate-and-acceptance-suite.md | 57 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (slice A: C1, C2) |
 | docs/operating-model/AGENT-ROUTING.md | 81 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 47 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
@@ -67,7 +68,7 @@
 | docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |
 | docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
-| docs/specs/gated-autonomy.md | 143 | Status: draft · 2026-11-12 · Owner: product-manager · Backlog: proposed M3 — Gated… — sections: Problem:5, Goal and success measure:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Open questions:138 |
+| docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A only: C1 and C2; C3 to C7 need… — sections: Problem:5, Goal and success measure:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user, 2026-11-12):138 |
 | docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat · 2026-11-11 · Owner: product-manager ·… |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |
