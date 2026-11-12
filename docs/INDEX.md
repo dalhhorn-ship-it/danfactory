@@ -16,6 +16,7 @@
 | What's planned / in progress? | docs/BACKLOG.md |
 | Can I start building this feature? | only with an approved PRD: docs/policies/prd-approval.md |
 | Can this change merge? What does a gate reason code mean? | docs/policies/merge-gate.md (`python3 scripts/gate.py`) |
+| What is broken right now and who fixes it? | docs/policies/issue-ledger.md (`python3 scripts/issues.py status`) |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
 | Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
@@ -32,7 +33,7 @@
 | docs/BACKLOG.md | 54 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 23 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/TECH-DEBT.md | 22 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
@@ -57,7 +58,8 @@
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
 | docs/policies/evals.md | 34 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
-| docs/policies/merge-gate.md | 57 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
+| docs/policies/issue-ledger.md | 23 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
+| docs/policies/merge-gate.md | 51 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/security.md | 31 | Secure defaults always; guards are advisory unless backed by credential scoping; full… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |

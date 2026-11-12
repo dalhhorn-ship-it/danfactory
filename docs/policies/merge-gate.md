@@ -41,6 +41,9 @@ A check with nothing to run (empty command, no suite, no base) is `skip`, never 
 ## Security scan notes
 The patterns are conservative: private key blocks, common cloud and Git host tokens, long quoted `api_key`/`token` values, `.env*` and `.dev.vars*` files, workflow `uses:` without a 40-hex SHA, and `curl|wget ... | sh` outside Markdown. Findings name `path:line`, never the matched text.
 
+## Issue ledger
+Failing admitted acceptance tests become issues the finder files and the fixer loop works from: see docs/policies/issue-ledger.md.
+
 ## Honest limits
 - Trailers are self-asserted: they stop honest mistakes and make bypasses visible, not impossible (TD-012; the runner will refuse fixer commits with `Acceptance-Change`).
 - The scan is a tripwire, not a secret scanner. It does not replace `security-audit-run`.

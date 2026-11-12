@@ -24,6 +24,7 @@
 | Build: workbook / data outputs | design exists | `data-builder` | sonnet |
 | Read big things | file > 350 lines, 3+ files, logs, long diffs | `bulk-reader` | haiku |
 | Run tests / builds | run `metrics.py test` directly (one line when green); delegate when it fails or output is long | `test-runner` | haiku |
+| Failing acceptance tests → issues | L2+ in autonomy mode: after a build or a failing gate (docs/policies/issue-ledger.md) | `finder` | sonnet |
 | Debug | first attempt by the main agent fails, or production incident | `ultrathink-debugger` | opus |
 | UI changed | user-facing screens or flows touched | `ui-comprehensive-tester` | sonnet |
 | Task done? | see ladder | `task-completion-validator` | sonnet |
@@ -64,8 +65,8 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 
 | Path | Roster |
 |---|---|
-| software-product | product-manager, software-architect, developer, code-writer, test-runner, reviewer, task-completion-validator, ui-comprehensive-tester, karen, deploy-watcher, doc-keeper |
-| library-cli | product-manager, software-architect, developer, code-writer, test-runner, reviewer, code-quality-pragmatist, doc-keeper |
+| software-product | product-manager, software-architect, developer, code-writer, test-runner, finder, reviewer, task-completion-validator, ui-comprehensive-tester, karen, deploy-watcher, doc-keeper |
+| library-cli | product-manager, software-architect, developer, code-writer, test-runner, finder, reviewer, code-quality-pragmatist, doc-keeper |
 | data-spreadsheet | product-manager, spreadsheet-architect, data-builder, test-runner, reviewer, karen, doc-keeper |
 | documents-content | product-manager, reviewer, jenny, doc-keeper |
 | research-analysis | product-manager, bulk-reader, reviewer, jenny |
@@ -77,5 +78,6 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 `bulk-reader`, `test-runner` and `ultrathink-debugger` are available on every path when their trigger fires.
 
 ## Changelog
+- 1.2.0 — `finder` (issue ledger, ADR 0008) for software-product and library-cli.
 - 1.1.0 — adopt-existing moment and roster.
 - 1.0.0 — 18 agents, ladder by rigor, tie-breakers, path rosters. Verifiers adapted from darcyegb/ClaudeCodeAgents (MIT).

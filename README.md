@@ -43,13 +43,14 @@ Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are
 | 3. Build | path playbook + subagents | code / workbook / document … |
 | Milestones | `retro`, `metrics` | LEARNINGS.md, tree updates, metrics/REPORT.md |
 | Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, a Delivery card (CI pass rate, time, latest failures, weekly bars, release cadence from CHANGELOG or tags), a Roadmap tab (value vs technical-foundation swimlanes, one global build sequence, Next up, PRD badges; optional 6-month, proposed Gantt and Releases views) and an Evals tab (eval library with proof strength, results heatmap, rule coverage map, cost vs pass rate per model, flow of backlog items covered by evals). Styled after IBM's open-source Carbon design system, light and dark, offline, no JavaScript |
+| What is broken right now | `python3 scripts/issues.py status` (`find`, `sync`; finder agent) | failing admitted acceptance tests become files in `issues/open/`, fixed ones move to `issues/fixed/`; dashboard Autonomy tab (docs/policies/issue-ledger.md) |
 | Ready to merge | `python3 scripts/gate.py` (CI job `gate`) | one verdict with reason codes: structure, build, lint, tests, acceptance, protected paths, review trailer, security scan of added lines; recorded locally and shown on the dashboard Gates tab |
 | On request | `python3 scripts/evals.py run` | behavioural evals: 10 tasks run headless in throwaway copies of the template, checked on files, git diff and commands (not wording); results in metrics/evals.jsonl, compared with a stored baseline; budget cap in factory.json; never in CI |
 | On request | `security-audit-run`, `ship` | audit report, live deploy |
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)
 
-The 18 agents are routed by moment and rigor, not all run every time. A verification ladder decides how many checkers a task gets (none at L0, up to five at L3).
+The 19 agents are routed by moment and rigor, not all run every time. A verification ladder decides how many checkers a task gets (none at L0, up to five at L3).
 
 | Role | Agents |
 |---|---|
@@ -57,6 +58,7 @@ The 18 agents are routed by moment and rigor, not all run every time. A verifica
 | Build | developer, code-writer, data-builder |
 | Cheap helpers (Haiku) | bulk-reader, test-runner, doc-keeper, deploy-watcher, claude-md-compliance-checker |
 | Verify | reviewer, task-completion-validator, code-quality-pragmatist, karen, jenny, ui-comprehensive-tester |
+| Autonomy | finder (files failing acceptance tests as issues, sonnet; software-product and library-cli) |
 | Debug | ultrathink-debugger (Opus, only after a failed first attempt) |
 
 The verifiers and debugger are adapted from [darcyegb/ClaudeCodeAgents](https://github.com/darcyegb/ClaudeCodeAgents) (MIT).
