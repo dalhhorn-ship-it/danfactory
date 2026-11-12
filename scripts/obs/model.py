@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import sqlite3
 
 from . import sources as S
 
@@ -101,7 +102,7 @@ def _owner(comps, path):
 
 
 def import_edges(root, comps):
-    """`serving` relations from a regex scan of relative/sibling imports (the codegraph path is TD-004)."""
+    """`serving` relations from a regex scan of relative/sibling imports (the fallback when codegraph is unavailable)."""
     by_stem = {_stem(c["el"]["path"]): c["el"]["id"] for c in comps}
     rels = set()
     for c in comps:
@@ -122,6 +123,45 @@ def import_edges(root, comps):
                         if res == p or res.startswith(p + "/") or os.path.splitext(p)[0] == res:
                             targets.append(o["el"]["id"])
             rels.update(_rel("serving", t, me) for t in targets if t != me)
+    return rels
+
+
+CG_DB = ".codegraph/codegraph.db"
+CG_QUERY = ("SELECT DISTINCT s.file_path, t.file_path FROM edges e JOIN nodes s ON s.id = e.source "
+            "JOIN nodes t ON t.id = e.target WHERE e.kind = 'imports' AND s.file_path <> t.file_path")
+
+
+def codegraph_pairs(root):
+    """(importer, imported) file pairs from the codegraph index, or None when it is off, absent or unreadable.
+
+    Reads .codegraph/codegraph.db read-only (codegraph 1.6.2 schema: nodes, edges kind 'imports'); the index
+    is as fresh as the last `codegraph sync`. Any problem returns None so the regex scan takes over (TD-004).
+    """
+    try:
+        with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
+            if not (json.load(fh).get("integrations") or {}).get("codegraph"):
+                return None
+        db = os.path.join(root, CG_DB)
+        if not os.path.isfile(db):
+            return None
+        con = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
+        try:
+            if not con.execute("SELECT 1 FROM nodes WHERE kind = 'file' LIMIT 1").fetchone():
+                return None
+            return sorted(con.execute(CG_QUERY).fetchall())
+        finally:
+            con.close()
+    except (OSError, ValueError, sqlite3.Error):
+        return None
+
+
+def codegraph_edges(comps, pairs):
+    """`serving` relations (imported component serves importer) from file-level import pairs."""
+    rels = set()
+    for src, dst in pairs:
+        a, b = _owner(comps, src), _owner(comps, dst)
+        if a and b and a != b:
+            rels.add(_rel("serving", b, a))
     return rels
 
 
@@ -149,7 +189,10 @@ def generate(root):
     comps = components(root, source_roots(root, cur), cur["exclude"])
     for c in comps:
         put(c["el"])
-    rels |= import_edges(root, comps)
+    pairs = codegraph_pairs(root)
+    rels |= import_edges(root, comps)  # also with codegraph: its index misses bare `import mod as m` and function-local imports
+    if pairs is not None:
+        rels |= codegraph_edges(comps, pairs)
     for a in S.adrs(root):
         aid = "adr:" + a["num"]
         put(_el(aid, "principle", a["title"], status=a["status"]))
@@ -175,7 +218,7 @@ def generate(root):
             sid = "svc:" + b["name"]
             put(_el(sid, "technology-service", "%s (%s)" % (b["name"], b["kind"]), kind=b["kind"], used=bool(users)))
             rels.update(_rel("serving", sid, u) for u in users)
-    return {"source": "scan", "elements": sorted(els.values(), key=lambda e: e["id"]),
+    return {"source": "scan" if pairs is None else "codegraph", "elements": sorted(els.values(), key=lambda e: e["id"]),
             "relations": [{"type": t, "source": a, "target": b} for t, a, b in sorted(rels)]}
 
 

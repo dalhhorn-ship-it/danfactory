@@ -61,7 +61,7 @@ Wiring in dashboard.py:
 - **Component-to-component relations:** a regex scan for relative imports (`from "./x"`, `import x` / `from x import` when `x` is a sibling module) gives `serving` relations.
 - **Interfaces:** the Worker entry (`main` in the wrangler config) gives `if:http`, linked by `serving` from the component that holds the entry file.
 - **Data objects:** `CREATE TABLE` names in `migrations/*.sql`, accessed (`access`) by components whose source mentions the table name.
-- **Codegraph:** when `integrations.codegraph` is true and the CLI is present, import edges come from codegraph instead of the regex scan (`source: "codegraph"`). This is spike S1. If it doesn't work out, keep the scan and log a TECH-DEBT item.
+- **Codegraph:** when `integrations.codegraph` is true and `.codegraph/codegraph.db` exists, `source` is `codegraph` and its file-level `imports` edges (read read-only with stdlib sqlite3, one query; `codegraph sync` keeps it fresh) are merged with the regex scan, because the index misses bare Python `import mod as m` and function-local imports (measured: 5 of 7 component edges on this repo's scripts/). Missing, flag off or unreadable index: scan only, `source: "scan"`. Tested with a recorded row fixture (`.factory/tests/fixtures/codegraph_imports.json`), no CLI or network.
 
 **Technology**
 - Read `wrangler.jsonc`/`wrangler.json` (strip `//` and `/* */` comments outside strings and trailing commas, then `json.loads`), or `wrangler.toml` (with `tomllib`).
@@ -133,7 +133,7 @@ Wiring in dashboard.py:
 
 ## Risks and spikes
 - **S1 (30 min, Slice 1):** find out which codegraph CLI output gives file-level imports. If none is usable, use the scan only and log TD.
-- **S1 outcome (2026-11-07):** codegraph is not installed in this environment, so no file-level import output could be checked; the regex scan is used (`source: "scan"`), logged as TD-004.
+- **S1 outcome (2026-11-07):** codegraph was not installed, so the regex scan shipped (TD-004). **Resolved:** `bash scripts/install-codegraph.sh` (pinned 1.6.2, npm) works; `codegraph node -f <file> --symbols-only` lists dependents but is one process per file and counts calls, so the `imports` edges in `.codegraph/codegraph.db` are used instead (39 file pairs on scripts/).
 - **S2 (30 min, end of Slice 1), PENDING (TD-005; no product repo available when Slice 1 was built):** run `archmodel.py --print` on one real product repo. If components are noisy, tune the root rules or rely on `curated.roots`/`exclude`.
 - **S3 (Slice 3, before Cost):** attribution spike on `metrics/tokens.jsonl` (PRD risk 1).
 - **S3 outcome (2026-11-07):** token rows (`kind: session`) hold `ts`, `session_id` and token counts only: no sha, no item. The `session_id` is the transcript id, not the `Claude-Session` commit trailer, and a timestamp window would be a guess (sessions span items; subagents overlap). Decision: attribute only when a row has an explicit `item` or a `sha` of a commit with `Refs:`; rows had no link at the time (TD-009). Resolved: the SessionEnd hook now writes `shas` (commits made during the session); a row is attributed when they reference exactly one item, and sessions with several items are counted as "mixed" and left unattributed.
