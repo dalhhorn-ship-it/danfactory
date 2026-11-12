@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -92,6 +93,104 @@ class Units(unittest.TestCase):
         self.assertIn("No PRDs yet", tab_traceability.render(tr))
         self.assertIn("0 PRDs", tab_traceability.line(tr))
         self.assertIn("drift 0", tab_architecture.line(arch))
+
+
+class Codegraph(unittest.TestCase):
+    """TD-004: import edges from the codegraph index when on and present, regex scan otherwise (no network, no CLI)."""
+
+    def _db(self, root, imports, flag=True):
+        put(root, "factory.json", json.dumps({"project": {"name": "demo"}, "integrations": {"codegraph": flag}}))
+        os.makedirs(os.path.join(root, ".codegraph"), exist_ok=True)
+        con = sqlite3.connect(os.path.join(root, model.CG_DB))
+        con.execute("CREATE TABLE nodes (id TEXT PRIMARY KEY, kind TEXT, name TEXT, file_path TEXT)")
+        con.execute("CREATE TABLE edges (id INTEGER PRIMARY KEY, source TEXT, target TEXT, kind TEXT)")
+        for i, f in enumerate(("src/a.ts", "src/b.ts", "src/c.ts")):
+            con.execute("INSERT INTO nodes VALUES (?, 'file', ?, ?)", ("f%d" % i, f, f))
+        for a, b in imports:
+            con.execute("INSERT INTO edges (source, target, kind) VALUES (?, ?, 'imports')", (a, b))
+        con.execute("INSERT INTO edges (source, target, kind) VALUES ('f0', 'f2', 'calls')")  # ignored: not an import
+        con.commit()
+        con.close()
+
+    def _repo(self, **kw):
+        r = tempfile.mkdtemp()
+        for rel in ("src/a.ts", "src/b.ts", "src/c.ts"):
+            put(r, rel, FILES[rel])  # the regex scan would find only a -> b
+        self._db(r, **kw)
+        return r
+
+    def test_recorded_output_maps_to_component_edges(self):
+        rec = json.load(open(os.path.join(ROOT, ".factory", "tests", "fixtures", "codegraph_imports.json")))
+        self.assertGreater(len(rec["rows"]), 20)
+        comps = [{"el": {"id": "app:" + p, "path": p}} for p in ("scripts/dashboard.py", "scripts/metrics.py", "scripts/obs", "scripts/archmodel.py")]
+        rels = model.codegraph_edges(comps, [tuple(r) for r in rec["rows"]])
+        self.assertIn(("serving", "app:scripts/obs", "app:scripts/archmodel.py"), rels)  # archmodel imports obs.model
+        self.assertIn(("serving", "app:scripts/metrics.py", "app:scripts/dashboard.py"), rels)
+        self.assertFalse([r for r in rels if r[1] == r[2]])  # no self edges (obs files importing each other)
+
+    def test_index_used_when_on_and_present(self):
+        r = self._repo(imports=[("f2", "f1")])  # c imports b: only the index knows; a imports b: only the scan knows
+        self.assertEqual(model.codegraph_pairs(r), [("src/c.ts", "src/b.ts")])
+        g = model.generate(r)
+        rels = {(x["type"], x["source"], x["target"]) for x in g["relations"]}
+        self.assertEqual(g["source"], "codegraph")
+        self.assertIn(("serving", "app:src/b.ts", "app:src/c.ts"), rels)
+        self.assertIn(("serving", "app:src/b.ts", "app:src/a.ts"), rels)  # the scan edge stays: the index can miss imports
+
+    def test_falls_back_to_scan(self):
+        for label, r in (("flag off", self._repo(imports=[("f2", "f1")], flag=False)), ("no index", self._repo(imports=[]))):
+            if label == "no index":
+                os.remove(os.path.join(r, model.CG_DB))
+            g = model.generate(r)
+            rels = {(x["type"], x["source"], x["target"]) for x in g["relations"]}
+            self.assertEqual(g["source"], "scan", label)
+            self.assertIn(("serving", "app:src/b.ts", "app:src/a.ts"), rels, label)
+        r = self._repo(imports=[])
+        open(os.path.join(r, model.CG_DB), "w").write("not a database")
+        self.assertIsNone(model.codegraph_pairs(r))
+        self.assertEqual(model.generate(r)["source"], "scan")
+
+
+class ProductLayout(unittest.TestCase):
+    """TD-005: layout of a real product repo (lpdan: Worker in worker/, static public/, tests/, evals/, template scripts)."""
+    LPDAN = {
+        "factory.json": '{"project": {"name": "Landing"}}',
+        "wrangler.jsonc": '{"name": "site", "main": "worker/index.ts", "assets": {"directory": "./public", "binding": "ASSETS"}}',
+        "worker/index.ts": "export default { fetch() { return new Response('ok'); } };\n",
+        "public/copy.js": "document.title = 'x';\n",
+        "tests/smoke.mjs": "import assert from 'node:assert';\n",
+        "tests/check_page.py": "import sys\n",
+        "evals/base/textkit/core.py": "def f(): pass\n",
+        "scripts/metrics.py": "import json\n",
+        "scripts/obs/model.py": "import os\n",
+        "node_modules/x/index.js": "module.exports = 1;\n",
+    }
+
+    def _components(self, files):
+        r = tempfile.mkdtemp()
+        for rel, text in files.items():
+            put(r, rel, text)
+        g = model.generate(r)
+        return g, [e["id"] for e in g["elements"] if e["type"] == "application-component"]
+
+    def test_lpdan_layout_gives_one_worker_component_and_no_noise(self):
+        g, app = self._components(self.LPDAN)
+        self.assertEqual(app, ["app:worker/index.ts"])
+        ids = {e["id"] for e in g["elements"]}
+        self.assertTrue({"if:http", "node:site", "svc:ASSETS"} <= ids, ids)
+        rels = {(r["type"], r["source"], r["target"]) for r in g["relations"]}
+        self.assertIn(("serving", "app:worker/index.ts", "if:http"), rels)
+        self.assertEqual(g["source"], "scan")
+
+    def test_worker_entry_directory_beats_candidate_guess(self):
+        files = dict(self.LPDAN, **{"src/legacy.ts": "export const x = 1;\n", "server/api.ts": "export const y = 2;\n",
+                                    "wrangler.jsonc": '{"name": "site", "main": "server/api.ts"}'})
+        del files["worker/index.ts"]
+        self.assertEqual(self._components(files)[1], ["app:server/api.ts"])
+        files["wrangler.jsonc"] = '{"name": "site", "main": "index.ts"}'  # entry at the repo root: fall back to candidates
+        self.assertEqual(self._components(files)[1], ["app:src/legacy.ts"])
+        files["wrangler.jsonc"] = '{"name": "site", "main": "scripts/x.ts"}'  # template-owned dir is never a root
+        self.assertEqual(self._components(files)[1], ["app:src/legacy.ts"])
 
 
 class Repo(unittest.TestCase):

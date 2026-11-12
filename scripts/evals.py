@@ -46,6 +46,14 @@ ENV_ALLOW = ("PATH", "LANG", "LC_ALL", "TERM", "TZ",
              "ANTHROPIC_BASE_URL", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
              "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy",
              "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE")
+# Claude Code's Bash sandbox (bubblewrap + socat on Linux, Seatbelt on macOS) for eval runs (TD-010): no network
+# for the agent's commands (empty allow list; claude itself still reaches the API), no read of the login
+# directory, and no hole to run outside it. failIfUnavailable makes a missing sandbox a hard stop instead of a
+# silent fallback. CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (set in scrubbed_env) strips the model credential from
+# the commands' environment. EVALS_SANDBOX=off opts out (the run is then not isolated).
+SANDBOX = {"sandbox": {"enabled": True, "failIfUnavailable": True, "allowUnsandboxedCommands": False,
+                       "autoAllowBashIfSandboxed": True, "network": {"allowedDomains": []},
+                       "filesystem": {"denyRead": ["~/.claude", "~/.claude.json"]}}}
 TOOLS = "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Task,Agent,TodoWrite"
 GIT_ID = ["-c", "user.name=eval", "-c", "user.email=eval@example.invalid", "-c", "commit.gpgsign=false"]
 TASK_KEYS = ("id", "title", "gates", "prompt", "max_turns", "graders")
@@ -195,19 +203,33 @@ def scrubbed_env(src, home, tmp):
     env = {k: src[k] for k in ENV_ALLOW if k in src}
     env.update(HOME=src.get("HOME", home) if src.get("EVALS_HOME") == "real" else home, TMPDIR=tmp,
                GIT_TERMINAL_PROMPT="0", CODEGRAPH_TELEMETRY="0")
+    if src.get("EVALS_SANDBOX") != "off":
+        env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] = "1"
     return env
 
 
-def claude_cmd(model, max_turns):
+def sandbox_problem(src=None, which=shutil.which, platform=sys.platform):
+    """None when the Bash sandbox can run (or is opted out), else why not. Checked before any money is spent."""
+    if (os.environ if src is None else src).get("EVALS_SANDBOX") == "off":
+        return None
+    if platform.startswith("linux"):
+        missing = [t for t in ("bwrap", "socat") if not which(t)]
+        if missing:
+            return ("the Bash sandbox needs %s on PATH (apt-get install -y bubblewrap socat); "
+                    "or set EVALS_SANDBOX=off to run without network isolation" % " and ".join(missing))
+    return None
+
+
+def claude_cmd(model, max_turns, sandbox=True):
     return ["claude", "-p", "--output-format", "stream-json", "--verbose", "--include-hook-events",
             "--model", model, "--max-turns", str(max_turns), "--permission-mode", "acceptEdits",
-            "--allowedTools", TOOLS, "--no-session-persistence"]
+            "--allowedTools", TOOLS, "--no-session-persistence"] + (["--settings", json.dumps(SANDBOX)] if sandbox else [])
 
 
 def run_claude(prompt, model, max_turns, cwd, env, timeout):
     """Real model call. The prompt goes on stdin (--allowedTools is variadic and would swallow a positional)."""
     try:
-        p = subprocess.run(claude_cmd(model, max_turns), input=prompt, cwd=cwd, env=env, capture_output=True,
+        p = subprocess.run(claude_cmd(model, max_turns, os.environ.get("EVALS_SANDBOX") != "off"), input=prompt, cwd=cwd, env=env, capture_output=True,
                            text=True, timeout=timeout, check=False)
         return p.stdout, p.returncode
     except subprocess.TimeoutExpired as e:
@@ -426,6 +448,10 @@ def cmd_run(a):
         if not tasks:
             print("no such task: %s" % ",".join(a.task))
             return 2
+    problem = sandbox_problem()
+    if problem:
+        print("evals: " + problem)
+        return 2
     n, model = a.n or cfg["n"], a.model or cfg["model"]
     set_id = a.set or datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     print("evals: %d task(s) x %d, model %s, budget $%s, set %s" % (len(tasks), n, model, cfg["budget_usd"], set_id))

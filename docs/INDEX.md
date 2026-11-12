@@ -15,7 +15,6 @@
 | Where are we / project status? | `python3 scripts/dashboard.py --print` |
 | What's planned / in progress? | docs/BACKLOG.md |
 | Can I start building this feature? | only with an approved PRD: docs/policies/prd-approval.md |
-| Can this change merge? What does a gate reason code mean? | docs/policies/merge-gate.md (`python3 scripts/gate.py`) |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
 | Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
@@ -56,7 +55,7 @@
 | docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
-| docs/policies/evals.md | 34 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
+| docs/policies/evals.md | 37 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/issue-ledger.md | 23 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
 | docs/policies/merge-gate.md | 62 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
