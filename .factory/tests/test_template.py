@@ -103,6 +103,7 @@ class BashPolicy(unittest.TestCase):
 
 
 class OneShotEscape(unittest.TestCase):
+    @unittest.skipIf(os.environ.get("DANFACTORY_TREE_SANDBOX") == "1", "inside the runner's sandbox the repo is read-only by design (runs in CI and check.sh)")
     def test_marker_allows_one_read_then_is_consumed(self):
         big = os.path.join(tempfile.mkdtemp(), "big.txt")
         with open(big, "w") as fh:

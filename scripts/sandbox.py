@@ -161,6 +161,7 @@ class TreeSandbox:
         os.makedirs(self.home)
         os.makedirs(self.scratch)
         self.env = eval_env(src, self.home, self.scratch)
+        self.env["DANFACTORY_TREE_SANDBOX"] = "1"  # tests that need a nested sandbox or a writable repo skip themselves (pilot 2)
         self.common = self.hide = None
         p = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=self.tree, capture_output=True, text=True,
                            env={"PATH": src.get("PATH", ""), "HOME": self.tmp, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull})

@@ -547,7 +547,9 @@ def codes(e):
 
 def bwrap_works():
     try:
-        return subprocess.run(["bwrap", "--ro-bind", "/", "/", "true"], capture_output=True).returncode == 0
+        # same mounts as the real sandbox, so this is False when already inside one (pilot 2: nested runs)
+        return subprocess.run(["bwrap", "--ro-bind", "/", "/", "--proc", "/proc", "--dev", "/dev", "--unshare-net", "true"],
+                              capture_output=True).returncode == 0
     except OSError:
         return False
 
@@ -596,6 +598,7 @@ class EvalSandbox(unittest.TestCase):
         finally:
             e.cleanup()
 
+    @unittest.skipIf(os.environ.get("DANFACTORY_TREE_SANDBOX") == "1", "inside the runner's sandbox: no nested bwrap (runs in CI and check.sh)")
     @unittest.skipUnless(bwrap_works(), "bubblewrap cannot run here")
     def test_bwrap_hides_secrets_blocks_network_and_protects_inputs(self):
         e = one(FIX)
