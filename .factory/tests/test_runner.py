@@ -748,12 +748,26 @@ class Reviewer(unittest.TestCase):
             e.cleanup()
 
     def test_reviewer_adding_an_ignored_file_is_caught(self):
-        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}], "review": [{"text": SHIP, "write": {"__pycache__/x.pyc": "x"}}]})
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}], "review": [{"text": SHIP, "write": {".env": "TOKEN=planted\n"}}]})
         try:
             rc, out = e.run("run", "--next")
             self.assertEqual(codes(e), [["reviewer-modified-tree"]], out)
         finally:
             e.cleanup()
+
+    def test_bytecode_caches_in_the_review_tree_are_tolerated(self):  # found in pilot 2: hooks of the reviewer's session
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}],
+                 "review": [{"text": SHIP, "write": {".claude/hooks/__pycache__/_prd.cpython-313.pyc": "x"}}]})
+        try:
+            rc, out = e.run("run", "--next")
+            self.assertEqual(rc, 0, out)
+        finally:
+            e.cleanup()
+
+    def test_hooks_run_without_writing_bytecode(self):
+        cfg = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))
+        cmds = [h["command"] for groups in cfg["hooks"].values() for g in groups for h in g["hooks"]]
+        self.assertTrue(cmds and all(c.startswith("python3 -B ") for c in cmds), cmds)
 
 
     def test_empty_sandbox_mount_points_in_the_review_tree_are_tolerated(self):  # found in the hardened smoke run

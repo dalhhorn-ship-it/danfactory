@@ -352,6 +352,12 @@ def drop_sandbox_artifacts(w):
         full = os.path.join(w.path, p)
         if p in SANDBOX_ARTIFACTS and os.path.isfile(full) and os.path.getsize(full) == 0:
             os.remove(full)
+    for p in out_of(w.g(["ls-files", "--others", "--ignored", "--exclude-standard", "-z"])).split("\0"):
+        if p and is_bytecode_cache(p):  # hooks inside the agent's session write .pyc caches (pilot 2); never part of what merges
+            try:
+                os.remove(os.path.join(w.path, p))
+            except OSError:
+                pass
 
 
 def changed_files(w):

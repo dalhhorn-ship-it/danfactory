@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start.py\""
           }
         ]
       }
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_large_read.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_large_read.py\""
           }
         ]
       },
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_bash_policy.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_bash_policy.py\""
           }
         ]
       },
@@ -69,7 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prd_write.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prd_write.py\""
           }
         ]
       }
@@ -80,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/docs_changed.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/docs_changed.py\""
           }
         ]
       }
@@ -90,7 +90,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/record_tokens.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/record_tokens.py\""
           }
         ]
       }
@@ -100,7 +100,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context_watch.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/context_watch.py\""
           }
         ]
       }
@@ -111,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact.py\""
+            "command": "python3 -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact.py\""
           }
         ]
       }
