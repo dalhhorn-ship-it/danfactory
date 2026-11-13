@@ -583,6 +583,7 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
             row["review_cost_usd"] = rv["cost"]
             if rv["estimated"]:
                 row["cost_estimated"] = True
+            drop_sandbox_artifacts(rtree)  # the reviewer's Bash sandbox leaves empty mount points here too (smoke run); nothing else is tolerated
             bad = rtree.identity() or ("HEAD moved" if rtree.head() != c1 else None) or ("the tree was modified: " + rtree.dirty()[:100] if rtree.dirty() else None)
             if bad:
                 raise Fail("reviewer-modified-tree", "- the reviewer changed the tree it was given (%s): attempt lost" % bad)

@@ -731,6 +731,15 @@ class Reviewer(unittest.TestCase):
             e.cleanup()
 
 
+    def test_empty_sandbox_mount_points_in_the_review_tree_are_tolerated(self):  # found in the hardened smoke run
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}], "review": [{"text": SHIP, "write": {".env": "", "package.json": ""}}]})
+        try:
+            rc, out = e.run("run", "--next")
+            self.assertEqual(rc, 0, out)
+        finally:
+            e.cleanup()
+
+
 class Verdict(unittest.TestCase):
     def test_parse_only_the_structured_last_line(self):
         pv = runner.parse_verdict
