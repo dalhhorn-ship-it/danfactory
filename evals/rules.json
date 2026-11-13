@@ -30,6 +30,17 @@
    "hook": "guard_bash_policy.py"
   },
   {
+   "id": "hook-guard-prd-write",
+   "title": "Product-code edits are blocked without an in-progress item linked to an approved PRD (or a same-day exemption)",
+   "kind": "hook",
+   "source": ".claude/settings.json (PreToolUse Edit|Write|MultiEdit|NotebookEdit)",
+   "gates": [
+    "prd-gate",
+    "prd-gate-forced"
+   ],
+   "hook": "guard_prd_write.py"
+  },
+  {
    "id": "hook-docs-changed",
    "title": "Doc edits remind the agent to sync docs and the index",
    "kind": "hook",

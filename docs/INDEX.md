@@ -31,7 +31,7 @@
 | docs/BACKLOG.md | 55 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 24 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/TECH-DEBT.md | 26 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
@@ -56,11 +56,11 @@
 | docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
-| docs/policies/evals.md | 37 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
+| docs/policies/evals.md | 39 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/issue-ledger.md | 23 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
-| docs/policies/merge-gate.md | 62 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
-| docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/security.md | 31 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
+| docs/policies/merge-gate.md | 67 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
+| docs/policies/prd-approval.md | 29 | No feature work starts until the product-manager has written a PRD and the user has… |
+| docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |

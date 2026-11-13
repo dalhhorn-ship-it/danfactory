@@ -18,8 +18,11 @@
 | coverage | last full-run coverage against `budgets.min_coverage_pct` and `max_coverage_drop_pct` | `coverage-below-min`, `coverage-dropped` |
 | acceptance | `scripts/acceptance.py run --json` once the suite exists (AUTO-2), else skip | `acceptance-regression`, `test-not-admitted`, `acceptance-error` (also: the suite or script is gone while the baseline lists tests, a collection error, a runner error), `open-prd-questions` (warn), `acceptance-unmapped` (warn) |
 | protected | changed paths matching `gate.protected`; baseline ids removed | `protected-path`, `baseline-shrunk` |
+| prd | product-code commits in range (any path outside `docs/`, `issues/`, `tests/acceptance/`, `metrics/`, `.factory/`, `factory.json`, root `*.md` except CLAUDE.md) need `Refs:` to an item or PRD slug with an approved PRD, `Refs: ISS-n` of an issue whose PRD is approved, or a `PRD-Exempt:` trailer; the detail lists active and expired `.factory/prd-exemption` lines | `no-approved-prd` (fail in `required`, warn in `advisory`) |
 | review | `Review:` trailers on the non-merge commits in range | `review-missing`, `review-fix-first` |
 | security | added lines of the diff against base (tracked files, committed plus working tree), plus untracked files for path rules | `secret-in-diff`, `env-file-added`, `unpinned-action`, `pipe-to-shell` |
+
+The `prd` check needs `.claude/hooks/_prd.py` (shared with the write guard); without it the check reports `skip`.
 
 A check with nothing to run (empty command, no suite, no base) is `skip`, never `pass`.
 
@@ -37,6 +40,7 @@ Tests live in `tests/acceptance/<slug>/` (protected path), test id `<slug>/<modu
 
 ## Trailers
 - `Review: ship` or `Review: fix-first`, added by the `reviewer` as a trailer on a commit in the range (an empty commit is fine). The newest one wins.
+- `PRD-Exempt: <reason>`: marks a product-code commit as covered by a policy exemption (bug fix restoring approved behaviour, chore, waiver, spike) instead of a `Refs:` to an approved item. Self-asserted and visible in the log; pair it with a dated line in `.factory/prd-exemption` for the write guard.
 - `Acceptance-Change: <slug>`: required on every commit that touches a `gate.protected` path or removes ids from `metrics/acceptance-baseline.json`. `<slug>` must be an approved PRD in docs/specs/ (and, once tests/acceptance/manifest.json exists, listed in its `prds`). Only the `test-writer` writes it; `developer` never edits protected paths.
 
 ## Config (factory.json -> gate)
@@ -44,6 +48,7 @@ Tests live in `tests/acceptance/<slug>/` (protected path), test id `<slug>/<modu
 |---|---|---|
 | base_branch | main | merge-base target |
 | protected | `["tests/acceptance/**"]` | globs (`**` crosses folders) that need the trailer |
+| prd | required | `off`, `advisory` (an uncovered product commit warns) or `required` (it fails). This template's own factory.json sets `advisory`: it predates the rule, so older history would fail. Projects keep `required`. |
 | review | advisory | `off`, `advisory` (missing review warns) or `required` (missing review fails) |
 | security_ignore | `[".factory/tests/**", "evals/**"]` | globs the security scan skips (fixtures) |
 

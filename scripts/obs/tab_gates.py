@@ -4,6 +4,7 @@ import datetime
 import html
 import json
 import os
+import re
 import time
 
 from . import sources as S
@@ -147,6 +148,42 @@ def render_acceptance(a):
             % (kv, rows, ('<h3>Open PRD questions: answer them in a PRD revision</h3><ul>%s</ul>' % qs) if qs else ""))
 
 
+def guard_stats(root, rows, now):
+    """PRD write guard numbers: blocks in the last 30 days (metrics/guard.local.jsonl, local per machine), exemptions dated
+    today (.factory/prd-exemption), and gate runs among the last GATE_WINDOW carrying `no-approved-prd`."""
+    blocks = 0
+    for ln in S.read(root, "metrics/guard.local.jsonl").splitlines():
+        try:
+            t = datetime.datetime.fromisoformat(json.loads(ln)["ts"]).timestamp()
+        except (ValueError, KeyError, TypeError):
+            continue
+        if now - t <= 30 * 86400:
+            blocks += 1
+    today = datetime.date.fromtimestamp(now).isoformat()
+    ex = [x for x in (S.read(root, ".factory/prd-exemption") or "").splitlines()
+          if re.match(r"^%s\s+(bugfix|chore|waiver|spike):\s*\S" % today, x.strip())]
+    last = rows[-GATE_WINDOW:]
+    return {"blocks_30d": blocks, "open_exemptions": len(ex), "exemptions": [x.strip() for x in ex][:5],
+            "no_approved_prd_runs": sum("no-approved-prd" in (r.get("codes") or []) for r in last), "window": len(last)}
+
+
+def guard_line(g):
+    if not g:
+        return "PRD guard n/a"
+    return "PRD guard: %d block(s) in 30d, %d open exemption(s), no-approved-prd in %d of last %d gate run(s)" % (
+        g["blocks_30d"], g["open_exemptions"], g["no_approved_prd_runs"], g["window"])
+
+
+def render_guard(g):
+    if not g:
+        return ""
+    facts = [("Guard blocks, last 30 days (this machine)", g["blocks_30d"]),
+             ("Open exemptions (dated today)", "%d%s" % (g["open_exemptions"], (": " + "; ".join(g["exemptions"])) if g["exemptions"] else "")),
+             ("Gate runs with `no-approved-prd` (last %d)" % g["window"], g["no_approved_prd_runs"])]
+    kv = "".join("<tr><td>%s</td><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts)
+    return '<div class="card"><h2>PRD write guard</h2><table><tbody>%s</tbody></table></div>' % kv
+
+
 def collect(root, base):
     now = time.time()
     by_title = {}
@@ -175,7 +212,7 @@ def collect(root, base):
     deps = sorted(({"path": p, "days": _age(times[p], now)} for p in MANIFESTS if p in times), key=lambda d: d["path"])
     m = base.get("metrics") or {}
     gate = gate_stats(gate_rows(root), (m.get("test_budget")))
-    return {"gate": gate, "acceptance": acceptance_stats(root, gate_rows(root)), "items": items[:CAP], "items_total": len(items),
+    return {"gate": gate, "guard": guard_stats(root, gate_rows(root), now), "acceptance": acceptance_stats(root, gate_rows(root)), "items": items[:CAP], "items_total": len(items),
             "items_no_prd": sum(i["prd_status"] != "approved" for i in items),
             "components": comps[:CAP], "components_total": len(comps), "components_untested": sum(c["tests"] == 0 for c in comps),
             "coverage": m.get("coverage"), "coverage_min": m.get("coverage_min"),
@@ -223,12 +260,13 @@ def line(d):
     sec = "audit " + (d["security"]["ts"][:10] if d["security"] else NOT_YET)
     dep = "deps %dd old" % max(x["days"] for x in d["deps"]) if d["deps"] else "no dependency manifests"
     return "%d/%d items without approved PRD, %d/%d components without tests; %s; %s; %s; %s" % (
-        d["items_no_prd"], d["items_total"], d["components_untested"], d["components_total"], chk, sec, dep, gate_line(d.get("gate")))
+        d["items_no_prd"], d["items_total"], d["components_untested"], d["components_total"], chk, sec, dep, gate_line(d.get("gate"))) \
+        + "; " + guard_line(d.get("guard"))
 
 
 def render(d):
     if not d["items_total"] and not d["components_total"]:
-        return '<div class="stack"><div class="card"><h2>Gates</h2><p class="muted">%s</p></div>%s</div>' % (e(EMPTY), render_gate(d.get("gate")) + render_acceptance(d.get("acceptance")))
+        return '<div class="stack"><div class="card"><h2>Gates</h2><p class="muted">%s</p></div>%s</div>' % (e(EMPTY), render_gate(d.get("gate")) + render_guard(d.get("guard")) + render_acceptance(d.get("acceptance")))
     cov = ("%.1f%% (min %s%%)" % (d["coverage"], d["coverage_min"])) if d["coverage"] is not None else NOT_YET
     deps = ", ".join("%s: %dd" % (x["path"], x["days"]) for x in d["deps"]) or "no dependency manifests in the repo"
     facts = [("Last check.sh pass", _when(d["check"])), ("Last security audit", _when(d["security"])),
@@ -244,7 +282,7 @@ def render(d):
         if d["items_total"] > len(d["items"]) else ""
     capc = '<p class="muted small">Top %d of %d components; full list in data.json.</p>' % (len(d["components"]), d["components_total"]) \
         if d["components_total"] > len(d["components"]) else ""
-    return ('<div class="stack">' + render_gate(d.get("gate")) + render_acceptance(d.get("acceptance")) + '<div class="card"><h2>Gates</h2><table><tbody>%s</tbody></table></div>'
+    return ('<div class="stack">' + render_gate(d.get("gate")) + render_guard(d.get("guard")) + render_acceptance(d.get("acceptance")) + '<div class="card"><h2>Gates</h2><table><tbody>%s</tbody></table></div>'
             '<div class="card"><h2>PRD approved per item (%d without)</h2><div class="scroll"><table><thead><tr><th>ID</th><th>Item</th><th>State</th><th>PRD</th></tr></thead>'
             '<tbody>%s</tbody></table></div>%s</div>'
             '<div class="card"><h2>Tests per component (matched by file name)</h2><div class="scroll"><table><tbody>%s</tbody></table></div>%s</div></div>'
