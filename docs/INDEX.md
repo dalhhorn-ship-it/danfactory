@@ -42,7 +42,7 @@
 | docs/decisions/0006-agent-eval-harness.md | 22 | Status: accepted · Date: 2026-11-11 · PRD: docs/specs/agent-eval-harness.md |
 | docs/decisions/0007-merge-gate-and-acceptance-suite.md | 60 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (slice A: C1, C2) |
 | docs/decisions/0008-issue-ledger-and-finder.md | 33 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (C3, step 3,… |
-| docs/decisions/0009-fixer-runner.md | 70 | Status: accepted · Date: 2026-11-13 · PRD: docs/specs/gated-autonomy.md (C4; criteria 8,… |
+| docs/decisions/0009-fixer-runner.md | 82 | Status: accepted · Date: 2026-11-13 · PRD: docs/specs/gated-autonomy.md (C4; criteria 8,… |
 | docs/operating-model/AGENT-ROUTING.md | 86 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 53 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
@@ -61,7 +61,7 @@
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
 | docs/policies/merge-gate.md | 62 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 25 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/runner.md | 45 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
+| docs/policies/runner.md | 49 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
 | docs/policies/security.md | 31 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |

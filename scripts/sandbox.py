@@ -14,6 +14,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 # Environment variables the sandboxed agent may see. Everything else (CLOUDFLARE_*, GITHUB_*, GH_*, AWS_*, cloud and
 # SSH variables, CLAUDE_CODE_* of this session) is dropped. The first group is what claude needs to reach the API.
@@ -31,6 +32,9 @@ SANDBOX = {"sandbox": {"enabled": True, "failIfUnavailable": True, "allowUnsandb
                        "filesystem": {"denyRead": ["~/.claude", "~/.claude.json"]}}}
 TOOLS = "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Task,Agent,TodoWrite"
 READ_TOOLS = "Read,Glob,Grep"  # reviewer: reads, cannot edit or run commands
+# Reviewer: only read tools exist for it (--tools restricts the built-in set; --allowedTools alone only pre-approves), and
+# permission mode dontAsk denies anything not pre-approved. The deny list is belt and braces.
+DENY_TOOLS = "Bash Edit Write MultiEdit NotebookEdit Task Agent WebFetch WebSearch Skill"
 GIT_ID = ["-c", "user.name=eval", "-c", "user.email=eval@example.invalid", "-c", "commit.gpgsign=false"]
 
 
@@ -63,16 +67,21 @@ def sandbox_problem(src=None, which=shutil.which, platform=sys.platform):
     return None
 
 
-def claude_cmd(model, max_turns, sandbox=True, tools=TOOLS):
-    return ["claude", "-p", "--output-format", "stream-json", "--verbose", "--include-hook-events",
-            "--model", model, "--max-turns", str(max_turns), "--permission-mode", "acceptEdits",
-            "--allowedTools", tools, "--no-session-persistence"] + (["--settings", json.dumps(SANDBOX)] if sandbox else [])
+def claude_cmd(model, max_turns, sandbox=True, tools=TOOLS, max_budget=None, reviewer=False):
+    cmd = ["claude", "-p", "--output-format", "stream-json", "--verbose", "--include-hook-events",
+           "--model", model, "--max-turns", str(max_turns), "--permission-mode", "dontAsk" if reviewer else "acceptEdits",
+           "--allowedTools", tools, "--no-session-persistence"] + (["--settings", json.dumps(SANDBOX)] if sandbox else [])
+    if reviewer:
+        cmd += ["--tools", tools, "--disallowedTools", DENY_TOOLS]
+    if max_budget is not None:  # claude stops itself at this spend (ADR 0009 hardening)
+        cmd += ["--max-budget-usd", "%.4f" % max(float(max_budget), 0.01)]
+    return cmd
 
 
-def run_claude(prompt, model, max_turns, cwd, env, timeout, tools=TOOLS):
+def run_claude(prompt, model, max_turns, cwd, env, timeout, tools=TOOLS, max_budget=None, reviewer=False):
     """Real model call. The prompt goes on stdin (--allowedTools is variadic and would swallow a positional)."""
     try:
-        p = subprocess.run(claude_cmd(model, max_turns, os.environ.get("EVALS_SANDBOX") != "off", tools), input=prompt,
+        p = subprocess.run(claude_cmd(model, max_turns, os.environ.get("EVALS_SANDBOX") != "off", tools, max_budget, reviewer), input=prompt,
                            cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout, check=False)
         return p.stdout, p.returncode
     except subprocess.TimeoutExpired as e:
@@ -102,6 +111,106 @@ def usage_cost(events):
            "tokens_out": u["output_tokens"]}
     cost = round(max([float(e.get("total_cost_usd") or 0) for e in res] or [0]), 5)
     return tok, cost, sum(e.get("num_turns", 0) or 0 for e in res), bool(res)
+
+
+# ---- sandbox for code that lives in a worktree (ADR 0009 hardening) ----
+# Fixer-written code (product code, tests, the acceptance command, build and lint commands) runs on the runner's side of the
+# fence too: the runner evaluates it with an allow-listed environment without model credentials and inside bubblewrap with no
+# network, a throwaway HOME and TMPDIR, the main project directory and the real home hidden, and the scripts and gate inputs
+# mounted read-only. No bwrap (or not Linux): refuse, like evals. EVALS_SANDBOX=off opts out (scrubbed env only).
+RO_TREE = ("scripts", "tests/acceptance", "factory.json", ".claude", ".github", "metrics/acceptance-baseline.json")
+NO_CREDS = ("PATH", "LANG", "LC_ALL", "TERM", "TZ")
+
+
+class SandboxUnavailable(Exception):
+    pass
+
+
+def tree_sandbox_problem(src=None, which=shutil.which, platform=sys.platform):
+    if (os.environ if src is None else src).get("EVALS_SANDBOX") == "off":
+        return None
+    if not platform.startswith("linux"):
+        return "evaluating fixer code needs bubblewrap (Linux); set EVALS_SANDBOX=off to run it without isolation"
+    if not which("bwrap"):
+        return "evaluating fixer code needs bwrap on PATH (apt-get install -y bubblewrap); or set EVALS_SANDBOX=off to run it without isolation"
+    return None
+
+
+def eval_env(src, home, tmp):
+    """Environment for code under test: PATH, locale and nothing else (no model credentials, no proxies: it has no network)."""
+    env = {k: src[k] for k in NO_CREDS if k in src}
+    env.update(HOME=home, TMPDIR=tmp, GIT_TERMINAL_PROMPT="0", PYTHONDONTWRITEBYTECODE="1")
+    return env
+
+
+class TreeSandbox:
+    """Runs commands for one worktree: argv() wraps a command in bwrap, env is the scrubbed environment, close() removes the
+    throwaway HOME and TMPDIR. gate_wrap() is the hook gate.WRAP expects."""
+
+    def __init__(self, tree, extra_rw=(), src=None, timeout=1800):
+        src = os.environ if src is None else src
+        problem = tree_sandbox_problem(src)
+        if problem:
+            raise SandboxUnavailable(problem)
+        self.off = src.get("EVALS_SANDBOX") == "off"
+        self.tree, self.timeout = os.path.realpath(tree), timeout
+        self.extra_rw = [os.path.realpath(d) for d in extra_rw]
+        self.tmp = tempfile.mkdtemp(prefix="tree-sandbox-")
+        self.home, self.scratch = os.path.join(self.tmp, "home"), os.path.join(self.tmp, "tmp")
+        os.makedirs(self.home)
+        os.makedirs(self.scratch)
+        self.env = eval_env(src, self.home, self.scratch)
+        self.common = self.hide = None
+        p = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=self.tree, capture_output=True, text=True,
+                           env={"PATH": src.get("PATH", ""), "HOME": self.tmp, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull})
+        if p.returncode == 0 and p.stdout.strip():
+            self.common = os.path.realpath(p.stdout.strip())
+            top = os.path.dirname(self.common)
+            if os.path.basename(self.common) == ".git" and self.tree.startswith(top + os.sep):
+                self.hide = top  # the main project directory (its .env, other worktrees): hidden, only .git comes back read-only
+        self.hidden_homes = [h for h in {os.path.realpath(src.get("HOME") or "/root"), "/root"}
+                             if h != "/" and not os.path.realpath(sys.executable).startswith(h + os.sep)]
+
+    def close(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def argv(self, cmd, shell=False, extra_rw=()):
+        inner = ["sh", "-c", cmd] if shell else list(cmd)
+        pre = ["timeout", "-k", "10", str(self.timeout)] if shutil.which("timeout") else []
+        if self.off:
+            return pre + inner
+        a = ["bwrap", "--die-with-parent", "--new-session", "--unshare-all", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc",
+             "--tmpfs", "/tmp"]
+        for d in sorted(self.hidden_homes) + ([self.hide] if self.hide else []):
+            a += ["--tmpfs", d]
+        a += ["--bind", self.tree, self.tree]
+        for rel in RO_TREE + (".git",):
+            path = os.path.join(self.tree, rel)
+            if os.path.exists(path):
+                a += ["--ro-bind", path, path]
+        if self.common:
+            a += ["--ro-bind", self.common, self.common]
+        for d in [self.home, self.scratch] + self.extra_rw + [os.path.realpath(x) for x in extra_rw]:
+            a += ["--bind", d, d]
+        return pre + a + ["--chdir", self.tree] + inner
+
+    def acceptance_env(self):
+        """Environment for scripts/acceptance.py itself (runner-trusted code): it wraps the tests it starts in its own sandbox."""
+        return dict(self.env, ACCEPTANCE_SANDBOX="1", **({"EVALS_SANDBOX": "off"} if self.off else {}))
+
+    def gate_wrap(self, cmd, root, shell):
+        """(cmd, shell, env) for gate.sh(): git runs as is, the acceptance runner sandboxes its tests itself, the rest runs wrapped."""
+        if not shell and cmd and cmd[0] == "git":
+            return cmd, shell, None
+        if not shell and list(cmd[:2]) == ["python3", "scripts/acceptance.py"]:
+            return cmd, shell, self.acceptance_env()
+        return self.argv(cmd, shell), False, self.env
 
 
 # ---- metrics/runner.jsonl: one durable row per fixer attempt, park, stop or second reading (ADR 0009) ----

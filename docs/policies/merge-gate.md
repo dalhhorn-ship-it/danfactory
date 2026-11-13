@@ -3,7 +3,7 @@
 > One command, one verdict with reason codes, the same locally and in CI. Design: docs/decisions/0007-merge-gate-and-acceptance-suite.md.
 
 ## Use
-- Before merging: `python3 scripts/gate.py` (add `--json` for machines, `--only security,protected` for a subset, `--no-record` to skip the local history row).
+- Before merging: `python3 scripts/gate.py` (add `--json` for machines, `--only security,protected` for a subset, `--no-record` to skip the local history row, `--sandbox` to run build, lint, tests and the acceptance suite in bubblewrap without network and with a scrubbed environment; the fixer runner always does).
 - CI runs the same script as job `gate` in .github/workflows/ci.yml. Require `gate` in branch protection for `main`.
 - Exit code: 0 pass, 1 fail, 2 usage error. A `warn` never fails the verdict.
 - Base: `--base`, else the merge-base with `origin/<gate.base_branch>`, else `HEAD~1`. With no usable base the diff checks (`protected`, `review`, `security`) report `skip`. When `--base` is unresolvable or empty or a fallback is used, the verdict carries `base_note` and the text output and CI summary print `base-fallback: <why>` (informational, never a failure).

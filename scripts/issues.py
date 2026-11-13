@@ -187,7 +187,7 @@ def _note(iss, text):
 
 
 # ---- results ----
-def results(root, from_json):
+def results(root, from_json, env=None):
     if from_json:
         try:
             with open(from_json, encoding="utf-8") as fh:
@@ -198,7 +198,7 @@ def results(root, from_json):
         script = os.path.join(root, "scripts", "acceptance.py")
         if not os.path.isfile(script):
             raise Usage("scripts/acceptance.py not found (the acceptance suite is AUTO-2); pass --from-json FILE with `acceptance.py run --json` output")
-        p = subprocess.run([sys.executable, script, "run", "--json"], cwd=root, capture_output=True, text=True)
+        p = subprocess.run([sys.executable, script, "run", "--json"], cwd=root, capture_output=True, text=True, env=env)
         try:
             data = json.loads(p.stdout)
         except ValueError:

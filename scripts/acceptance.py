@@ -33,9 +33,11 @@ import datetime
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -281,27 +283,53 @@ def _child_unittest(root, accdir, out, ref):
     write_json(out, {"tests": rows, "collection_errors": errors})
 
 
+def tree_sandbox(root):
+    """A sandbox.TreeSandbox for the code under test when ACCEPTANCE_SANDBOX=1 (the fixer runner sets it), else None.
+    The tests then run in bubblewrap without network and with a scrubbed environment; no bwrap means a runner error."""
+    if os.environ.get("ACCEPTANCE_SANDBOX") != "1":
+        return None
+    sys.path.insert(0, HERE)
+    import sandbox
+    try:
+        return sandbox.TreeSandbox(root)
+    except sandbox.SandboxUnavailable as ex:
+        raise RunnerError(str(ex))
+
+
+def fresh(path, since):
+    """True when `path` is a file written at or after `since` (a result file left over from before the run is not trusted)."""
+    try:
+        return os.stat(path).st_mtime >= since - 1.0
+    except OSError:
+        return False
+
+
 def run_unittest(root, ref=None):
     cfg = config(root)
     accdir = os.path.join(root, cfg["dir"])
     if not os.path.isdir(accdir):
         return {"tests": [], "collection_errors": []}
-    fd, out = tempfile.mkstemp(suffix=".json")
-    os.close(fd)
+    # the result file lives in a directory only this process created, outside the tree under test
+    odir = tempfile.mkdtemp(prefix="acceptance-out-")
+    out = os.path.join(odir, "result.json")
+    ts = tree_sandbox(root)
     try:
         cmd = [sys.executable, os.path.abspath(__file__), "_unittest", "--root", root, "--dir", accdir, "--out", out]
         if ref:
             cmd += ["--ref", os.path.abspath(ref)]
-        p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, errors="replace")
-        res = read_json(out)
+        t0 = time.time()
+        if ts:
+            p = subprocess.run(ts.argv(cmd, False, [odir]), cwd=root, env=ts.env, capture_output=True, text=True, errors="replace")
+        else:
+            p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, errors="replace")
+        res = read_json(out) if fresh(out, t0) else None
         if not isinstance(res, dict) or "tests" not in res:
             raise RunnerError("unittest runner failed (exit %d): %s" % (p.returncode, _tail(p.stdout + p.stderr)))
         return res
     finally:
-        try:
-            os.unlink(out)
-        except OSError:
-            pass
+        shutil.rmtree(odir, ignore_errors=True)
+        if ts:
+            ts.close()
 
 
 # ---------------------------------------------------------------- custom runner: JUnit XML
@@ -463,24 +491,28 @@ def run_custom(root, command, ref=None):
     cfg = config(root)
     accdir = os.path.join(root, cfg["dir"])
     slugs = set(os.listdir(accdir)) if os.path.isdir(accdir) else set()
-    fd, junit = tempfile.mkstemp(suffix=".xml")
-    os.close(fd)
-    os.unlink(junit)
-    env = dict(os.environ, ACCEPTANCE_JUNIT=junit)
+    jdir = tempfile.mkdtemp(prefix="acceptance-junit-")  # runner-owned, outside the tree under test, nothing in it before the run
+    junit = os.path.join(jdir, "junit.xml")
+    ts = tree_sandbox(root)
+    env = dict(ts.env if ts else os.environ, ACCEPTANCE_JUNIT=junit)
     if ref:
         ref = os.path.abspath(ref)
         env["ACCEPTANCE_REFERENCE"] = ref
         env["PYTHONPATH"] = ref + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     try:
-        p = subprocess.run(command, cwd=root, shell=True, env=env, capture_output=True, text=True, errors="replace")
-        if not os.path.isfile(junit):
-            raise RunnerError("command wrote no JUnit file at $ACCEPTANCE_JUNIT (exit %d): %s" % (p.returncode, _tail(p.stdout + p.stderr)))
+        t0 = time.time()
+        if ts:
+            p = subprocess.run(ts.argv(command, True, [jdir] + ([ref] if ref else [])), cwd=root, env=env, capture_output=True, text=True,
+                               errors="replace")
+        else:
+            p = subprocess.run(command, cwd=root, shell=True, env=env, capture_output=True, text=True, errors="replace")
+        if not os.path.isfile(junit) or not fresh(junit, t0):
+            raise RunnerError("command wrote no fresh JUnit file at $ACCEPTANCE_JUNIT (exit %d): %s" % (p.returncode, _tail(p.stdout + p.stderr)))
         return parse_junit(junit, slugs, root, accdir)
     finally:
-        try:
-            os.unlink(junit)
-        except OSError:
-            pass
+        shutil.rmtree(jdir, ignore_errors=True)
+        if ts:
+            ts.close()
 
 
 def run_suite(root, ref=None, reference_command=False):
@@ -606,10 +638,8 @@ def second_reading_prompt(slug, prd_text, layout):
 
 
 def cmd_second_reading(a, root):
-    import shutil
-    import tempfile
-    import time
     sys.path.insert(0, HERE)
+    import runner
     import sandbox as S
     prd = os.path.join(root, "docs", "specs", a.slug + ".md")
     if not os.path.isfile(prd):
@@ -621,6 +651,14 @@ def cmd_second_reading(a, root):
         return 2
     cfg = read_json(os.path.join(root, "factory.json"), {}) or {}
     model = a.model or (cfg.get("autonomy") or {}).get("model") or "sonnet"
+    acfg = runner.settings(root)
+    rows = runner.load_rows(root, acfg["staging_branch"])
+    left = float(acfg["daily_budget_usd"]) - runner.spent(rows, runner.today())
+    est = runner.estimate(rows, acfg)
+    if left <= 0 or left < est:  # same daily cap as the fixer runner, checked before the paid call
+        print("second-reading: daily budget: $%.2f spent today plus ~$%.2f for this call would pass the $%.2f cap"
+              % (runner.spent(rows, runner.today()), est, float(acfg["daily_budget_usd"])), file=sys.stderr)
+        return 3
     tmp = tempfile.mkdtemp(prefix="second-reading-")
     try:
         ref, home, scratch = (os.path.join(tmp, d) for d in ("ref", "home", "tmp"))
@@ -635,14 +673,24 @@ def cmd_second_reading(a, root):
             fh.write(layout + "\n")
         env = S.scrubbed_env(os.environ, home, scratch)
         t0 = time.time()
-        out, rc = S.run_claude(second_reading_prompt(a.slug, prd_text, layout), model, int((cfg.get("autonomy") or {}).get("max_turns") or 40),
-                               ref, env, 900)
+        try:
+            out, rc = S.run_claude(second_reading_prompt(a.slug, prd_text, layout), model, int((cfg.get("autonomy") or {}).get("max_turns") or 40),
+                                   ref, env, 900, max_budget=left)
+        except FileNotFoundError:  # claude is not installed: nothing was spent
+            out, rc = "", 127
+        except Exception:  # noqa: BLE001 - the money may be spent: record an estimate below
+            out, rc = "", 125
         tok, cost, _turns, has = S.usage_cost(S.parse_events(out))
+        estimated = not has and cost <= 0 and rc != 127
+        if estimated:
+            cost = round(min(est, left), 5)
         for junk in ("PRD.md", "LAYOUT.txt"):
             if os.path.exists(os.path.join(ref, junk)):
                 os.remove(os.path.join(ref, junk))
         row = dict(tok, ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), kind="second-reading", slug=a.slug,
                    model=model, cost_usd=cost, seconds=round(time.time() - t0, 1), run="second-reading-" + a.slug)
+        if estimated:
+            row["cost_estimated"] = True
         S.append_row(os.path.join(root, S.RUNNER_ROWS), row)
         print("second-reading: model %s, $%.2f, %.0fs%s" % (model, cost, time.time() - t0, "" if has else " (no result from the agent, claude exit %s)" % rc))
         if not has:

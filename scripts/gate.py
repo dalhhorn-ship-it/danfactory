@@ -43,10 +43,16 @@ TAIL = 300
 
 # ---------------------------------------------------------------- helpers
 
+WRAP = None  # --sandbox (and the fixer runner) set this to sandbox.TreeSandbox.gate_wrap: (cmd, root, shell) -> (cmd, shell, env)
+
+
 def sh(cmd, root, shell=False):
     """(returncode, stdout+stderr). Never raises for a missing binary."""
+    env = None
+    if WRAP:
+        cmd, shell, env = WRAP(cmd, root, shell)
     try:
-        p = subprocess.run(cmd, cwd=root, shell=shell, capture_output=True, text=True, errors="replace")
+        p = subprocess.run(cmd, cwd=root, shell=shell, env=env, capture_output=True, text=True, errors="replace")
         return p.returncode, (p.stdout or "") + (p.stderr or "")
     except OSError as ex:
         return 127, str(ex)
@@ -581,6 +587,8 @@ def main(argv=None, root=ROOT):
     ap.add_argument("--json", action="store_true", help="print the verdict as JSON")
     ap.add_argument("--summary", metavar="FILE", help="write a Markdown summary (CI step summary)")
     ap.add_argument("--only", help="comma-separated check ids (%s)" % ",".join(c for c, _ in CHECKS))
+    ap.add_argument("--sandbox", action="store_true", help="run build, lint, tests and the acceptance suite in bubblewrap without network "
+                    "and with a scrubbed environment (the fixer runner always does)")
     ap.add_argument("--no-record", action="store_true", help="do not append to %s" % LOCAL)
     try:
         a = ap.parse_args(argv)
@@ -593,7 +601,22 @@ def main(argv=None, root=ROOT):
         if unknown or not only:
             print("unknown check id(s): %s (known: %s)" % (", ".join(sorted(unknown)), ", ".join(c for c, _ in CHECKS)), file=sys.stderr)
             return 2
-    v = run_gate(root, a.base, only)
+    global WRAP
+    ts = None
+    if a.sandbox:
+        import sandbox
+        try:
+            ts = sandbox.TreeSandbox(root)
+        except sandbox.SandboxUnavailable as ex:
+            print("gate --sandbox: %s" % ex, file=sys.stderr)
+            return 2
+        WRAP = ts.gate_wrap
+    try:
+        v = run_gate(root, a.base, only)
+    finally:
+        WRAP = None
+        if ts:
+            ts.close()
     if not a.no_record:
         try:
             record(root, v)
