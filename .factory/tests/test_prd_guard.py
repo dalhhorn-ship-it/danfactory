@@ -274,9 +274,14 @@ class GateCheck(Base):
         self.assertEqual({c["id"]: c for c in gate.run_gate(p.root, None, {"prd"})["checks"]}["prd"]["status"], "skip")
 
     def test_template_factory_json_is_advisory_and_check_is_registered(self):
+        self.assertIn("prd", [c for c, _ in gate.CHECKS])
+        self.assertEqual(gate.DEFAULTS["prd"], "required")
+        sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
+        from _common import template_mode
+        if not template_mode(root=ROOT):
+            self.skipTest("the template's own factory.json setting; a project sets gate.prd itself (pilot 2)")
         with open(os.path.join(ROOT, "factory.json"), encoding="utf-8") as fh:
             self.assertEqual(json.load(fh)["gate"]["prd"], "advisory")
-        self.assertIn("prd", [c for c, _ in gate.CHECKS])
         self.assertEqual(gate.DEFAULTS["prd"], "required")
 
 

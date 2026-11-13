@@ -30,6 +30,8 @@ def make_copy(remote=None, git=True):
         f = json.load(fh)
     f.pop("adopted", None)
     f.update(phase="brainstorm", project={"name": "", "one_liner": ""})
+    f["paths"] = {"primary": "", "secondary": []}  # a project from the template has its own path and commands (pilot 2)
+    f["commands"] = {k: "" for k in f.get("commands", {})}
     f["template"]["source_repo"] = SRC
     os.makedirs(os.path.join(d, "docs"))
     for rel, body in (("factory.json", json.dumps(f)), ("docs/BACKLOG.md", BACKLOG), ("docs/TECH-DEBT.md", DEBT)):
