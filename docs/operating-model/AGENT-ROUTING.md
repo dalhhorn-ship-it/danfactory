@@ -26,6 +26,7 @@
 | Read big things | file > 350 lines, 3+ files, logs, long diffs | `bulk-reader` | haiku |
 | Run tests / builds | run `metrics.py test` directly (one line when green); delegate when it fails or output is long | `test-runner` | haiku |
 | Failing acceptance tests → issues | L2+ in autonomy mode: after a build or a failing gate (docs/policies/issue-ledger.md) | `finder` | sonnet |
+| Fix issues unattended (autonomy mode) | L2+, `autonomy.enabled`, open issues with an approved PRD, you start it (docs/policies/runner.md) | `python3 scripts/runner.py run --next` (fixer and reviewer are headless agents it starts; not a subagent) | sonnet (`autonomy.model`) |
 | Debug | first attempt by the main agent fails, or production incident | `ultrathink-debugger` | opus |
 | UI changed | user-facing screens or flows touched | `ui-comprehensive-tester` | sonnet |
 | Task done? | see ladder | `task-completion-validator` | sonnet |

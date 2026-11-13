@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Issue ledger: failing admitted acceptance tests become files in issues/open/, fixed ones move to issues/fixed/.
+"""Issue ledger: failing admitted acceptance tests become files in issues/open/, fixed ones move to issues/fixed/,
+issues the fixer runner gave up on wait in issues/blocked/.
 Design: docs/decisions/0008-issue-ledger-and-finder.md. Stdlib only, no model calls.
 
   issues.py find   [--from-json FILE]   file or update issues from failing admitted tests (idempotent)
   issues.py sync   [--from-json FILE]   move issues whose tests all pass to issues/fixed/; reopen regressions
   issues.py merge  ISS-a ISS-b          fold b into a
   issues.py split  ISS-a TEST-ID...     move the given tests of a into a new issue
+  issues.py block  ISS-a [--log TEXT]   park an open issue in issues/blocked/ (the fixer runner does this after its attempt cap, ADR 0009)
+  issues.py unpark ISS-a                move a blocked issue back to issues/open/ after you acted
   issues.py list   [--json]
   issues.py status [--json]             counts for the dashboard
 
@@ -24,6 +27,7 @@ import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 FAILING = ("fail", "error")
+STATES = ("open", "fixed", "blocked")
 HEADER_RE = re.compile(r"^>\s*Status:\s*(\w+)\s*·\s*PRD:\s*(.*?)\s*·\s*Item:\s*(.*?)\s*·\s*Fingerprint:\s*(\w*)\s*·\s*Opened:\s*(.*?)\s*·"
                        r"\s*Updated:\s*(.*?)\s*·\s*Fixed:\s*(.*?)\s*$")
 FILE_RE = re.compile(r"^ISS-(\d{4,})-(.*)\.md$")
@@ -107,7 +111,7 @@ def parse(text):
 def load(root):
     """All ledger issues sorted by number: dicts with num, id, state, path, title, meta, sections, tests {id: message}."""
     out = []
-    for state in ("open", "fixed"):
+    for state in STATES:
         d = _dir(root, state)
         if not os.path.isdir(d):
             continue
@@ -225,7 +229,7 @@ def _apply(issue, group):
 def cmd_find(root, tests, admitted):
     issues = load(root)
     fail = _failing(tests, admitted)
-    by_id_open = {t: i for i in issues if i["state"] == "open" for t in i["tests"]}
+    by_id_open = {t: i for i in issues if i["state"] in ("open", "blocked") for t in i["tests"]}  # a parked issue still owns its tests
     by_id_fixed = {t: i for i in issues if i["state"] == "fixed" for t in i["tests"]}
     assigned, rest = {}, []  # issue id -> tests
     reopened = set()
@@ -244,7 +248,7 @@ def cmd_find(root, tests, admitted):
         groups.setdefault(fingerprint(t), []).append(t)
     by_fp = {}
     for i in issues:
-        if i["state"] == "open":
+        if i["state"] in ("open", "blocked"):
             by_fp.setdefault(i["meta"]["fp"], i)
     created, updated, reopen_list = [], [], []
     by_idx = {i["id"]: i for i in issues}
@@ -321,6 +325,33 @@ def _get(issues, ref):
             if i["num"] == int(m.group(1)):
                 return i
     raise Usage("no such issue: " + ref)
+
+
+def cmd_block(root, ref, log=""):
+    """Park an open issue (state blocked) and append an attempt log section; nothing else changes."""
+    iss = _get(load(root), ref)
+    if iss["state"] != "open":
+        raise Usage("only an open issue can be blocked (%s is %s)" % (iss["id"], iss["state"]))
+    iss["state"] = "blocked"
+    iss["meta"]["status"] = "blocked"
+    iss["meta"]["updated"] = _today()
+    if log.strip():
+        old = iss["sections"].get("Attempt log", "").strip("\n")
+        iss["sections"]["Attempt log"] = (old + "\n\n" if old else "") + log.strip("\n")
+    save(root, iss)
+    return {"blocked": iss["id"]}
+
+
+def cmd_unpark(root, ref):
+    iss = _get(load(root), ref)
+    if iss["state"] != "blocked":
+        raise Usage("%s is not blocked (state: %s)" % (iss["id"], iss["state"]))
+    iss["state"] = "open"
+    iss["meta"]["status"] = "open"
+    iss["meta"]["updated"] = _today()
+    _note(iss, "Unparked %s: back in the queue for the fixer runner." % _today())
+    save(root, iss)
+    return {"unparked": iss["id"]}
 
 
 def cmd_merge(root, a_ref, b_ref):
@@ -407,17 +438,19 @@ def status(root, today=None):
     issues = load(root)
     op = [i for i in issues if i["state"] == "open"]
     fx = [i for i in issues if i["state"] == "fixed"]
+    bl = [i for i in issues if i["state"] == "blocked"]
     by_prd = {}
     for i in op:
         by_prd[i["meta"]["prd"]] = by_prd.get(i["meta"]["prd"], 0) + 1
     ages = [(a, i["id"]) for i in op for a in [_age_days(i["meta"]["opened"], today)] if a is not None]
     oldest = max(ages) if ages else None
     trend = git_trend(root)
-    return {"exists": os.path.isdir(os.path.join(root, "issues")) and bool(issues), "open": len(op), "fixed": len(fx),
+    return {"exists": os.path.isdir(os.path.join(root, "issues")) and bool(issues), "open": len(op), "fixed": len(fx), "blocked": len(bl),
             "by_prd": dict(sorted(by_prd.items())),
             "oldest_open": {"id": oldest[1], "days": oldest[0]} if oldest else None,
             "tests_per_issue": {i["id"]: len(i["tests"]) for i in op},
             "per_day": dict(sorted(trend.items())),
+            "blocked_issues": [{"id": i["id"], "title": i["title"], "prd": i["meta"]["prd"]} for i in bl],
             "issues": [{"id": i["id"], "title": i["title"], "prd": i["meta"]["prd"], "tests": len(i["tests"]), "opened": i["meta"]["opened"],
                         "age": _age_days(i["meta"]["opened"], today)} for i in op]}
 
@@ -432,6 +465,11 @@ def main(argv=None):
     s = sub.add_parser("merge")
     s.add_argument("a")
     s.add_argument("b")
+    s = sub.add_parser("block")
+    s.add_argument("a")
+    s.add_argument("--log", default="")
+    s = sub.add_parser("unpark")
+    s.add_argument("a")
     s = sub.add_parser("split")
     s.add_argument("a")
     s.add_argument("ids", nargs="+")
@@ -448,6 +486,10 @@ def main(argv=None):
             print("%s: %s%s" % (a.cmd, "; ".join(parts) or "nothing to do", " (%d failing admitted test(s))" % r["_failing"] if "_failing" in r else ""))
         elif a.cmd == "merge":
             print(json.dumps(cmd_merge(root, a.a, a.b)))
+        elif a.cmd == "block":
+            print(json.dumps(cmd_block(root, a.a, a.log)))
+        elif a.cmd == "unpark":
+            print(json.dumps(cmd_unpark(root, a.a)))
         elif a.cmd == "split":
             print(json.dumps(cmd_split(root, a.a, a.ids)))
         elif a.cmd == "list":
@@ -461,7 +503,7 @@ def main(argv=None):
             if a.json:
                 print(json.dumps(st, indent=1))
             else:
-                print("%d open, %d fixed" % (st["open"], st["fixed"]) if st["exists"] else EMPTY)
+                print("%d open, %d fixed%s" % (st["open"], st["fixed"], ", %d blocked" % st["blocked"] if st["blocked"] else "") if st["exists"] else EMPTY)
     except Usage as ex:
         print("issues.py: %s" % ex, file=sys.stderr)
         return 2

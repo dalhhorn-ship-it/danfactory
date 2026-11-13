@@ -53,10 +53,10 @@ The patterns are conservative: private key blocks, common cloud and Git host tok
 - Paths: git runs with `core.quotepath=off` and `-z` for name lists. A `+++ ` line is a file header only before the first hunk of a file, so added content starting `++ ` cannot reset the path.
 
 ## Issue ledger
-Failing admitted acceptance tests become issues the finder files and the fixer loop works from: see docs/policies/issue-ledger.md.
+Failing admitted acceptance tests become issues the finder files and the fixer loop works from: see docs/policies/issue-ledger.md. The fixer runner (docs/policies/runner.md) runs the gate with `review: required` on every attempt and merges only to staging.
 
 ## Honest limits
-- Trailers are self-asserted: they stop honest mistakes and make bypasses visible, not impossible (TD-012; the runner will refuse fixer commits with `Acceptance-Change`).
+- Trailers are self-asserted: they stop honest mistakes and make bypasses visible, not impossible (TD-012). For unattended work the runner closes this: it commits with trailers it controls, squashes any commit the fixer made, reverts protected changes and writes the `Review:` trailer from an independent reviewer pass (docs/policies/runner.md). Human-driven commits can still write their own.
 - The scan is a tripwire, not a secret scanner. It does not replace `security-audit-run`.
 - Gate history is local per machine and per CI run; cloud sessions start empty.
 - `acceptance-error` (the suite printed no valid JSON) is a small addition to the ADR code list so a broken suite fails loudly.

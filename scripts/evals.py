@@ -27,6 +27,8 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import evals_graders as G  # noqa: E402
+from sandbox import (ENV_ALLOW, GIT_ID, SANDBOX, TOOLS, claude_cmd, git, parse_events, run_claude,  # noqa: E402,F401
+                     sandbox_problem, scrubbed_env)
 
 TASKS_DIR = os.path.join(ROOT, "evals", "tasks")
 BASE_DIR = os.path.join(ROOT, "evals", "base")
@@ -40,22 +42,6 @@ DEFAULTS = {"n": 3, "model": "sonnet", "budget_usd": 5, "regression_threshold": 
 EXCLUDE = (".factory/HANDOFF.md", "evals/", "scripts/evals.py", "scripts/evals_graders.py", ".factory/tests/test_evals.py",
            "metrics/evals", "metrics/eval-transcripts/", "docs/policies/evals.md",
            "docs/decisions/0006-agent-eval-harness.md", "docs/specs/agent-eval-harness.md")
-# Environment variables the sandboxed agent may see. Everything else (CLOUDFLARE_*, GITHUB_*, GH_*, AWS_*, cloud and
-# SSH variables, CLAUDE_CODE_* of this session) is dropped. The first group is what claude needs to reach the API.
-ENV_ALLOW = ("PATH", "LANG", "LC_ALL", "TERM", "TZ",
-             "ANTHROPIC_BASE_URL", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
-             "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy",
-             "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE")
-# Claude Code's Bash sandbox (bubblewrap + socat on Linux, Seatbelt on macOS) for eval runs (TD-010): no network
-# for the agent's commands (empty allow list; claude itself still reaches the API), no read of the login
-# directory, and no hole to run outside it. failIfUnavailable makes a missing sandbox a hard stop instead of a
-# silent fallback. CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (set in scrubbed_env) strips the model credential from
-# the commands' environment. EVALS_SANDBOX=off opts out (the run is then not isolated).
-SANDBOX = {"sandbox": {"enabled": True, "failIfUnavailable": True, "allowUnsandboxedCommands": False,
-                       "autoAllowBashIfSandboxed": True, "network": {"allowedDomains": []},
-                       "filesystem": {"denyRead": ["~/.claude", "~/.claude.json"]}}}
-TOOLS = "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Task,Agent,TodoWrite"
-GIT_ID = ["-c", "user.name=eval", "-c", "user.email=eval@example.invalid", "-c", "commit.gpgsign=false"]
 TASK_KEYS = ("id", "title", "gates", "prompt", "max_turns", "graders")
 
 
@@ -115,12 +101,6 @@ def validate_task(t):
 
 
 # ---------- sandbox ----------
-def git(args, cwd, **kw):
-    return subprocess.run(["git", *GIT_ID, *args], cwd=cwd, capture_output=True, text=True, check=kw.get("check", True),
-                          env={"PATH": os.environ.get("PATH", ""), "HOME": cwd, "GIT_CONFIG_GLOBAL": os.devnull,
-                               "GIT_CONFIG_SYSTEM": os.devnull})
-
-
 def template_sha():
     try:
         sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True,
@@ -195,58 +175,6 @@ def prepare_workdir(task, dst):
             src = json.load(fh)["template"]["source_repo"]
         git(["remote", "add", "origin", "https://github.com/%s" % src], dst)
     return dst
-
-
-def scrubbed_env(src, home, tmp):
-    """Allow-listed variables only, HOME and TMPDIR pointing at throwaway dirs. EVALS_HOME=real keeps the real HOME
-    (needed where claude logs in via ~/.claude; the agent can then read that login, see docs/policies/evals.md)."""
-    env = {k: src[k] for k in ENV_ALLOW if k in src}
-    env.update(HOME=src.get("HOME", home) if src.get("EVALS_HOME") == "real" else home, TMPDIR=tmp,
-               GIT_TERMINAL_PROMPT="0", CODEGRAPH_TELEMETRY="0")
-    if src.get("EVALS_SANDBOX") != "off":
-        env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] = "1"
-    return env
-
-
-def sandbox_problem(src=None, which=shutil.which, platform=sys.platform):
-    """None when the Bash sandbox can run (or is opted out), else why not. Checked before any money is spent."""
-    if (os.environ if src is None else src).get("EVALS_SANDBOX") == "off":
-        return None
-    if platform.startswith("linux"):
-        missing = [t for t in ("bwrap", "socat") if not which(t)]
-        if missing:
-            return ("the Bash sandbox needs %s on PATH (apt-get install -y bubblewrap socat); "
-                    "or set EVALS_SANDBOX=off to run without network isolation" % " and ".join(missing))
-    return None
-
-
-def claude_cmd(model, max_turns, sandbox=True):
-    return ["claude", "-p", "--output-format", "stream-json", "--verbose", "--include-hook-events",
-            "--model", model, "--max-turns", str(max_turns), "--permission-mode", "acceptEdits",
-            "--allowedTools", TOOLS, "--no-session-persistence"] + (["--settings", json.dumps(SANDBOX)] if sandbox else [])
-
-
-def run_claude(prompt, model, max_turns, cwd, env, timeout):
-    """Real model call. The prompt goes on stdin (--allowedTools is variadic and would swallow a positional)."""
-    try:
-        p = subprocess.run(claude_cmd(model, max_turns, os.environ.get("EVALS_SANDBOX") != "off"), input=prompt, cwd=cwd, env=env, capture_output=True,
-                           text=True, timeout=timeout, check=False)
-        return p.stdout, p.returncode
-    except subprocess.TimeoutExpired as e:
-        out = e.stdout.decode() if isinstance(e.stdout, bytes) else (e.stdout or "")
-        return out, 124
-
-
-def parse_events(text):
-    ev = []
-    for line in (text or "").splitlines():
-        try:
-            obj = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(obj, dict):
-            ev.append(obj)
-    return ev
 
 
 def hooks_fired(events):

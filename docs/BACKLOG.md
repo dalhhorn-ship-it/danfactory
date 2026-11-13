@@ -32,7 +32,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-1 Merge gate: one command, one verdict with reason codes, same locally and in CI, Merge gate view on the dashboard (docs/specs/gated-autonomy.md) (M) #foundation
 - [x] AUTO-2 Locked acceptance suite: test-writer, admission, protected paths, baseline ratchet, Acceptance coverage view; risk 1 spike first (docs/specs/gated-autonomy.md) (L) (after: AUTO-1) #foundation
 - [x] AUTO-3 Issue ledger and finder: issues/ as files, issues.py find/sync, finder agent, Autonomy tab with Issues block (docs/specs/gated-autonomy.md, ADR 0008) (M) (after: AUTO-2) #foundation
-- [~] AUTO-4 Fixer loop with rework (cap 3, 5 USD/day), runner refuses self-written trailers (TD-012), automated second reading (TD-014); pilot 2 on a semver library (docs/specs/gated-autonomy.md, ADR 0009) (L) (after: AUTO-3) #foundation
+- [x] AUTO-4 Fixer loop with rework (cap 3, 5 USD/day), runner refuses self-written trailers (TD-012), automated second reading (TD-014); pilot 2 on a semver library (docs/specs/gated-autonomy.md, ADR 0009) (L) (after: AUTO-3) #foundation
 - [ ] AUTO-5 Auto-merge to staging and release train; user promotes to main — awaits approval (M) (after: AUTO-4) #foundation
 - [ ] AUTO-6 Safe unattended running and 2 to 4 parallel fixers — awaits approval (M) (after: AUTO-5) #foundation
 - [ ] AUTO-7 Learning from gate rejections, Autonomy view — awaits approval (M) (after: AUTO-4) #foundation

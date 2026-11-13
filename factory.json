@@ -58,6 +58,16 @@
     "regression_threshold": 0.34,
     "max_turns": 30
   },
+  "autonomy": {
+    "enabled": false,
+    "staging_branch": "staging",
+    "max_attempts": 3,
+    "daily_budget_usd": 5,
+    "run_budget_usd": 2,
+    "model": "sonnet",
+    "review_model": "sonnet",
+    "max_turns": 40
+  },
   "dashboard": {
     "github_repo": "",
     "changelog_file": "CHANGELOG.md",

@@ -58,3 +58,13 @@ The runner checks the budget before every attempt, never after.
 
 ## Consequences
 Every attempt costs model money (fixer plus reviewer); the caps bound it. Fixes stack on staging until the user promotes. AUTO-5 adds batch re-verification and rollback. Parallel fixers wait for AUTO-6, so this runner is serial.
+
+## Implementation notes (2026-11-13, AUTO-4)
+Details the build settled, none of which change the decision:
+- **Staging is the runner's ledger.** Rows, the `blocked` move and `unpark` are committed on `staging`; the runner merges the current branch into `staging` first when it moved ahead, and reads spend from the working tree plus the committed copy on `staging` so a checkout of main sees today's total. The project tree is written only by that merge.
+- **Own gate module, extra protected paths.** The gate runs in-process from the runner's own scripts with `review: required` forced (no gate.py change). `RUNNER_PROTECTED` adds the gate and runner machinery, factory.json, `.claude/`, `issues/` and `metrics/` to `gate.protected` for fixer changes.
+- **The issue's own tests are checked by the runner** before review and gate (`issue-not-fixed`): the gate's baseline comparison does not cover tests that were failing when admitted.
+- **A fixer's own commit is squashed** (`git reset --soft` to the base) so only the runner's message and trailers survive.
+- **Reviewer** is read-only (Read, Glob, Grep) and gets the diff in the prompt; its last line `VERDICT: ship|fix-first` decides the trailer.
+- **Sandbox artifacts.** The smoke run showed Claude Code's Bash sandbox leaving empty mount-point files (`.env`, `package.json`, ...) in the working directory, which failed the gate (`env-file-added`). The runner removes the known untracked 0-byte ones before committing.
+- **Second reading** shows the agent file paths and public signatures, not bodies; `scripts/sandbox.py` holds the shared sandbox, and `metrics/runner.jsonl` rows carry `kind` attempt, park, stop, unpark or second-reading.

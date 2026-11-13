@@ -4,6 +4,7 @@ Design: docs/decisions/0007-merge-gate-and-acceptance-suite.md. Policy: docs/pol
 
   python3 scripts/acceptance.py map <slug> [--strict]
   python3 scripts/acceptance.py admit <slug> [--reference-dir DIR]
+  python3 scripts/acceptance.py second-reading <slug> [--model M]   # spends money: an agent writes a throwaway reference, then admit
   python3 scripts/acceptance.py run [--json] [--ids ID ...]
   python3 scripts/acceptance.py baseline [--allow-shrink]
   python3 scripts/acceptance.py status [--json]
@@ -566,6 +567,92 @@ def cmd_admit(a, root):
     return 1 if rejected else 0
 
 
+SKIP_DIRS = (".git", "tests", "test", "docs", "issues", "metrics", "scripts", ".claude", ".factory", ".github", "evals", "node_modules",
+             "__pycache__", ".venv", "venv", "dist", "build")
+
+
+def public_layout(root):
+    """Source files of the project (paths, plus public def/class signatures of Python files): no bodies, no tests, no docs."""
+    lines = []
+    for base, dirs, files in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS and not d.startswith("."))
+        for f in sorted(files):
+            rel = os.path.relpath(os.path.join(base, f), root).replace(os.sep, "/")
+            if f.endswith((".md", ".json", ".lock", ".txt", ".yml", ".yaml", ".sh", ".toml", ".cfg", ".ini")) or f.startswith("."):
+                continue
+            lines.append(rel)
+            if f.endswith(".py"):
+                try:
+                    with open(os.path.join(base, f), encoding="utf-8") as fh:
+                        tree = ast.parse(fh.read())
+                except (OSError, SyntaxError):
+                    continue
+                for n in tree.body:
+                    if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and not n.name.startswith("_"):
+                        sig = "def %s(%s)" % (n.name, ", ".join(x.arg for x in n.args.args)) if isinstance(n, ast.FunctionDef) else "class " + n.name
+                        lines.append("    " + sig)
+    return "\n".join(lines) or "(no source files yet)"
+
+
+def second_reading_prompt(slug, prd_text, layout):
+    return ("You write a THROWAWAY reference implementation from a product requirements document alone. It is used once, to check that "
+            "acceptance tests written by someone else can pass; it is deleted afterwards.\n\n"
+            "Rules:\n- Read only what is in this directory (PRD.md and LAYOUT.txt). You cannot see the real implementation or the tests.\n"
+            "- Write the implementation into THIS directory at the paths LAYOUT.txt lists (plus new files where the PRD needs them), as a "
+            "complete package: it replaces the real one on the import path, so include every public function the layout names and every "
+            "function or behaviour the PRD asks for. Python standard library only.\n- Implement exactly what the acceptance criteria say, "
+            "nothing else. Do not write tests. No network.\n\nPRD (%s):\n%s\n\nLAYOUT.txt (public layout of the project, signatures only):\n%s\n"
+            % (slug, prd_text, layout))
+
+
+def cmd_second_reading(a, root):
+    import shutil
+    import tempfile
+    import time
+    sys.path.insert(0, HERE)
+    import sandbox as S
+    prd = os.path.join(root, "docs", "specs", a.slug + ".md")
+    if not os.path.isfile(prd):
+        print("no PRD at docs/specs/%s.md" % a.slug, file=sys.stderr)
+        return 2
+    problem = S.sandbox_problem()
+    if problem:
+        print("second-reading: " + problem, file=sys.stderr)
+        return 2
+    cfg = read_json(os.path.join(root, "factory.json"), {}) or {}
+    model = a.model or (cfg.get("autonomy") or {}).get("model") or "sonnet"
+    tmp = tempfile.mkdtemp(prefix="second-reading-")
+    try:
+        ref, home, scratch = (os.path.join(tmp, d) for d in ("ref", "home", "tmp"))
+        for d in (ref, home, scratch):
+            os.makedirs(d)
+        with open(prd, encoding="utf-8", errors="replace") as fh:
+            prd_text = fh.read()
+        layout = public_layout(root)
+        with open(os.path.join(ref, "PRD.md"), "w", encoding="utf-8") as fh:
+            fh.write(prd_text)
+        with open(os.path.join(ref, "LAYOUT.txt"), "w", encoding="utf-8") as fh:
+            fh.write(layout + "\n")
+        env = S.scrubbed_env(os.environ, home, scratch)
+        t0 = time.time()
+        out, rc = S.run_claude(second_reading_prompt(a.slug, prd_text, layout), model, int((cfg.get("autonomy") or {}).get("max_turns") or 40),
+                               ref, env, 900)
+        tok, cost, _turns, has = S.usage_cost(S.parse_events(out))
+        for junk in ("PRD.md", "LAYOUT.txt"):
+            if os.path.exists(os.path.join(ref, junk)):
+                os.remove(os.path.join(ref, junk))
+        row = dict(tok, ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), kind="second-reading", slug=a.slug,
+                   model=model, cost_usd=cost, seconds=round(time.time() - t0, 1), run="second-reading-" + a.slug)
+        S.append_row(os.path.join(root, S.RUNNER_ROWS), row)
+        print("second-reading: model %s, $%.2f, %.0fs%s" % (model, cost, time.time() - t0, "" if has else " (no result from the agent, claude exit %s)" % rc))
+        if not has:
+            return 2
+        args = argparse.Namespace(slug=a.slug, reference_dir=ref)
+        return cmd_admit(args, root)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def suite_report(root, ids=None):
     res = run_suite(root)
     man = load_manifest(root)
@@ -664,6 +751,9 @@ def main(argv=None, root=ROOT):
     p = sub.add_parser("admit", help="admit tests that fail before the build (and pass on a second reading)")
     p.add_argument("slug")
     p.add_argument("--reference-dir", metavar="DIR", help="throwaway implementation from the PRD alone, put first on the import path")
+    p = sub.add_parser("second-reading", help="an agent writes a throwaway reference from the PRD alone, then admit --reference-dir")
+    p.add_argument("slug")
+    p.add_argument("--model")
     p = sub.add_parser("run", help="run the suite")
     p.add_argument("--json", action="store_true")
     p.add_argument("--ids", nargs="+", help="only report these test ids")
@@ -686,7 +776,7 @@ def main(argv=None, root=ROOT):
     if a.cmd == "_unittest":
         _child_unittest(a.root, a.dir, a.out, a.ref)
         return 0
-    return {"map": cmd_map, "admit": cmd_admit, "run": cmd_run, "baseline": cmd_baseline, "status": cmd_status}[a.cmd](a, root)
+    return {"map": cmd_map, "admit": cmd_admit, "second-reading": cmd_second_reading, "run": cmd_run, "baseline": cmd_baseline, "status": cmd_status}[a.cmd](a, root)
 
 
 if __name__ == "__main__":
