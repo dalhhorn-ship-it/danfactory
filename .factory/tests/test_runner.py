@@ -674,6 +674,31 @@ class FreshCheckout(unittest.TestCase):
         finally:
             e.cleanup()
 
+    def test_bytecode_caches_from_hooks_do_not_count_as_protected(self):
+        # pilot 2: the fixer's own hooks wrote .claude/hooks/__pycache__/*.pyc; three good attempts were thrown away
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD,
+                                      ".claude/hooks/__pycache__/_common.cpython-313.pyc": "x"}}], "review": [{"text": SHIP}]})
+        try:
+            rc, out = e.run("run", "--next")
+            self.assertEqual(rc, 0, out)
+            self.assertNotIn("_common.cpython-313.pyc", sh(e.root, "ls-tree", "-r", "--name-only", "staging"))
+        finally:
+            e.cleanup()
+
+    def test_other_ignored_file_in_protected_dir_still_counts(self):
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD, ".claude/hooks/__pycache__/evil.py": "x"}}],
+                 "review": [{"text": SHIP}]})
+        try:
+            rc, out = e.run("run", "--next")
+            self.assertEqual(rc, 1, out)
+            self.assertEqual(codes(e), [["fixer-touched-protected"]])
+        finally:
+            e.cleanup()
+
+    def test_scrubbed_env_stops_bytecode_writes(self):
+        import sandbox as S
+        self.assertEqual(S.scrubbed_env({}, "/h", "/t").get("PYTHONDONTWRITEBYTECODE"), "1")
+
     def test_gitignore_that_ignores_protected_paths_is_protected(self):
         e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD, ".gitignore": "__pycache__/\n.claude/worktrees/\nscripts/\ntests/\n"}}],
                  "review": [{"text": SHIP}]})

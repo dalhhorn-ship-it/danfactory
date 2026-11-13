@@ -49,7 +49,8 @@ def scrubbed_env(src, home, tmp):
     (needed where claude logs in via ~/.claude; the agent can then read that login, see docs/policies/evals.md)."""
     env = {k: src[k] for k in ENV_ALLOW if k in src}
     env.update(HOME=src.get("HOME", home) if src.get("EVALS_HOME") == "real" else home, TMPDIR=tmp,
-               GIT_TERMINAL_PROMPT="0", CODEGRAPH_TELEMETRY="0")
+               GIT_TERMINAL_PROMPT="0", CODEGRAPH_TELEMETRY="0",
+               PYTHONDONTWRITEBYTECODE="1")  # hooks run by the agent must not leave .pyc caches (pilot 2: false fixer-touched-protected)
     if src.get("EVALS_SANDBOX") != "off":
         env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] = "1"
     return env

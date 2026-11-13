@@ -360,10 +360,23 @@ def changed_files(w):
     return sorted({p for p in tracked + other if p})
 
 
+def is_bytecode_cache(path):
+    """A Python bytecode cache file (`__pycache__/x.cpython-313.pyc`): ignored, never committed, never in the evaluated checkout."""
+    parts = path.split("/")
+    return len(parts) >= 2 and parts[-2] == "__pycache__" and parts[-1].endswith((".pyc", ".pyo"))
+
+
 def hidden_protected(w, files, pats):
     """Protected paths the plain change list cannot see: ignored untracked files that match, and a changed .gitignore that would
     make a protected path (a tracked one, or a concrete name a protected glob stands for) ignored."""
     hit = [p for p in out_of(w.g(["ls-files", "--others", "--ignored", "--exclude-standard", "-z"])).split("\0") if p and gate.matches(p, pats)]
+    caches = [p for p in hit if is_bytecode_cache(p)]
+    for p in caches:  # interpreter caches the agent's own hooks wrote; what is evaluated is a fresh checkout, so they cannot count
+        try:
+            os.remove(os.path.join(w.path, p))
+        except OSError:
+            pass
+    hit = [p for p in hit if p not in caches]
     ignores = [p for p in files if os.path.basename(p) == ".gitignore"]
     if ignores:
         tracked = [p for p in out_of(w.g(["ls-files", "-z"])).split("\0") if p and gate.matches(p, pats)]
