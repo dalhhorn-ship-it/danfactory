@@ -83,6 +83,7 @@ The paths are deliberately different, so a spreadsheet isn't run like a SaaS app
 
 | Piece | Where | Idea taken from |
 |---|---|---|
+| PRD write guard (no approved PRD, no product-code edit; gate check `prd`) | .claude/hooks/guard_prd_write.py, docs/policies/prd-approval.md | own design (GRD-1), closes TD-015 |
 | Large-read guard + delegation subagents | .claude/hooks/guard_large_read.py, .claude/agents/ | [spotify shunt](https://github.com/spotify/portal-ai-plugins/tree/main/plugins/shunt), re-targeted from AiKA to native Haiku/Sonnet subagents |
 | Docs quick-reference + doc knowledge graph | docs/INDEX.md, docs/knowledge-graph.json, scripts/docs_index.py | generated from headings and links; auto-refreshed by a hook |
 | Code knowledge graph | `bash scripts/install-codegraph.sh` | [codegraph](https://github.com/colbymchenry/codegraph) (local, telemetry off) |

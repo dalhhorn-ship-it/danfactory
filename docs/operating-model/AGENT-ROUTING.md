@@ -20,7 +20,7 @@
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
 | Design (spreadsheet/data) | data-spreadsheet path; restructuring a model | `spreadsheet-architect` | sonnet |
 | Build: small change (< ~50 lines, one area) | – | main agent | – |
-| Build: specified backlog item | approved PRD exists; can run in its own context; parallel slices | `developer` | sonnet |
+| Build: specified backlog item | approved PRD exists and its backlog item is marked `[~]` (the write guard blocks product edits otherwise, subagents included); can run in its own context; parallel slices | `developer` | sonnet |
 | Build: boilerplate from a pattern | reference file exists | `code-writer` | sonnet |
 | Build: workbook / data outputs | design exists | `data-builder` | sonnet |
 | Read big things | file > 350 lines, 3+ files, logs, long diffs | `bulk-reader` | haiku |

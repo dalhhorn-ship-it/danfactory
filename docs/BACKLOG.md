@@ -38,7 +38,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [ ] AUTO-7 Learning from gate rejections, Autonomy view — awaits approval (M) (after: AUTO-4) #foundation
 
 ## Unplanned
-- [~] GRD-1 PRD write guard: hook blocks product-code edits without an in-progress approved item, gate check `prd`, exemption file (docs/specs/prd-write-guard.md) (M) #security
+- [x] GRD-1 PRD write guard: hook blocks product-code edits without an in-progress approved item, gate check `prd`, exemption file (docs/specs/prd-write-guard.md) (M) #security
 - [x] TPL-1 Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
 - [x] UPS-1 Upstream from lpdan: adopt_scan report sanitiser, pipe-to-shell deploy guard, docs_index.py --related (docs/specs/upstream-from-lpdan-2026-11.md) (S) #security
 - [x] SEC-1 Security best practices section in docs/policies/security.md (docs/specs/security-hardening-audit-1.md) (S) #security

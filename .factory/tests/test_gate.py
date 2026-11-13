@@ -117,7 +117,7 @@ class Verdict(Base):
     def test_base_note(self):
         r = self.repo()
         r.write("a.txt", "x\n")
-        r.commit("a")
+        r.commit("a", "PRD-Exempt: fixture")
         v = r.run(base="nope")
         self.assertIn("--base nope does not resolve", v["base_note"])
         self.assertEqual(v["base"], r.base[:7])  # fell back to HEAD~1

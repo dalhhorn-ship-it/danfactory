@@ -63,6 +63,15 @@
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_bash_policy.py\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_prd_write.py\""
+          }
+        ]
       }
     ],
     "PostToolUse": [

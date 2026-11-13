@@ -44,6 +44,7 @@
     "base_branch": "main",
     "protected": ["tests/acceptance/**"],
     "review": "advisory",
+    "prd": "advisory",
     "security_ignore": [".factory/tests/**", "evals/**"]
   },
   "acceptance": {

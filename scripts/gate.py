@@ -32,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-DEFAULTS = {"base_branch": "main", "protected": ["tests/acceptance/**"], "review": "advisory",
+DEFAULTS = {"base_branch": "main", "protected": ["tests/acceptance/**"], "review": "advisory", "prd": "required",
             "security_ignore": [".factory/tests/**", "evals/**"]}
 TRAILER_RE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*):[ \t]*(.+?)[ \t]*$")
 BASELINE = "metrics/acceptance-baseline.json"
@@ -484,9 +484,62 @@ def c_security(ctx):
     return "fail", codes, "; ".join("%s %s" % f for f in found[:6]) + (" ..." if len(found) > 6 else "")
 
 
+def _prd_rules(root):
+    """The shared PRD rules (.claude/hooks/_prd.py, also used by the write guard hook), or None when the file is absent."""
+    for base in (ROOT, root):
+        hooks = os.path.join(base, ".claude", "hooks")
+        if not os.path.isfile(os.path.join(hooks, "_prd.py")):
+            continue
+        sys.path.insert(0, hooks)
+        try:
+            import _prd
+            return _prd
+        finally:
+            sys.path.remove(hooks)
+    return None
+
+
+def c_prd(ctx):
+    """Product-code commits in range need `Refs:` to an item with an approved PRD (or an ISS-n of one), or `PRD-Exempt:`."""
+    mode = ctx["gate"].get("prd", "required")
+    if mode == "off":
+        return "skip", [], "gate.prd is off"
+    root, rules = ctx["root"], _prd_rules(ctx["root"])
+    if rules is None:
+        return "skip", [], ".claude/hooks/_prd.py is missing (copy it from the template to enable this check)"
+    ex = rules.exemptions(root)
+    note = ""
+    if ex:
+        act = [x["kind"] for x in ex if x["active"]]
+        note = " [exemptions in .factory/prd-exemption: %d active%s, %d expired]" % (
+            len(act), " (" + ", ".join(act) + ")" if act else "", len(ex) - len(act))
+    if not ctx["base"]:
+        return "skip", [], "no base to diff against" + note
+    bad, used, product = [], 0, 0
+    for c in commits(root, ctx["base"]):
+        files = [f for f in (git(root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "-z", c["sha"]) or "").split("\0") if f]
+        if not any(rules.is_product_path(f) for f in files):
+            continue
+        product += 1
+        tr = c["trailers"]
+        if any(v.strip() for v in tr.get("prd-exempt", [])):
+            used += 1
+            continue
+        refs = [r for v in tr.get("refs", []) for r in re.split(r"[,\s]+", v) if r]
+        if not any(rules.item_approved(root, r) for r in refs):
+            bad.append(c["sha"][:7])
+    if not bad:
+        return "pass", [], "%d product-code commit(s) in range, all covered (%d by PRD-Exempt)%s" % (product, used, note)
+    msg = "%d product-code commit(s) without Refs to an approved PRD or PRD-Exempt: %s%s" % (
+        len(bad), ", ".join(bad[:6]) + (" ..." if len(bad) > 6 else ""), note)
+    if mode == "required":
+        return "fail", ["no-approved-prd"], msg
+    return "warn", ["no-approved-prd"], msg + " (advisory)"
+
+
 CHECKS = (("structure", c_structure), ("build", c_build), ("lint", c_lint), ("tests", c_tests),
           ("coverage", c_coverage), ("acceptance", c_acceptance), ("protected", c_protected),
-          ("review", c_review), ("security", c_security))
+          ("prd", c_prd), ("review", c_review), ("security", c_security))
 
 
 # ---------------------------------------------------------------- run
