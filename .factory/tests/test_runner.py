@@ -755,6 +755,28 @@ class Reviewer(unittest.TestCase):
         finally:
             e.cleanup()
 
+    def test_ignored_empty_env_mount_point_in_review_tree_is_tolerated(self):  # pilot 2: projects git-ignore .env
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}], "review": [{"text": SHIP, "write": {".env": ""}}]})
+        try:
+            with open(os.path.join(e.root, ".gitignore"), "a") as fh:
+                fh.write(".env\n")
+            sh(e.root, "add", ".gitignore"); sh(e.root, "commit", "-qm", "ignore .env")
+            sh(e.root, "branch", "-f", "staging", "HEAD")
+            rc, out = e.run("run", "--next")
+            self.assertEqual(rc, 0, out)
+        finally:
+            e.cleanup()
+
+    def test_failure_detail_is_recorded(self):
+        e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}], "review": [{"text": SHIP, "write": {".env": "TOKEN=planted\n"}}]})
+        try:
+            e.run("run", "--next")
+            rows = [json.loads(l) for l in sh(e.root, "show", "staging:metrics/runner.jsonl").splitlines() if l.strip()]
+            att = [r for r in rows if r.get("kind") == "attempt"]
+            self.assertIn(".env", att[0].get("detail", ""))
+        finally:
+            e.cleanup()
+
     def test_bytecode_caches_in_the_review_tree_are_tolerated(self):  # found in pilot 2: hooks of the reviewer's session
         e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}],
                  "review": [{"text": SHIP, "write": {".claude/hooks/__pycache__/_prd.cpython-313.pyc": "x"}}]})

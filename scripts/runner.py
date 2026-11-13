@@ -348,6 +348,8 @@ def checkout(root, commit, name):
 
 def drop_sandbox_artifacts(w):
     untracked = [p for p in out_of(w.g(["ls-files", "--others", "--exclude-standard", "-z"])).split("\0") if p]
+    # ignored ones too: a project that git-ignores .env (every project from this template) still gets the empty mount point (pilot 2)
+    untracked += [p for p in out_of(w.g(["ls-files", "--others", "--ignored", "--exclude-standard", "-z"])).split("\0") if p]
     for p in untracked:
         full = os.path.join(w.path, p)
         if p in SANDBOX_ARTIFACTS and os.path.isfile(full) and os.path.getsize(full) == 0:
@@ -535,6 +537,8 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
         row["seconds"] = round(time.time() - t0, 1)
         row["cost_usd"] = round(row["fixer_cost_usd"] + row["review_cost_usd"], 5)
         reasons.extend(reason if isinstance(reason, list) else [reason])
+        if codes:  # the full reason goes into the record, so a failure is diagnosed from runner.jsonl, not by rerunning (pilot 2)
+            row["detail"] = " | ".join(str(r) for r in (reason if isinstance(reason, list) else [reason]))[:1000]
         return row, reasons
 
     def left_now():
