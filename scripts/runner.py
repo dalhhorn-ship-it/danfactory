@@ -512,6 +512,24 @@ def gate_verdict(path, base):
             gate.config, gate.WRAP = orig, None
 
 
+BASE_CHECKS = ["structure", "build", "lint", "tests"]
+
+
+def base_problem(root, swt, run_id):
+    """None when a fresh checkout of the staging tip passes the gate's own-health checks (no fixer change involved), else why not.
+    Free: no model call. Runs in the tree sandbox like every evaluation."""
+    tip = out_of(git(["rev-parse", "HEAD"], swt)).strip()
+    with checkout(root, tip, run_id + "-base") as bt:
+        orig = gate.config
+        with S.TreeSandbox(bt.path) as ts:
+            gate.WRAP = ts.gate_wrap
+            try:
+                v = gate.run_gate(bt.path, tip, only=BASE_CHECKS)
+            finally:
+                gate.config, gate.WRAP = orig, None
+    return None if v["verdict"] == "pass" else " | ".join(gate_reasons(v))
+
+
 def gate_reasons(v):
     return ["- gate `%s` [%s]: %s" % (c["id"], ", ".join(c["codes"]), c["detail"][:300]) for c in v["checks"] if c["status"] == "fail"]
 
@@ -772,6 +790,12 @@ def run_issue(a, root, cfg, swt, cap):
     prd = iss["meta"]["prd"]
     run_id = "%s-%s" % (datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ"), iss["id"])
     print("runner: run %s, issue %s (%s), model %s, up to %d attempt(s), staging %s" % (run_id, iss["id"], iss["title"][:60], cfg["model"], cap, staging))
+    sick = base_problem(root, swt, run_id)
+    if sick:  # pilot 2: a stale docs index on staging failed every attempt; nothing paid starts on a base that already fails
+        print("runner: refused before any paid call: the staging base already fails the gate: %s" % sick)
+        S.append_row(rows_path(swt), {"ts": now(), "kind": "base-unhealthy", "run": run_id, "issue": iss["id"], "cost_usd": 0,
+                                      "detail": sick[:1000]})
+        return 1
     mine, prev, stop, merged = [], [], None, False
     try:
         for k in range(1, cap + 1):

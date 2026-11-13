@@ -777,6 +777,21 @@ class Reviewer(unittest.TestCase):
         finally:
             e.cleanup()
 
+    def test_unhealthy_staging_base_refuses_before_any_paid_call(self):  # pilot 2: stale docs index failed every attempt
+        e = one(FIX)
+        try:
+            os.makedirs(os.path.join(e.root, "scripts"), exist_ok=True)
+            with open(os.path.join(e.root, "scripts", "check.sh"), "w") as fh:
+                fh.write("echo 'docs index is stale' >&2\nexit 1\n")
+            sh(e.root, "add", "-A"); sh(e.root, "commit", "-qm", "break the base")
+            sh(e.root, "branch", "-f", "staging", "HEAD")
+            rc, out = e.run("run", "--next")
+            self.assertEqual(rc, 1, out)
+            self.assertIn("staging base already fails", out)
+            self.assertEqual(e.calls("fixer"), [])
+        finally:
+            e.cleanup()
+
     def test_bytecode_caches_in_the_review_tree_are_tolerated(self):  # found in pilot 2: hooks of the reviewer's session
         e = one({"fixer": [{"write": {"textkit/__init__.py": GOOD}}],
                  "review": [{"text": SHIP, "write": {".claude/hooks/__pycache__/_prd.cpython-313.pyc": "x"}}]})
