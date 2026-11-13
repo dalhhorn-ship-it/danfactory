@@ -51,3 +51,6 @@ Spike on textkit (evals/spikes/acceptance-admission/): a fresh test-writer turne
 
 ### 2026-11-12 — Tests that `cp -r` the repo commit into the original branch inside a git worktree  [all] [practice]
 In a worktree `.git` is a file pointing at the shared gitdir, so the hook tests' project copy (`project_copy`) committed `chore: unrelated` / `chore: handoff` onto the real branch on every `check.sh`. The copy now gets its own `git init` when `.git` is a file. Any test that copies the repo and runs git in the copy needs the same care.
+
+### 2026-11-13 — Pilot a real project before trusting a runner  [library-cli] [practice] [upstream]
+Pilot 2 (evals/spikes/pilot-semverlite/): the fixer runner passed every unit test and two smoke runs, yet a real project made from the template failed six paid runs for template reasons (pyc caches, ignored mount points, stale index, template-only test assumptions, nested sandbox, acceptance tests in the unit command). Once fixed, the issue was solved on attempt 1 for 0.22 USD. Changes: runner records the full failure reason and gates the staging base for free before paying. Rule: run new autonomy machinery on a freshly bootstrapped project, not on the template or a hand-made fixture.
