@@ -1,6 +1,6 @@
 # PRD: Trust hardening (close the fake-pass holes, approval agents cannot write, enforced path and rigor, adversarial pilot, clean reuse)
 
-> Status: draft · 2026-11-14 · Owner: product-manager · Backlog: M4 — Trusted autonomy → TRUST-1, TRUST-2, PATH-1, PILOT-3, REUSE-1
+> Status: approved · 2026-11-14 · by user in chat ("approve all 5, button and typed phrase should be possible, 3 via a button, 4 ok, 5 ok") · Owner: product-manager · Backlog: M4 — Trusted autonomy → TRUST-1, TRUST-2, PATH-1, PILOT-3, REUSE-1
 
 ## Problem
 The user asked for an evaluation of the repo against its goal: a re-usable agentic factory that picks the right approach, gives oversight, verifies and fixes by design, and needs minimal human intervention. The evaluation found five gaps. On 2026-11-14 the user replied "ok plz address this Suggested order". That is a request to address them, not approval of this PRD.
@@ -127,3 +127,8 @@ Recommendation: approve all five slices now. TRUST-2 comes back to the user once
 
 ## Decisions (user)
 1. 2026-11-14: approvals happen in Claude Code only. In the user's words: "ok before we move on this, I want to ensure my approvals are done in claude code, dont want to have to click in git as well". No approval or release step may need a click or any other action on GitHub.
+2. 2026-11-14: all five slices approved ("approve all 5, button and typed phrase should be possible, 3 via a button, 4 ok, 5 ok"). TRUST-2's design still returns to the user once, with the spike result, before its build.
+3. Approval in Claude Code works both ways: an Approve button and an exact typed phrase.
+4. Builds may start on their own once a PRD is approved. Promotion to main is one batched release step the user triggers with a button in Claude Code (a typed word stays as the fallback). This replaces decision 6 of 2026-11-12 in docs/specs/gated-autonomy.md for the build start; "no agent promotes to main without the user" stays.
+5. The first non-software path with a real check is data-spreadsheet.
+6. Pilot budget: 5 USD cap, on a machine or environment with `claude`, `bwrap` and `socat`.

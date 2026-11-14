@@ -82,5 +82,5 @@
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/size-monitoring.md | 47 | Status: approved · 2026-11-14 · by user in chat ("Overall evaluate how large this… |
 | docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |
-| docs/specs/trust-hardening.md | 129 | Status: draft · 2026-11-14 · Owner: product-manager · Backlog: M4 — Trusted autonomy →… — sections: Problem:5, Goal and success measure:24, Users and user stories:29, Scope:37, Non-goals:56, Acceptance criteria:65, UX / behaviour notes:92, Risks and assumptions:98, Effort and sequencing:106, Open questions:121, Decisions (user):128 |
+| docs/specs/trust-hardening.md | 134 | Status: approved · 2026-11-14 · by user in chat ("approve all 5, button and typed phrase… — sections: Problem:5, Goal and success measure:24, Users and user stories:29, Scope:37, Non-goals:56, Acceptance criteria:65, UX / behaviour notes:92, Risks and assumptions:98, Effort and sequencing:106, Open questions:121, Decisions (user):128 |
 | docs/specs/upstream-from-lpdan-2026-11.md | 24 | Status: approved · 2026-11-11 · by user in chat ("Ok plz do", in the lpdan session,… |
