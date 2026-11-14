@@ -33,9 +33,15 @@ Splitting the big files or moving autonomy into an optional pack (separate decis
 4. Given a project without git history, when the dashboard builds, then growth shows "not enough history" and nothing fails.
 5. `python3 scripts/dashboard.py --print` has a Size row.
 
-## Follow-ups proposed (each needs its own approval)
+## Follow-ups (approved by user in chat 2026-11-14: "ok implement these two, after size monitoring lands"; design ADR 0011)
 - **SIZE-2:** move the autonomy machinery into an optional pack that `choose-path` installs only when autonomy mode is chosen. A new project then starts about 4,000 lines lighter.
 - **SIZE-3:** split runner.py, acceptance.py, gate.py and dashboard.py below the budget, keeping behaviour and tests unchanged.
 
 ## Effort
 M. Technical foundation (#quality).
+
+## Acceptance criteria for the follow-ups
+6. SIZE-2: given `bootstrap.sh` without `--with-autonomy`, when a new project is made, then the pack's files are absent, `factory.json` records `template.ref` and `packs.autonomy: false`, and check.sh, the dashboard and the gate pass.
+7. SIZE-2: given that project, when `pack.py add autonomy` runs, then exactly the manifest's files arrive from the pinned commit and their tests pass. `pack.py remove autonomy` restores the lighter state.
+8. SIZE-2: given the template repo itself, when check.sh runs, then the pack's tests still run (the template keeps the full tree).
+9. SIZE-3: given the five large files, when split, then no product file exceeds `file_lines_max`, the CLIs behave the same, and the test suite passes without weakened tests.
