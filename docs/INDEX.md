@@ -16,11 +16,11 @@
 | What's planned / in progress? | docs/BACKLOG.md |
 | Can I start building this feature? | only with an approved PRD: docs/policies/prd-approval.md |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
-| Why are deploys slow / how not to wait? | docs/policies/async-delivery.md |
+| How not to wait on deploys? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
-| How do I bring an existing (Lovable) build in? | docs/operating-model/paths/adopt-existing.md |
-| Where did the last session stop? | .factory/HANDOFF.md (handoff skill) |
-| Did a gate/hook/CLAUDE.md change make agents worse? How do I run the evals? | docs/policies/evals.md (`python3 scripts/evals.py`) |
+| How to bring in an existing build? | docs/operating-model/paths/adopt-existing.md |
+| Where did we stop? | .factory/HANDOFF.md (handoff skill) |
+| How do I run the evals? | docs/policies/evals.md (`python3 scripts/evals.py`) |
 <!-- curated:end -->
 
 ## Documents
@@ -31,7 +31,7 @@
 | docs/BACKLOG.md | 67 | Milestones and work items; the dashboard reads this file. Seeded by… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Unplanned:40 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices,… |
-| docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this file plus… — sections: Open:7, Resolved:13 |
+| docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this file plus… — sections: Open:7, Resolved:12 |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |

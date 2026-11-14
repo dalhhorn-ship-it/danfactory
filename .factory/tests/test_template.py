@@ -587,9 +587,14 @@ class Bootstrap(unittest.TestCase):
         if subprocess.run(["git", "-C", d, "config", "--get", "remote.origin.url"], capture_output=True).returncode == 0:
             self.assertEqual(r.returncode, 2, "refuses in the template repo itself")  # the copy still has the template origin
             subprocess.run(["git", "-C", d, "remote", "remove", "origin"], check=True)
+        # offline (the template URL points nowhere): no network in tests, template.ref stays empty with a note (NEW-1)
+        env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="url.%s.insteadOf" % os.path.join(d, "nowhere"),
+                   GIT_CONFIG_VALUE_0="https://github.com/" + json.load(open(os.path.join(d, "factory.json")))["template"]["source_repo"])
         r = subprocess.run(["bash", "scripts/bootstrap.sh", "demo", "--codegraph", "A demo app"], cwd=d,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, env=env)
         self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("could not reach", r.stderr)
+        self.assertEqual(json.load(open(os.path.join(d, "factory.json")))["template"]["ref"], "")
         # TD-017: clean records for the new project
         bl = open(os.path.join(d, "docs", "BACKLOG.md")).read()
         self.assertIn("M0", bl)

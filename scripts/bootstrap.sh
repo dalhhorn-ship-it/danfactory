@@ -2,7 +2,8 @@
 # Run once in a NEW repository created from this template.
 #   bash scripts/bootstrap.sh [--codegraph] [--cloudflare] [--with-autonomy] [--template-ref SHA] "my-project" ["one line description"]
 # Flags may appear anywhere. The autonomy pack (ADR 0011) is removed unless --with-autonomy; add it later with
-# `python3 scripts/pack.py add autonomy`. template.ref (a full SHA of the template) defaults to this checkout's HEAD.
+# `python3 scripts/pack.py add autonomy`. template.ref (a full SHA of the template) is found automatically (scripts/template_ref.py:
+# HEAD if upstream has it, else the newest upstream commit matching the copy's files, else upstream main); --template-ref overrides.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -14,7 +15,7 @@ while [ $# -gt 0 ]; do
     --template-ref) TREF="${1:-}"; [ $# -gt 0 ] && shift ;;
     --codegraph) CODEGRAPH=1 ;;
     --cloudflare) CLOUDFLARE=1 ;;
-    -h|--help) sed -n 2,5p "$0"; exit 0 ;;
+    -h|--help) sed -n 2,6p "$0"; exit 0 ;;
     -*) echo "unknown flag: $arg" >&2; exit 2 ;;
     *) POS+=("$arg") ;;
   esac
@@ -26,7 +27,10 @@ if python3 -c "import sys; sys.path.insert(0, '.claude/hooks'); from _common imp
 fi
 NAME="${POS[0]:-$(basename "$ROOT")}"
 DESC="${POS[1]:-}"
-[ -n "$TREF" ] || TREF="$(git rev-parse HEAD 2>/dev/null || true)"
+# NEW-1: find the template commit (network only to template.source_repo; offline leaves it empty, pack.py resolves it later).
+[ -n "$TREF" ] || TREF="$(python3 scripts/template_ref.py . || true)"
+# NEW-2: list the template files (path + blob hash) before anything is rewritten; pruned to the unchanged ones at the end.
+python3 scripts/obs/tplfiles.py snapshot .
 [ -z "$TREF" ] || [[ "$TREF" =~ ^[0-9a-f]{40}$ ]] || { echo "--template-ref must be a full 40-hex commit SHA" >&2; exit 2; }
 python3 - "$NAME" "$DESC" "$TREF" "$AUTONOMY" <<'PY'
 import json, sys
@@ -71,6 +75,8 @@ for f in glob.glob("docs/decisions/00*.md"):
 PY
 # Optional packs: remove the autonomy pack's files unless --with-autonomy (they come back with `pack.py add autonomy`).
 [ "$AUTONOMY" = 1 ] || python3 scripts/pack.py remove autonomy
+# The template's own new-project smoke test (NEW-3) is not the project's.
+rm -f .factory/tests/test_new_project_smoke.py
 # fresh metrics for the new project
 rm -f metrics/history.jsonl metrics/tokens.jsonl metrics/REPORT.md
 chmod +x .claude/hooks/*.py scripts/*.py scripts/*.sh .githooks/*
@@ -79,5 +85,6 @@ git config core.hooksPath .githooks 2>/dev/null || true
 [ "$CODEGRAPH" = 1 ] && bash scripts/install-codegraph.sh
 [ "$CLOUDFLARE" = 1 ] && python3 scripts/cf_scaffold.py
 python3 scripts/docs_index.py
+python3 scripts/obs/tplfiles.py prune . >/dev/null
 echo
 echo "Bootstrapped '$NAME'. Next: run  claude  and say  \"let's start\"  -- the brainstorm skill takes it from there."

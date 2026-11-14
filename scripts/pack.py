@@ -2,7 +2,7 @@
 """Optional packs (ADR 0011, SIZE-2). Stdlib only.
 
   python3 scripts/pack.py status            which packs are in and the lines each adds
-  python3 scripts/pack.py add <name>        fetch the pack's files from the template at factory.json template.ref, run its tests
+  python3 scripts/pack.py add [--ref SHA] <name>   fetch the pack's files from the template at factory.json template.ref, run its tests
   python3 scripts/pack.py remove <name>     delete the pack's files, set packs.<name> false
 
 A pack is packs/<name>.json: {"files": [...], "tests": [...], "description": ...}. The template repo itself always keeps
@@ -21,6 +21,10 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+import template_ref  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "scripts", "obs"))
+import tplfiles  # noqa: E402
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -93,12 +97,10 @@ def reindex(root):
 
 
 def source_url(src):
-    src = (src or "").strip()
-    if not src:
-        raise PackError("factory.json template.source_repo is empty")
-    if re.match(r"^[\w.-]+/[\w.-]+$", src) and not os.path.exists(src):
-        return "https://github.com/" + src
-    return src
+    try:
+        return template_ref.source_url(src)
+    except ValueError as ex:
+        raise PackError(str(ex))
 
 
 def git(args, cwd, **kw):
@@ -114,7 +116,10 @@ def fetch_files(url, ref, name, tmp):
             raise PackError("git %s failed" % cmd[0])
     p = git(["fetch", "--quiet", "--depth", "1", "--filter=blob:none", "origin", ref], src, text=True)
     if p.returncode:
-        raise PackError("could not fetch %s from %s (is template.ref a commit that exists there?): %s" % (ref, url, p.stderr.strip()[-300:]))
+        raise PackError("template ref %s does not exist in %s (or the source is unreachable): %s\n"
+                        "Fix: pass a template commit that has this pack with  python3 scripts/pack.py add --ref <sha> %s  "
+                        "(recorded in factory.json template.ref on success), or run bootstrap with --template-ref <sha>."
+                        % (ref[:12], url, p.stderr.strip()[-200:], name))
     head = git(["rev-parse", "FETCH_HEAD"], src, text=True).stdout.strip()
     if head != ref:
         raise PackError("fetched commit %s does not match pinned %s" % (head, ref))
@@ -158,7 +163,7 @@ def prune_dirs(root, rels):
             d = os.path.dirname(d)
 
 
-def cmd_add(root, name, out=print):
+def cmd_add(root, name, out=print, ref=""):
     if template_mode(root=root):
         raise PackError("this is the template repo itself; it keeps every pack's files (nothing to add)")
     local = manifest(root, name) if os.path.isfile(os.path.join(root, "packs", name + ".json")) else None
@@ -167,11 +172,18 @@ def cmd_add(root, name, out=print):
         out("pack %s is already installed" % name)
         return 0
     t = f.get("template") or {}
-    ref = str(t.get("ref") or "").strip()
-    if not SHA_RE.match(ref):
-        raise PackError("factory.json template.ref must be a full 40-hex commit SHA of %s (bootstrap.sh records it; "
-                        "set it to a template commit that has this pack)" % (t.get("source_repo") or "the template"))
     url = source_url(t.get("source_repo"))
+    ref = (ref or str(t.get("ref") or "")).strip()
+    if not ref:  # bootstrap ran offline: find the template commit now (same logic as bootstrap, NEW-1)
+        ref, note = template_ref.resolve(root, t.get("source_repo"), wanted=tplfiles.read(root), exact=False)
+        if note:
+            out("template ref: " + note)
+        if not ref:
+            raise PackError("template.ref is empty and %s could not be reached. Go online, or pass a template commit with "
+                            "python3 scripts/pack.py add --ref <sha> %s" % (url, name))
+    if not SHA_RE.match(ref):
+        raise PackError("template ref %r must be a full 40-hex commit SHA of %s. Fix: python3 scripts/pack.py add --ref <sha> %s "
+                        "(or set template.ref in factory.json)" % (ref, t.get("source_repo") or "the template", name))
     tmp = tempfile.mkdtemp(prefix="pack-")
     written, backup = [], {}
     try:
@@ -206,6 +218,14 @@ def cmd_add(root, name, out=print):
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     set_flag(root, name, True)
+    if ref != str(t.get("ref") or ""):
+        f = read_json(os.path.join(root, "factory.json"), {})
+        f.setdefault("template", {})["ref"] = ref
+        write_factory(root, f)
+    listed = tplfiles.read(root)  # pack files come from the template: upstream, like the rest (NEW-2)
+    if listed or os.path.isfile(os.path.join(root, tplfiles.LIST)):
+        listed.update({rel: tplfiles.blob_hash(os.path.join(root, rel)) for rel in files})
+        tplfiles.write(root, listed)
     reindex(root)
     out("pack %s installed: %d files from %s@%s, tests passed" % (name, len(files), url, ref[:10]))
     return 0
@@ -263,6 +283,9 @@ def main(argv=None, root=ROOT):
     try:
         if a[:1] == ["status"] and len(a) == 1:
             return cmd_status(root)
+        if len(a) == 4 and a[0] == "add" and "--ref" in a[1:3]:
+            i = a.index("--ref")  # 1: add --ref SHA name; 2: add name --ref SHA
+            return cmd_add(root, a[3] if i == 1 else a[1], ref=a[i + 1])
         if len(a) == 2 and a[0] in ("add", "remove"):
             return (cmd_add if a[0] == "add" else cmd_remove)(root, a[1])
         print(__doc__.strip().split("\n\n")[0], file=sys.stderr)

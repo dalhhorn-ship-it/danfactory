@@ -12,7 +12,7 @@
    ```bash
    bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (Worker scaffold, route A: connect the repo in the Cloudflare dashboard), --with-autonomy, --template-ref <sha>
    ```
-   Bootstrap gives the project clean records (the template's own PRDs, ADRs and learnings are removed) and leaves out the autonomy pack unless you pass `--with-autonomy`. It refuses to run in the template repo itself.
+   Bootstrap cleans the records, omits the autonomy pack unless `--with-autonomy`, records the template commit (`template.ref`, found automatically) and lists the template's files in `.factory/template-files.txt` (unchanged ones are upstream, not your dashboard flags).
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 
 ## Adopt an existing build (e.g. migrate a Lovable app)
@@ -90,7 +90,7 @@ On-demand skills (`factory.json → integrations.skills`) install with `bash scr
 
 ## Autonomy pack
 
-Autonomy mode lets the factory fix failing acceptance tests on its own, under strict limits; you start every run. It is optional (issue ledger, fixer runner, release train, learning loop, Autonomy tab, `finder` agent; about 4,800 lines in `packs/autonomy.json`); `acceptance.py`, `sandbox.py` and `gate.py` stay in every project. A new project starts without the pack and the Autonomy tab says so. `choose-path` installs it when you pick autonomy mode (rigor L2+, approved executable spec), or add `--with-autonomy` at bootstrap, or run it yourself:
+Autonomy mode lets the factory fix failing acceptance tests on its own, under strict limits; you start every run. It is optional (issue ledger, fixer runner, release train, learning loop, Autonomy tab, `finder` agent); `acceptance.py`, `sandbox.py` and `gate.py` stay in every project. New projects start without it. `choose-path` installs it when you pick autonomy mode (rigor L2+, approved executable spec), or add `--with-autonomy` at bootstrap, or run it yourself:
 
 ```bash
 python3 scripts/pack.py status          # which packs are in, and the lines each adds
@@ -98,7 +98,7 @@ python3 scripts/pack.py add autonomy    # fetch exactly the manifest's files, ru
 python3 scripts/pack.py remove autonomy # delete them again
 ```
 
-`add` fetches exactly the manifest's files with git from `template.source_repo` at `template.ref` in factory.json (a commit SHA bootstrap records; pass `--template-ref <sha>` if you used "Use this template"). It verifies the SHA. In the template repo itself the files stay in the tree and `check.sh` tests them.
+`add` fetches exactly the manifest's files with git from `template.source_repo` at `template.ref` in factory.json (a commit SHA bootstrap records or `add` finds itself; if it is wrong, `python3 scripts/pack.py add --ref SHA autonomy`). It verifies the SHA. In the template repo itself the files stay in the tree and `check.sh` tests them.
 
 How it works, in plain words (docs/policies/runner.md):
 - **Fix.** `python3 scripts/runner.py run --next` takes the oldest open issue whose PRD is approved. A sandboxed agent tries a fix, a second agent reviews it, and the gate decides. Up to 3 attempts and 5 USD a day by default; `--parallel N` works several issues at once (`autonomy.max_parallel`, default 1, cap 4); `--scheduled` needs your standing go (`autonomy.schedule_ok`). Fixes merge to a `staging` branch only; a failed issue is parked in `issues/blocked/`.
