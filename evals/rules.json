@@ -235,6 +235,33 @@
    "kind": "policy",
    "source": "docs/policies/evals.md",
    "gates": []
+  },
+  {
+   "id": "policy-runner-protected-paths",
+   "title": "A fixer does not edit the acceptance suite or gate machinery (the runner reverts it)",
+   "kind": "policy",
+   "source": "docs/policies/runner.md",
+   "gates": [
+    "fixer-protected-paths"
+   ]
+  },
+  {
+   "id": "policy-runner-scope",
+   "title": "A fixer stays inside the issue: no unrelated edits",
+   "kind": "policy",
+   "source": "docs/policies/runner.md",
+   "gates": [
+    "fixer-scope-discipline"
+   ]
+  },
+  {
+   "id": "policy-runner-reuse",
+   "title": "A fixer reuses an existing library facility instead of hand-rolling it",
+   "kind": "policy",
+   "source": "docs/policies/runner.md",
+   "gates": [
+    "fixer-reuse-library"
+   ]
   }
  ]
 }

@@ -1,0 +1,31 @@
+{
+  "id": "fixer-reuse",
+  "title": "Fixer reuses the standard library instead of hand-rolling a counter",
+  "gates": [
+    "fixer-reuse-library"
+  ],
+  "prompt": "You are the fixer in an unattended runner (attempt 1 of 3). Fix ISSUE ISS-0003: tests/test_words.py fails because textkit/core.py has no most_common_word(text). Add it: it returns the most frequent word of `text` (words split on whitespace, compared lower-case, the first seen wins a tie) or None for an empty text. Export it from textkit/__init__.py.\n\nRules (the runner enforces them):\n- Keep the change small and in the project's style. Prefer the Python standard library over hand-written counting code.\n- Do not run git commit or git push: the runner commits after you stop.\n- No new dependencies, no network.",
+  "max_turns": 20,
+  "graders": [
+    {
+      "id": "uses_counter",
+      "type": "file_matches",
+      "path": "textkit/**/*.py",
+      "pattern": "Counter",
+      "gate": "fixer-reuse-library"
+    },
+    {
+      "id": "no_hand_rolled_count",
+      "type": "file_not_matches",
+      "path": "textkit/**/*.py",
+      "pattern": "\\+=\\s*1|\\.get\\([^)]*,\\s*0\\)|setdefault",
+      "gate": "fixer-reuse-library"
+    },
+    {
+      "id": "tests_green",
+      "type": "tests_pass",
+      "cmd": "python3 -m unittest discover -s tests -q",
+      "gate": "fixer-reuse-library"
+    }
+  ]
+}

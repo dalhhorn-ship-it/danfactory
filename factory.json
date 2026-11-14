@@ -67,7 +67,8 @@
     "run_budget_usd": 2,
     "model": "sonnet",
     "review_model": "sonnet",
-    "max_turns": 40
+    "max_turns": 40,
+    "learn_threshold": 3
   },
   "dashboard": {
     "github_repo": "",

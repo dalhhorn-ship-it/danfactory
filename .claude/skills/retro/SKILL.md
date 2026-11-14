@@ -5,7 +5,7 @@ description: Milestone retrospective. Reviews metrics (test time, coverage, depl
 
 # Retro — keep the factory learning
 
-1. `python3 scripts/metrics.py report` and read `metrics/REPORT.md`.
+1. `python3 scripts/metrics.py report` and read `metrics/REPORT.md`. If the runner or gate has recorded rejections, also run `python3 scripts/learn.py report` and read `metrics/LEARN.md`: its candidate rules (codes recurring past `autonomy.learn_threshold`) are suggestions to put to the user, each needing a PRD before it becomes a rule.
 2. Look at recent history cheaply: `git log --oneline -30`, and ask the user 2 questions: what was slow/annoying? what worked surprisingly well?
 3. Write 1–5 entries in `docs/operating-model/LEARNINGS.md` using its entry format. Tag each with the path(s) and one of `[practice]`, `[tree-gap]`, `[budget]`, `[tooling]`, `[anti-pattern]`.
 4. Act on them, smallest change that sticks:

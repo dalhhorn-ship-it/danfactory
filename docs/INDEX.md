@@ -57,11 +57,11 @@
 | docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
 | docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
-| docs/policies/evals.md | 39 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
+| docs/policies/evals.md | 41 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
 | docs/policies/merge-gate.md | 67 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 29 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/runner.md | 53 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
+| docs/policies/runner.md | 57 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
