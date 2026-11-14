@@ -56,7 +56,7 @@ The 20 agents are routed by moment and rigor (none to five checkers per task, L0
 | Role | Agents |
 |---|---|
 | Plan & design | product-manager, software-architect (Opus), spreadsheet-architect |
-| Build | developer, code-writer, data-builder, test-writer (acceptance tests from the approved PRD, before the build) |
+| Build | developer, code-writer, data-builder, test-writer |
 | Cheap helpers (Haiku) | bulk-reader, test-runner, doc-keeper, deploy-watcher, claude-md-compliance-checker |
 | Verify | reviewer, task-completion-validator, code-quality-pragmatist, karen, jenny, ui-comprehensive-tester |
 | Autonomy | finder (files failing acceptance tests as issues, sonnet; software-product and library-cli) |
