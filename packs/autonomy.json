@@ -37,6 +37,12 @@
   "scripts/learn.py",
   "scripts/obs/tab_autonomy.py",
   "scripts/release.py",
-  "scripts/runner.py"
+  "scripts/runner.py",
+  "scripts/runner_agent.py",
+  "scripts/runner_attempt.py",
+  "scripts/runner_core.py",
+  "scripts/runner_git.py",
+  "scripts/runner_parallel.py",
+  "scripts/runner_pick.py"
  ]
 }

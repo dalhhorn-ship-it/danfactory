@@ -19,6 +19,7 @@ import acceptance  # noqa: E402
 import evals  # noqa: E402
 import issues  # noqa: E402
 import runner  # noqa: E402
+import runner_attempt  # noqa: E402
 import sandbox  # noqa: E402
 from obs import tab_autonomy  # noqa: E402
 
@@ -854,7 +855,7 @@ class Verdict(unittest.TestCase):
     def test_diff_too_large_fails_instead_of_truncating(self):
         e = one(FIX)
         try:
-            with mock.patch.object(runner, "DIFF_MAX", 60):
+            with mock.patch.object(runner_attempt, "DIFF_MAX", 60):
                 rc, out = e.run("run", "--next")
             self.assertEqual(rc, 1, out)
             self.assertEqual(codes(e), [["diff-too-large"]])
