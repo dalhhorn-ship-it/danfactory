@@ -67,6 +67,9 @@ def load_rules(root):
     rules = []
     for r in raw:
         if isinstance(r, dict) and r.get("id") and r.get("title"):
+            src = str(r.get("source") or "")
+            if r.get("kind") == "policy" and src.startswith("docs/policies/") and src.endswith(".md") and not os.path.isfile(os.path.join(root, src)):
+                continue  # the policy belongs to a pack that is not installed (ADR 0011): its rules and fixer tasks are absent too
             g = r.get("gates")
             rules.append({"id": str(r["id"]), "title": str(r["title"]), "kind": str(r.get("kind") or "rule"),
                           "source": str(r.get("source") or ""), "hook": str(r.get("hook") or ""),

@@ -32,8 +32,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
-from obs import (size, theme, delivery, roadmap_data, roadmap_views, tab_architecture, tab_cost, tab_decisions, tab_autonomy, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
+from obs import (size, theme, delivery, roadmap_data, roadmap_views, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
                  tab_hotspots, tab_traceability)
+if os.path.isfile(os.path.join(ROOT, "scripts", "obs", "tab_autonomy.py")):  # a pack file (ADR 0011)
+    from obs import tab_autonomy  # noqa: E402
+else:
+    from obs import tab_autonomy_absent as tab_autonomy  # noqa: E402
 
 OUT = os.path.join(ROOT, "dashboard")
 # (key, label, module|None): None = built into this file. Tab inputs, labels and CSS selectors are generated from it.

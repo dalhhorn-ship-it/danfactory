@@ -2,6 +2,8 @@
 
 > Status: approved · 2026-11-14 · by user in chat ("Overall evaluate how large this program has become, it needs to be fit for purpose. Implement size monitoring also in the dashboard to flag issues like this") · Owner: product-manager · Backlog: Unplanned → SIZE-1
 
+> Build status: SIZE-1 done; SIZE-2 done 2026-11-14 (criteria 6, 7, 8 met: packs/autonomy.json, scripts/pack.py, bootstrap without the pack); SIZE-3 open.
+
 ## Problem (evaluation, 2026-11-14)
 In three days (caeb33a → b2123fa) product code grew from 7,167 to 12,547 lines (+75%), tests from 3,389 to 7,223, scripts from 34 to 43, hooks from 8 to 11, agents from 18 to 20. Fixed context per session is still small (CLAUDE.md ~780 tokens, start note ~900 tokens). The costs are elsewhere:
 - **Files agents cannot read whole.** The large-read guard stops at 350 lines; runner.py (1,199), acceptance.py (831), gate.py (724), dashboard.py (715) and guard_bash_policy.py (602) must be read in pieces every time, which costs tokens and invites mistakes.

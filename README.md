@@ -10,9 +10,9 @@
    ```
 2. Bootstrap. Add `--codegraph` to install the local code graph:
    ```bash
-   bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (Worker scaffold, route A: connect the repo in the Cloudflare dashboard)
+   bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (Worker scaffold, route A: connect the repo in the Cloudflare dashboard), --with-autonomy, --template-ref <sha>
    ```
-   Bootstrap gives the project clean records: BACKLOG.md holds only the M0 set-up milestone, TECH-DEBT.md is empty, and the template's own PRDs, ADRs 0002 and up and LEARNINGS entries are removed (they stay in the template repo). It refuses to run in the template repo itself.
+   Bootstrap gives the project clean records: BACKLOG.md holds only the M0 set-up milestone, TECH-DEBT.md is empty, and the template's own PRDs, ADRs 0002 and up and LEARNINGS entries are removed (they stay in the template repo). It refuses to run in the template repo itself. It also leaves out the autonomy pack (below) unless you pass `--with-autonomy`.
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 
 ## Adopt an existing build (e.g. migrate a Lovable app)
@@ -100,6 +100,18 @@ The paths are deliberately different, so a spreadsheet isn't run like a SaaS app
 | Deploy via git to Cloudflare | `ship` skill, templates/deploy-cloudflare.yml | [cloudflare-deploy skill](https://github.com/davila7/claude-code-templates/blob/main/cli-tool/components/skills/development/cloudflare-deploy/SKILL.md), installed on demand |
 
 On-demand skills are listed in `factory.json → integrations.skills`. Install one with `bash scripts/install-skill.sh <name>`. They are git-ignored, so the template stays small and every install pulls the current version.
+
+## Autonomy pack
+
+The autonomy machinery (issue ledger, fixer runner, release train, learning loop, the Autonomy tab, the `finder` agent, their policies, tests and fixer eval tasks; about 4,800 lines, listed in `packs/autonomy.json`) is optional. `acceptance.py`, `sandbox.py` and `gate.py` stay in every project. A new project starts without the pack; the dashboard's Autonomy tab then says so and nothing else changes. `choose-path` installs it when you choose autonomy mode (rigor L2+, approved executable spec), or run it yourself:
+
+```bash
+python3 scripts/pack.py status          # which packs are in, and the lines each adds
+python3 scripts/pack.py add autonomy    # fetch exactly the manifest's files, run the pack's tests, set packs.autonomy true
+python3 scripts/pack.py remove autonomy # delete them again
+```
+
+`add` fetches with git from `template.source_repo` at `template.ref` in factory.json: a full 40-hex commit SHA that bootstrap records (this checkout's HEAD; pass `--template-ref <sha>` when the project was made with "Use this template", whose first commit is not a template commit, e.g. `git ls-remote https://github.com/dalhhorn-ship-it/danfactory HEAD`). The fetch is verified against that SHA; nothing is piped into a shell. In the template repo itself the pack's files stay in the tree and `check.sh` tests them; `add` and `remove` refuse there.
 
 ## Commands
 

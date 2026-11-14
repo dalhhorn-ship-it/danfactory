@@ -16,6 +16,7 @@ SRC = "dalhhorn-ship-it/danfactory"
 COPY = [".claude/hooks/_common.py", ".claude/hooks/session_start.py", ".claude/hooks/record_tokens.py",
         "scripts/dashboard.py", "scripts/metrics.py", "scripts/evals.py", "scripts/evals_graders.py", "scripts/issues.py", "scripts/sandbox.py"] + sorted(  # dashboard imports its tab modules
     os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "scripts", "obs", "*.py")))
+COPY = [c for c in COPY if os.path.isfile(os.path.join(ROOT, c))]  # issues.py and tab_autonomy.py are pack files (absent in a light project)
 BACKLOG = "# Backlog\n\n## Milestone: M0 (target: )\n- [ ] One #process\n\n## Unplanned\n- [ ] Maintain thing #foundation\n"
 DEBT = "# Debt\n\n## Open\n- [ ] TD-001 Fix the thing \u2014 impact: low \u00b7 effort: S\n"
 BRAINSTORM = "[danfactory] next: No agreed goal yet. Run the `brainstorm` skill"

@@ -1,4 +1,5 @@
 """Self-tests for danfactory hooks and scripts (stdlib unittest)."""
+import glob
 import json
 import os
 import subprocess
@@ -934,7 +935,11 @@ class Config(unittest.TestCase):
             names.add(name)
         with open(os.path.join(ROOT, "docs", "operating-model", "AGENT-ROUTING.md"), encoding="utf-8") as fh:
             routing = fh.read()
-        for n in names:
+        present = set(names)
+        for pf in glob.glob(os.path.join(ROOT, "packs", "*.json")):  # an agent of a pack that is not installed may still be routed (ADR 0011)
+            with open(pf, encoding="utf-8") as fh:
+                names |= {os.path.basename(x)[:-3] for x in json.load(fh)["files"] if x.startswith(".claude/agents/") and x.endswith(".md")}
+        for n in present:
             self.assertIn(n, routing, "agent missing from AGENT-ROUTING.md: " + n)
         for n in set(re.findall(r"`([a-z][a-z-]+)`", routing)):
             skills = set(os.listdir(os.path.join(ROOT, ".claude", "skills")))

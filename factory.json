@@ -3,7 +3,11 @@
   "template": {
     "name": "danfactory",
     "source_repo": "dalhhorn-ship-it/danfactory",
-    "decision_tree_version": "1.2.0"
+    "ref": "",
+    "decision_tree_version": "1.3.0"
+  },
+  "packs": {
+    "autonomy": true
   },
   "project": {
     "name": "",

@@ -367,6 +367,8 @@ def cmd_list(a):
 def cmd_run(a):
     cfg = settings()
     tasks = load_tasks()
+    if not os.path.isdir(os.path.join(TASKS_DIR, "fixer-protected")):
+        print("evals: fixer tasks skipped, autonomy pack not installed (python3 scripts/pack.py add autonomy)")
     bad = [(t.get("id"), validate_task(t)) for t in tasks if validate_task(t)]
     if bad:
         print("invalid tasks: %s" % bad)

@@ -1,5 +1,7 @@
 # Policy: fixer runner (autonomy mode)
 
+> Part of the autonomy pack (ADR 0011). A new project does not have it until `python3 scripts/pack.py add autonomy` (choose-path runs it when you pick autonomy mode).
+
 > One open issue, one sandboxed agent per attempt, the gate decides, merges go to a staging branch only. Design: docs/decisions/0009-fixer-runner.md. Needs the ledger (docs/policies/issue-ledger.md) and the gate (docs/policies/merge-gate.md).
 
 ## Start a run

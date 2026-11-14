@@ -1,6 +1,6 @@
 # Decision tree
 
-> Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live in paths/*.md. Enriched by `retro` from LEARNINGS.md.
+> Picks the operating model for a goal. Version 1.3.0. Keep this file short: details live in paths/*.md. Enriched by `retro` from LEARNINGS.md.
 
 ## Q0: new or existing?
 
@@ -53,6 +53,10 @@ Software that must be reachable by users → deploy via git to Cloudflare using 
 
 Pick the roster and verification ladder in AGENT-ROUTING.md (docs/operating-model/AGENT-ROUTING.md) for the chosen path(s) and rigor.
 
+## Q12: autonomy mode? (rigor L2+ only)
+
+Offer it only when rigor is L2 or L3 and an approved executable spec (a PRD with acceptance tests) exists or is planned. Yes: run `python3 scripts/pack.py add autonomy` (the autonomy pack is not in a new project, ADR 0011) and set `factory.json` `autonomy.enabled` to true. No: leave the pack out; every other feature works without it.
+
 ## Path summary
 
 | Path | Heavy lifting by | Core practice | Default rigor | File |
@@ -68,6 +72,7 @@ Pick the roster and verification ladder in AGENT-ROUTING.md (docs/operating-mode
 | adopt-existing | bulk-reader, karen, product-manager | scan → index → dashboard → advise, then continue on another path | as target | paths/adopt-existing.md |
 
 ## Changelog
+- 1.3.0 — Q12 autonomy mode installs the optional autonomy pack (SIZE-2).
 - 1.2.0 — Q0b template/factory maintenance work (from M1 retro).
 - 1.1.0 — Q0 adopt-existing; flat first-match questions with a fallback (automation/infra no longer nested under apps).
 - 1.0.0 — initial tree (8 paths, rigor dial, Cloudflare git deploy).

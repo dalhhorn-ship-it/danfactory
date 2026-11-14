@@ -194,7 +194,7 @@ class TestGate(TempRepo):
 
 def in_template_checkout():
     """The repo tests need the template's own git checkout (copies made by other tests have neither)."""
-    return os.path.exists(os.path.join(ROOT, ".git")) and "scripts/runner.py" in {
+    return os.path.exists(os.path.join(ROOT, ".git")) and os.path.isfile(os.path.join(ROOT, "scripts", "runner.py")) and "scripts/runner.py" in {
         p for p, _ in size.current_files(ROOT)}
 
 

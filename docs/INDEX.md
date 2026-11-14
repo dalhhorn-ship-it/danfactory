@@ -31,7 +31,7 @@
 | docs/BACKLOG.md | 62 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 30 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/TECH-DEBT.md | 31 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
@@ -45,7 +45,7 @@
 | docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/gated-autonomy.md (C5, C6, C7;… |
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 37 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/size-monitoring.md (SIZE-2,… |
 | docs/operating-model/AGENT-ROUTING.md | 87 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
-| docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
+| docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version 1.3.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
 | docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
@@ -62,7 +62,7 @@
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
 | docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 30 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/runner.md | 70 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
+| docs/policies/runner.md | 72 | Part of the autonomy pack (ADR 0011). A new project does not have it until `python3… |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
 | docs/policies/testing-and-metrics.md | 28 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
@@ -80,6 +80,6 @@
 | docs/specs/prd-write-guard.md | 39 | Status: approved · 2026-11-13 · by user in chat ("Ok build the guard", after the TD-015… |
 | docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat · 2026-11-11 · Owner: product-manager ·… |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/size-monitoring.md | 47 | Status: approved · 2026-11-14 · by user in chat ("Overall evaluate how large this… |
+| docs/specs/size-monitoring.md | 49 | Status: approved · 2026-11-14 · by user in chat ("Overall evaluate how large this… |
 | docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |
 | docs/specs/upstream-from-lpdan-2026-11.md | 24 | Status: approved · 2026-11-11 · by user in chat ("Ok plz do", in the lpdan session,… |

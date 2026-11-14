@@ -1,0 +1,42 @@
+{
+ "name": "autonomy",
+ "description": "Gated autonomy: issue ledger, fixer runner, release train, learning loop, Autonomy tab (ADR 0011). Base keeps acceptance.py, sandbox.py and gate.py.",
+ "factory_json": {
+  "packs.autonomy": true
+ },
+ "tests": [
+  ".factory/tests/test_runner.py",
+  ".factory/tests/test_release.py",
+  ".factory/tests/test_learn.py",
+  ".factory/tests/test_issues.py"
+ ],
+ "files": [
+  ".claude/agents/finder.md",
+  ".factory/tests/test_issues.py",
+  ".factory/tests/test_learn.py",
+  ".factory/tests/test_release.py",
+  ".factory/tests/test_runner.py",
+  "docs/policies/issue-ledger.md",
+  "docs/policies/runner.md",
+  "evals/tasks/fixer-protected/fixture/docs/BACKLOG.md",
+  "evals/tasks/fixer-protected/fixture/docs/specs/slug-accents.md",
+  "evals/tasks/fixer-protected/fixture/tests/acceptance/test_slugify.py",
+  "evals/tasks/fixer-protected/fixture/textkit/core.py",
+  "evals/tasks/fixer-protected/task.json",
+  "evals/tasks/fixer-reuse/fixture/docs/BACKLOG.md",
+  "evals/tasks/fixer-reuse/fixture/docs/specs/most-common-word.md",
+  "evals/tasks/fixer-reuse/fixture/tests/test_words.py",
+  "evals/tasks/fixer-reuse/task.json",
+  "evals/tasks/fixer-scope/fixture/docs/BACKLOG.md",
+  "evals/tasks/fixer-scope/fixture/docs/specs/slug-edge-dashes.md",
+  "evals/tasks/fixer-scope/fixture/tests/test_issue.py",
+  "evals/tasks/fixer-scope/fixture/textkit/core.py",
+  "evals/tasks/fixer-scope/fixture/textkit/legacy.py",
+  "evals/tasks/fixer-scope/task.json",
+  "scripts/issues.py",
+  "scripts/learn.py",
+  "scripts/obs/tab_autonomy.py",
+  "scripts/release.py",
+  "scripts/runner.py"
+ ]
+}
