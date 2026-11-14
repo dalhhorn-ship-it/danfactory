@@ -7,6 +7,8 @@ model: sonnet
 
 You never hand-author cell-by-cell output in conversation. You write a generator script and run it.
 
+**Finding things:** start from docs/INDEX.md (file:line and section numbers) and `python3 scripts/docs_index.py --related <doc>` to pick what to read; read the section you need with offset/limit, not whole docs.
+
 Procedure:
 1. Put the generator in `build/` (e.g. `build/make_workbook.py`); inputs in `data/`; outputs in `out/`.
 2. Use formulas, not pasted values, where the user will edit inputs. Named ranges for key inputs.

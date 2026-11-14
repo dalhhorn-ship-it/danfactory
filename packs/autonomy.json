@@ -17,6 +17,8 @@
   ".factory/tests/test_release.py",
   ".factory/tests/test_runner.py",
   "docs/policies/issue-ledger.md",
+  "docs/policies/runner-release.md",
+  "docs/policies/runner-safety.md",
   "docs/policies/runner.md",
   "evals/tasks/fixer-protected/fixture/docs/BACKLOG.md",
   "evals/tasks/fixer-protected/fixture/docs/specs/slug-accents.md",

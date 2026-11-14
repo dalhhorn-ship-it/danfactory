@@ -1,0 +1,19 @@
+# Policy: fixer runner, safety and limits
+
+> Part of the autonomy pack (ADR 0011). The second reading of acceptance tests and the honest limits of the runner's isolation. Start and run: docs/policies/runner.md. Release: docs/policies/runner-release.md.
+
+## Second reading (TD-014)
+`python3 scripts/acceptance.py second-reading <slug> [--model M]` starts an agent in the same sandbox in a temp directory. It sees the PRD and a layout of the project's source files (paths and public signatures, no bodies, no tests, no docs) and writes a throwaway implementation, then `admit --reference-dir` runs and the directory is deleted. Cost goes to `metrics/runner.jsonl` (kind `second-reading`). The separation is real (different process, no access to the tests or implementation) but not proven: see limits.
+
+## Honest limits
+- The fixer's worktree sits inside the project tree (`.claude/worktrees/`), not outside it. Writes outside it are blocked by the Bash sandbox and by `acceptEdits`, but the fixer can read the project tree around it (including an untracked `.env` in your checkout). Keep real secrets out of the project directory, or run the runner in a clone.
+- The model credential reaches claude itself (it needs it); `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` hides it from the agent's commands. `EVALS_HOME=real` and `EVALS_SANDBOX=off` behave as in docs/policies/evals.md (the latter removes the isolation; the runner then is not isolated).
+- Claude Code's sandbox leaves empty mount-point files (`.env`, `package.json`, `.gitmodules` and similar) in the working directory; the runner deletes the known ones before it commits (only untracked, 0 bytes).
+- A fixer-controlled test can still write its own result file: the runner puts it in a directory it created, outside the worktree, and rejects a file not written after the run started, but code that runs under the test knows the path. The gate, the reviewer and your promotion step are the controls against a test that lies.
+- The tree sandbox hides the main project directory and your home, and blocks network and writes outside the checkout, but it reads the rest of the filesystem (read-only) and does not limit CPU or memory (commands do have a 30 minute timeout). It is bubblewrap, not a VM. Fixer code runs on Linux only; elsewhere the runner refuses unless `EVALS_SANDBOX=off`.
+- The fixer itself runs in the worktree under Claude Code's own sandbox; the runner checks `.git`, git dir, common dir and branch before and after it, and uses explicit `--git-dir` and `--work-tree` so a moved `.git` cannot redirect its git commands, but it cannot stop a fixer from writing inside its own worktree.
+- A stale lock (process gone, or older than 2 hours) is reclaimed automatically with a note; a runner that is really still running after 2 hours loses its lock.
+- The reviewer is a second model run, not an independent human: it catches special-casing and scope creep, not everything. The gate and your promotion step are the real controls.
+- Human-driven commits can still write their own trailers (TD-012 remains for them; the gate only makes it visible). One runner at a time (lock file).
+- Parallel fixers are threads of one runner process (each fixer, reviewer and every evaluation is its own child process). The in-process gate patches module globals, so gate runs are serialised by a lock: fixers overlap, gate evaluations do not (TD-020).
+- Cost is per attempt and varies by model and issue; haiku attempts in the smoke run cost about 0.01 USD, sonnet costs several times more. 

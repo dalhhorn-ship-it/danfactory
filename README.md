@@ -4,7 +4,7 @@
 
 ## Start a new project
 
-1. On GitHub: **Use this template → Create a new repository** (turn on *Settings → Template repository* for danfactory once). Or copy it by hand:
+1. On GitHub: **Use this template → Create a new repository** (turn on *Settings → Template repository* once). Or copy by hand:
    ```bash
    git clone https://github.com/dalhhorn-ship-it/danfactory my-project && cd my-project && rm -rf .git && git init
    ```
@@ -12,7 +12,7 @@
    ```bash
    bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (Worker scaffold, route A: connect the repo in the Cloudflare dashboard), --with-autonomy, --template-ref <sha>
    ```
-   Bootstrap gives the project clean records: BACKLOG.md holds only the M0 set-up milestone, TECH-DEBT.md is empty, and the template's own PRDs, ADRs 0002 and up and LEARNINGS entries are removed (they stay in the template repo). It refuses to run in the template repo itself. It also leaves out the autonomy pack (below) unless you pass `--with-autonomy`.
+   Bootstrap gives the project clean records (the template's own PRDs, ADRs and learnings are removed) and leaves out the autonomy pack unless you pass `--with-autonomy`. It refuses to run in the template repo itself.
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 
 ## Adopt an existing build (e.g. migrate a Lovable app)
@@ -28,34 +28,30 @@ Install danfactory once as a Claude Code plugin. Then, inside the other repo, ru
 ```
 
 It works on a `danfactory/adopt` branch and never overwrites your files:
-1. Scans what was built (origin, stack, tests, CI, hosting, security and quality findings) into `docs/ADOPTION-REPORT.md`.
+1. Scans what was built (stack, tests, CI, hosting, findings) into `docs/ADOPTION-REPORT.md`.
 2. Uses the decision tree (Q0 → adopt-existing → the path to continue on) to choose the operating model.
-3. Installs hooks, agents, skills, scripts, the docs index and CI, and merges settings, `CLAUDE.md` and `.gitignore`.
-4. Drafts GOAL.md from the as-built state, seeds BACKLOG.md and TECH-DEBT.md, builds the dashboard, and writes `docs/NEXT-BUILDS.md`.
+3. Installs hooks, agents, skills, scripts, the docs index and CI, and merges your settings, `CLAUDE.md` and `.gitignore`.
+4. Drafts GOAL.md from the as-built state, seeds the backlog and tech debt, and writes `docs/NEXT-BUILDS.md`.
 
-Lovable specifics (two-way sync, Supabase RLS, moving hosting to Cloudflare) are in docs/operating-model/paths/adopt-existing.md. Without plugins, run `bash scripts/install-adopt-skill.sh` from a danfactory clone; it installs `/danfactory-adopt` for your user.
+Lovable specifics are in docs/operating-model/paths/adopt-existing.md. Without plugins, run `bash scripts/install-adopt-skill.sh` from a danfactory clone.
 
 ## The flow
 
 | Phase | Skill | Output |
 |---|---|---|
-| 1. Agree the goal | `brainstorm` (talks it through with you) | docs/GOAL.md |
+| 1. Agree the goal | `brainstorm` (a conversation) | docs/GOAL.md |
 | 2. Choose how to work | `choose-path` (decision tree, rigor L0–L3) | docs/OPERATING-MODEL.md, factory.json, ADR |
-| 3. Build | path playbook + subagents | code / workbook / document … |
-| Milestones | `retro`, `metrics` | LEARNINGS.md, tree updates, metrics/REPORT.md |
-| Every build | `dashboard` (automatic) | dashboard/index.html: versions, progress, backlog, tech debt, key metrics, a Delivery card (CI pass rate, time, latest failures, weekly bars, release cadence from CHANGELOG or tags), a Hotspots tab with a Size block (files and growth against `budgets.size`, flags as alerts), a Roadmap tab (value vs technical-foundation swimlanes, one global build sequence, Next up, PRD badges; optional 6-month, proposed Gantt and Releases views) and an Evals tab (eval library with proof strength, results heatmap, rule coverage map, cost vs pass rate per model, flow of backlog items covered by evals). Styled after IBM's open-source Carbon design system, light and dark, offline, no JavaScript |
-| What is broken right now | `python3 scripts/issues.py status` (`find`, `sync`; finder agent) | failing admitted acceptance tests become files in `issues/open/`, fixed ones move to `issues/fixed/`; dashboard Autonomy tab (docs/policies/issue-ledger.md) |
-| Fix issues on their own (autonomy mode) | `python3 scripts/runner.py run --next` (`status`, `unpark`; `autonomy.enabled` in factory.json) | one sandboxed fixer per attempt, an independent review, the gate decides; up to 3 attempts and 5 USD a day; merges to `staging` only, you promote to main; failures are parked in `issues/blocked/` (docs/policies/runner.md) |
-| Fix several issues at once, or on a schedule | `python3 scripts/runner.py run --next --parallel 3` (`autonomy.max_parallel`, default 1, cap 4); `--scheduled` only with `autonomy.schedule_ok: true` | one worktree and fixer per issue, merges one at a time and re-gated against the newest staging tip (`stale-after-merge` when that fails), one shared daily budget; a schedule is yours to create (cron or routine), runs only issues of approved PRDs whose backlog item is `[~]` (docs/policies/runner.md) |
-| Promote autonomous fixes (you) | `python3 scripts/release.py verify`, then `report`; `smoke-failed <sha>` after a failed smoke | the staging batch goes through the full gate in the sandbox; the report lists commits, issues, verdict, cost and the exact promote commands; nothing pushes or merges to main, a failed smoke gets a `revert/<sha>` branch and an issue (docs/policies/runner.md) |
-| Learn from rejected fixes | `python3 scripts/learn.py report` (`retro` runs it) | failure codes per week, first-try pass rate, and candidate rules (codes recurring 3 times in 14 days, `autonomy.learn_threshold`) with example attempts in `metrics/LEARN.md`; Autonomy tab Learning block; suggestions only, a rule needs a PRD (docs/policies/runner.md) |
-| Ready to merge | `python3 scripts/gate.py` (CI job `gate`) | one verdict with reason codes: structure, build, lint, tests, acceptance, protected paths, review trailer, security scan of added lines, size warnings; recorded locally and shown on the dashboard Gates tab |
-| On request | `python3 scripts/evals.py run` | behavioural evals: 13 tasks (incl. three fixer-loop tasks) run headless in throwaway copies of the template, checked on files, git diff and commands (not wording); results in metrics/evals.jsonl, compared with a stored baseline; budget cap in factory.json; never in CI |
+| 3. Build | path playbook + subagents | code, workbook, document |
+| Milestones | `retro`, `metrics` | LEARNINGS.md, metrics/REPORT.md |
+| Every build | `dashboard` (automatic) | dashboard/index.html, offline, no JavaScript: progress, backlog, tech debt, delivery, roadmap, evals, hotspots with the Size block, autonomy |
+| What is broken right now | `python3 scripts/issues.py status` (`find`, `sync`; finder agent) | failing acceptance tests become files in `issues/open/`, fixed ones move to `issues/fixed/` (docs/policies/issue-ledger.md) |
+| Ready to merge | `python3 scripts/gate.py` (CI) | one verdict with reason codes: structure, build, lint, tests, coverage, acceptance, protected paths, PRD, review trailer, security scan of added lines; size is a warning only |
+| On request | `python3 scripts/evals.py run` | behavioural evals: 16 tasks run headless in throwaway copies and are checked on files, git diff and commands, not wording; compared with a stored baseline; capped by a budget; never in CI (docs/policies/evals.md) |
 | On request | `security-audit-run`, `ship` | audit report, live deploy |
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)
 
-The 20 agents are routed by moment and rigor, not all run every time. A verification ladder decides how many checkers a task gets (none at L0, up to five at L3).
+The 20 agents are routed by moment and rigor (none to five checkers per task, L0 to L3).
 
 | Role | Agents |
 |---|---|
@@ -66,44 +62,35 @@ The 20 agents are routed by moment and rigor, not all run every time. A verifica
 | Autonomy | finder (files failing acceptance tests as issues, sonnet; software-product and library-cli) |
 | Debug | ultrathink-debugger (Opus, only after a failed first attempt) |
 
-The verifiers and debugger are adapted from [darcyegb/ClaudeCodeAgents](https://github.com/darcyegb/ClaudeCodeAgents) (MIT).
-
 ### Paths (docs/operating-model/paths/)
 
-The paths are deliberately different, so a spreadsheet isn't run like a SaaS app.
-
-| Path | Use for | Heavy lifting |
-|---|---|---|
-| software-product | apps, APIs, services | vertical slices, TDD, CI, git → Cloudflare |
-| library-cli | packages, SDKs, CLIs | API-first, semver, examples as tests |
-| data-spreadsheet | workbooks, models, CSV/reports | `data-builder` generator scripts + xlsx skill |
-| documents-content | docs, decks, handbooks | outline-first, docx/pptx/pdf skills |
-| research-analysis | research, comparisons, analysis | deep-research fan-out, sources ledger |
-| automation-script | glue, jobs, bots | idempotent, dry-run, cron on Cloudflare |
-| infra-ops | IaC, pipelines, DNS | plan/apply split, least privilege |
-| prototype-spike | throwaway learning | time-box, kill/promote date |
+Eight playbooks, deliberately different so a spreadsheet isn't run like a SaaS app: software-product, library-cli, data-spreadsheet, documents-content, research-analysis, automation-script, infra-ops, prototype-spike (plus adopt-existing for migrations).
 
 ## What's inside
 
 | Piece | Where | Idea taken from |
 |---|---|---|
 | PRD write guard (no approved PRD, no product-code edit; gate check `prd`) | .claude/hooks/guard_prd_write.py, docs/policies/prd-approval.md | own design (GRD-1), closes TD-015 |
-| Large-read guard + delegation subagents | .claude/hooks/guard_large_read.py, .claude/agents/ | [spotify shunt](https://github.com/spotify/portal-ai-plugins/tree/main/plugins/shunt), re-targeted from AiKA to native Haiku/Sonnet subagents |
+| Large-read guard + delegation subagents | .claude/hooks/guard_large_read.py, .claude/agents/ | [spotify shunt](https://github.com/spotify/portal-ai-plugins/tree/main/plugins/shunt), with native Haiku/Sonnet subagents |
 | Docs quick-reference + doc knowledge graph | docs/INDEX.md, docs/knowledge-graph.json, scripts/docs_index.py | generated from headings and links; auto-refreshed by a hook |
-| Code knowledge graph | `bash scripts/install-codegraph.sh` | [codegraph](https://github.com/colbymchenry/codegraph) (local, telemetry off) |
-| Metrics: test time, coverage, deploys, tokens | scripts/metrics.py, metrics/ | budgets in factory.json; token use recorded at SessionEnd |
-| Build dashboard | scripts/dashboard.py, docs/BACKLOG.md, docs/TECH-DEBT.md | regenerated by every metrics run and CI build; CI uploads it as an artifact |
-| Behavioural evals | scripts/evals.py, scripts/evals_graders.py, evals/, docs/policies/evals.md | headless `claude -p` runs with deterministic graders; ADR 0006 |
-| Security audit (on request) | `security-audit-run` skill | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), installed on demand |
-| Short contexts + handoff notes | handoff skill, .claude/hooks/context_watch.py, pre_compact.py, session_start.py, CLAUDE.md compact instructions | NVIDIA "You don't need long context": note at logical boundaries, auto-compaction resets, note reloads automatically and work continues (no `/clear` needed) |
-| No waiting on git/CI/Cloudflare | deploy-watcher subagent, scripts/wait-for-url.sh, .githooks/pre-push, docs/policies/async-delivery.md | push-and-continue, bounded waits, test once, skip docs-only builds |
+| Code knowledge graph | `bash scripts/install-codegraph.sh` | [codegraph](https://github.com/colbymchenry/codegraph) (local) |
+| Metrics: test time, coverage, deploys, tokens | scripts/metrics.py, metrics/ | budgets in factory.json |
+| Short contexts + handoff notes | handoff skill, hooks context_watch.py, pre_compact.py, session_start.py | NVIDIA "You don't need long context": a note at logical boundaries, auto-compaction resets, the note reloads and work continues |
+| No waiting on git/CI/Cloudflare | deploy-watcher subagent, scripts/wait-for-url.sh, .githooks/pre-push, docs/policies/async-delivery.md | push and continue, bounded waits, skip docs-only builds |
 | Deploy via git to Cloudflare | `ship` skill, templates/deploy-cloudflare.yml | [cloudflare-deploy skill](https://github.com/davila7/claude-code-templates/blob/main/cli-tool/components/skills/development/cloudflare-deploy/SKILL.md), installed on demand |
 
-On-demand skills are listed in `factory.json → integrations.skills`. Install one with `bash scripts/install-skill.sh <name>`. They are git-ignored, so the template stays small and every install pulls the current version.
+On-demand skills (`factory.json → integrations.skills`) install with `bash scripts/install-skill.sh <name>`; they are git-ignored.
+
+## Guard rails, in plain words
+
+- **No approved PRD, no product code.** A PRD is a short written spec you approve in chat. A hook (`guard_prd_write.py`) blocks edits to product files, including writes made through shell commands, until `docs/BACKLOG.md` has an in-progress item linked to an approved PRD. The merge gate repeats the check on every commit (`prd`). Only `bugfix` and `chore` claims are honoured without you; a `waiver` must quote your own words (docs/policies/prd-approval.md).
+- **Small by budget.** `factory.json` `budgets.size` sets limits and the dashboard Size block flags them as warnings, never failures: code files over 400 lines (warn) or 700 (max), CLAUDE.md plus the start note over 2,500 tokens, more than 20 agents, code growth over 25% in 30 days, docs over 3,000 tokens (policies get split by topic; specs and ADRs are records and stay whole, with indexed sections).
+- **Index first.** Every agent starts from `docs/INDEX.md`, which lists each doc and, for docs over 1,500 tokens, its sections with start lines, so agents read one section, not the whole file. A hook blocks whole reads of files over 350 lines.
+- **Fast checks.** `bash scripts/check.sh` runs the template's tests in parallel worker processes inside the 120 s budget (`budgets.test_seconds`); CI runs the full set. While working, `python3 scripts/metrics.py test --affected` runs only the tests a change touches (30 s budget).
 
 ## Autonomy pack
 
-The autonomy machinery (issue ledger, fixer runner, release train, learning loop, the Autonomy tab, the `finder` agent, their policies, tests and fixer eval tasks; about 4,800 lines, listed in `packs/autonomy.json`) is optional. `acceptance.py`, `sandbox.py` and `gate.py` stay in every project. A new project starts without the pack; the dashboard's Autonomy tab then says so and nothing else changes. `choose-path` installs it when you choose autonomy mode (rigor L2+, approved executable spec), or run it yourself:
+Autonomy mode lets the factory fix failing acceptance tests on its own, under strict limits; you start every run. It is optional (issue ledger, fixer runner, release train, learning loop, Autonomy tab, `finder` agent; about 4,800 lines in `packs/autonomy.json`); `acceptance.py`, `sandbox.py` and `gate.py` stay in every project. A new project starts without the pack and the Autonomy tab says so. `choose-path` installs it when you pick autonomy mode (rigor L2+, approved executable spec), or add `--with-autonomy` at bootstrap, or run it yourself:
 
 ```bash
 python3 scripts/pack.py status          # which packs are in, and the lines each adds
@@ -111,7 +98,15 @@ python3 scripts/pack.py add autonomy    # fetch exactly the manifest's files, ru
 python3 scripts/pack.py remove autonomy # delete them again
 ```
 
-`add` fetches with git from `template.source_repo` at `template.ref` in factory.json: a full 40-hex commit SHA that bootstrap records (this checkout's HEAD; pass `--template-ref <sha>` when the project was made with "Use this template", whose first commit is not a template commit, e.g. `git ls-remote https://github.com/dalhhorn-ship-it/danfactory HEAD`). The fetch is verified against that SHA; nothing is piped into a shell. In the template repo itself the pack's files stay in the tree and `check.sh` tests them; `add` and `remove` refuse there.
+`add` fetches exactly the manifest's files with git from `template.source_repo` at `template.ref` in factory.json (a commit SHA bootstrap records; pass `--template-ref <sha>` if you used "Use this template"). It verifies the SHA. In the template repo itself the files stay in the tree and `check.sh` tests them.
+
+How it works, in plain words (docs/policies/runner.md):
+- **Fix.** `python3 scripts/runner.py run --next` takes the oldest open issue whose PRD is approved. A sandboxed agent tries a fix, a second agent reviews it, and the gate decides. Up to 3 attempts and 5 USD a day by default; `--parallel N` works several issues at once (`autonomy.max_parallel`, default 1, cap 4); `--scheduled` needs your standing go (`autonomy.schedule_ok`). Fixes merge to a `staging` branch only; a failed issue is parked in `issues/blocked/`.
+- **Release.** `python3 scripts/release.py verify` runs the full gate on the staging batch, `report` explains it and prints the exact promote commands, and you run them. Nothing reaches main by itself; `smoke-failed <sha>` after a bad deploy makes a `revert/<sha>` branch and an issue (docs/policies/runner-release.md).
+- **Learn.** `python3 scripts/learn.py report` (the `retro` skill runs it) turns repeated failure codes (3 times in 14 days) into candidate rules in `metrics/LEARN.md`. They are only suggestions: a rule still needs a PRD.
+- Limits and what the sandbox does not cover: docs/policies/runner-safety.md.
+
+**Pilot evidence** (evals/spikes/pilot-semverlite): a library project made from the template, built from a 10-criterion PRD of the Semantic Versioning spec. Acceptance tests were written and admitted, then the runner fixed the one issue on attempt 1 and merged to staging: 11 of 11 tests pass, main untouched. The fix cost 0.22 USD; 2.72 USD went on six runs that failed for template reasons, each since fixed with a test.
 
 ## Commands
 
@@ -122,23 +117,18 @@ python3 scripts/metrics.py test        # run tests, record time + coverage
 python3 scripts/metrics.py report      # metrics/REPORT.md with alerts + suggestions
 python3 scripts/dashboard.py --open    # build + open the project dashboard
 python3 scripts/evals.py run --n 3 --model haiku   # behavioural evals (costs tokens; see docs/policies/evals.md)
-python3 scripts/evals.py compare       # pass-rate change vs metrics/evals-baseline.json
-python3 scripts/ci_runs.py            # refresh metrics/ci-runs.json (CI pass rate and time for the Delivery card; the only script that uses the network)
-python3 scripts/archmodel.py --write   # refresh docs/architecture.json (dashboard Architecture tab)
-bash scripts/install-skill.sh security-audit
-bash scripts/install-skill.sh cloudflare-deploy
+python3 scripts/evals.py compare       # change vs the stored baseline
+python3 scripts/ci_runs.py            # refresh metrics/ci-runs.json (Delivery card; the only script that uses the network)
+python3 scripts/archmodel.py --write   # refresh docs/architecture.json
+bash scripts/install-skill.sh <name>   # security-audit, cloudflare-deploy
 ```
 
-Requirements: git and python3 (stdlib only). Node/npm are needed for codegraph and wrangler only when you use them.
+Requirements: git and python3 (stdlib only); Node/npm only for codegraph and wrangler.
 
-## Template mode (maintainers)
+## Maintaining the template
 
-A checkout whose git `origin` is `template.source_repo` in factory.json (`dalhhorn-ship-it/danfactory`) is the template itself. There the session-start hook says "TEMPLATE repo" instead of suggesting brainstorm, the dashboard shows "Template maintenance" (open tech debt, then open Unplanned backlog items) instead of phase and progress, and `python3 scripts/metrics.py test` runs `.factory/tests` (`commands.test` stays empty so projects are unaffected). Any other origin, no remote or no git means project mode. Detection reads local git config only (helper `template_mode()` in .claude/hooks/_common.py). If you rename or move the template repo, update `template.source_repo`. A plain `git clone` of the template keeps its origin and so counts as the template until you change the remote.
-
-## Feeding learnings back into the template
-
-`retro` tags learnings that apply to every project with `[upstream]`. From the project, run `python3 scripts/upstream_learnings.py --template ../danfactory`: it appends unsent entries to the template's LEARNINGS.md, marks them `[upstreamed]`, and lists which shared docs (tree, routing, paths) differ, for you to port. Then open a PR in the template and bump the tree version. New projects then start from the improved tree.
+A checkout whose git `origin` is `template.source_repo` in factory.json is the template itself (session start says "TEMPLATE repo", tests are `.factory/tests`); any other origin is a project. Learnings that apply to every project flow back with `python3 scripts/upstream_learnings.py --template ../danfactory`. Details: docs/policies/template-maintenance.md.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Some agents in `.claude/agents/` are adapted from darcyegb/ClaudeCodeAgents (MIT, see `.claude/agents/LICENSE-ClaudeCodeAgents.txt`). Skills fetched by `scripts/install-skill.sh` keep their own licenses (listed in factory.json under `skills`).
+MIT, see [LICENSE](LICENSE). The verifier and debugger agents are adapted from [darcyegb/ClaudeCodeAgents](https://github.com/darcyegb/ClaudeCodeAgents) (MIT, `.claude/agents/LICENSE-ClaudeCodeAgents.txt`). Fetched skills keep their own licenses.

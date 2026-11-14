@@ -3,7 +3,7 @@
 > Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin (delegate I/O-heavy work to a cheaper worker) using native Claude Code subagents.
 
 ## Rules
-1. **Index first.** Read `docs/INDEX.md`, then targeted reads (`Read` with offset/limit) at the `file:line` it lists.
+1. **Index first.** Read `docs/INDEX.md`, then targeted reads (`Read` with offset/limit) at the `file:line` it lists; for docs over `budgets.size.doc_tokens_sections` (1500 tokens) the index lists sections with start lines, and `python3 scripts/docs_index.py --related <doc>` shows linked docs. Every agent file says so (`Finding things`).
 2. **No whole large files in the main context.** Files over `budgets.large_read_lines` (350) are blocked by `.claude/hooks/guard_large_read.py` unless offset/limit is given. Escape hatch: `touch .claude/.allow-large-read` allows the next large read once (say why). The guard also catches `tail -n +K`, big `head`/`tail` counts and big `sed -n` ranges.
 3. **Delegate bulk reading** to `bulk-reader` (Haiku): big files, 3+ files, long diffs, logs, API specs. Ask a precise question; get `file:line` bullets back.
 4. **Delegate boilerplate** to `code-writer` with a reference file. Run tests directly via `metrics.py test` (one line when green); **delegate failing or noisy runs** to `test-runner`.

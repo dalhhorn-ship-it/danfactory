@@ -7,6 +7,8 @@ model: haiku
 
 Run the command you are given (default: `python3 scripts/metrics.py test`, which records timing and coverage in metrics/). Prefer `python3 scripts/metrics.py test --affected` when the caller says "inner loop".
 
+**Finding things:** start from docs/INDEX.md (file:line and section numbers) and `python3 scripts/docs_index.py --related <doc>` to pick what to read if you need project docs; return failing test names and file:line, never full logs.
+
 Reply format, nothing more:
 ```
 RESULT: pass|fail  (N passed, M failed, Xs; coverage Y%)

@@ -8,7 +8,7 @@
                                          branch revert/<sha> (git revert of the promoted merge) + an issue with the reason
 
 Nothing here merges into, commits on, checks out or pushes the production branch, and nothing pushes anywhere: the user
-promotes and pushes (docs/policies/runner.md). Exit 0 ok / verdict pass, 1 verdict fail or revert conflict, 2 refused."""
+promotes and pushes (docs/policies/runner-release.md). Exit 0 ok / verdict pass, 1 verdict fail or revert conflict, 2 refused."""
 import argparse
 import datetime
 import json
@@ -25,7 +25,7 @@ import runner as R  # noqa: E402
 import sandbox as S  # noqa: E402
 
 ROWS = os.path.join("metrics", "releases.jsonl")
-EMPTY = "No release verification yet: `python3 scripts/release.py verify` (docs/policies/runner.md)."
+EMPTY = "No release verification yet: `python3 scripts/release.py verify` (docs/policies/runner-release.md)."
 Refuse = R.Refuse
 
 
@@ -66,7 +66,7 @@ def guard(root, staging):
     """Refuse to operate on the production branch (or on a branch that does not exist)."""
     prod = prod_branch(root)
     if staging == prod:
-        raise Refuse("%s is the production branch: release.py never operates on it (you promote, docs/policies/runner.md)" % prod)
+        raise Refuse("%s is the production branch: release.py never operates on it (you promote, docs/policies/runner-release.md)" % prod)
     if not rev(root, "refs/heads/" + staging):
         raise Refuse("no branch %s: nothing to verify" % staging)
     if not rev(root, "refs/heads/" + prod):
@@ -262,7 +262,7 @@ def human(st):
 
 
 def main(argv=None, root=None):
-    ap = argparse.ArgumentParser(prog="release.py", description="Release train (docs/policies/runner.md)")
+    ap = argparse.ArgumentParser(prog="release.py", description="Release train (docs/policies/runner-release.md)")
     ap.add_argument("--root", default=None)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("verify")

@@ -112,7 +112,7 @@ def render_runner(rn):
 
 
 LEARN_EMPTY = ("No rejection data yet: `python3 scripts/learn.py report` lists recurring failure codes once the runner or the gate "
-               "has recorded rejections (docs/policies/runner.md, Learning).")
+               "has recorded rejections (docs/policies/runner-release.md, Learning).")
 WEEKS = 6
 
 
@@ -176,7 +176,7 @@ def render_issues(st):
 
 
 # ---- Release train block (AUTO-5, ADR 0010): staging lead, last verify, days since promotion, open revert branches
-RELEASE_EMPTY = "No release verification yet: `python3 scripts/release.py verify` (docs/policies/runner.md)."
+RELEASE_EMPTY = "No release verification yet: `python3 scripts/release.py verify` (docs/policies/runner-release.md)."
 
 
 def collect_release(root):
