@@ -133,7 +133,13 @@ class RecordTokens(unittest.TestCase):
             return
         # the un-bootstrapped template (empty project.name) must not record anything
         before = os.path.exists(os.path.join(ROOT, "metrics", "tokens.jsonl"))
-        hook("record_tokens.py", {"transcript_path": main_t, "session_id": "x"})
+        # template detection reads git remote origin; inject it for this one subprocess so the test does not depend
+        # on the checkout's remotes (a sandbox without origin would otherwise write into the real metrics/)
+        with open(os.path.join(ROOT, "factory.json"), encoding="utf-8") as fh:
+            src = json.load(fh)["template"]["source_repo"]
+        hook("record_tokens.py", {"transcript_path": main_t, "session_id": "x"},
+             env={"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "remote.origin.url",
+                  "GIT_CONFIG_VALUE_0": "https://github.com/%s.git" % src})
         self.assertEqual(os.path.exists(os.path.join(ROOT, "metrics", "tokens.jsonl")), before)
 
     def test_session_shas_window_and_git_failure(self):

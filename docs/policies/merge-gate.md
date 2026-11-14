@@ -11,7 +11,7 @@
 ## Checks, in order
 | Check | What it runs | Codes |
 |---|---|---|
-| structure | `bash scripts/check.sh` (template structure and its own tests) | `structure-failed` |
+| structure | `bash scripts/check.sh` (template structure and its own tests, run in parallel by `scripts/run_tests.py`; full set, nothing skipped) | `structure-failed` |
 | build | `commands.build` | `build-failed` |
 | lint | `commands.lint` | `lint-failed` |
 | tests | `python3 scripts/metrics.py test`; skipped in template mode (check.sh runs the suite) | `tests-failed`, `tests-over-budget` (warn), `tests-include-acceptance` (warn: `commands.test` would discover tests/acceptance) |

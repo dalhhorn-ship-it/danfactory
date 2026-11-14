@@ -123,7 +123,7 @@ class CallSites(unittest.TestCase):
     def test_metrics_test_command(self):
         sys.path.insert(0, os.path.join(ROOT, "scripts"))
         import metrics
-        self.assertEqual(metrics.TEMPLATE_TEST, "python3 -m unittest discover -s .factory/tests")
+        self.assertEqual(metrics.TEMPLATE_TEST, "python3 scripts/run_tests.py")
         r = run(self.prj, "scripts/metrics.py", "test")
         self.assertIn("commands.test is empty", r.stdout)  # project mode unchanged
 

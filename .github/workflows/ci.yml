@@ -20,7 +20,8 @@ jobs:
         env:
           # PRs: the base branch tip; pushes: the previous tip (all zeros on a first push: the gate falls back)
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python3 scripts/gate.py --base "$BASE" --summary "$GITHUB_STEP_SUMMARY"
+        # TEST_SUMMARY: check.sh (the structure step) appends per-set test timings to the step summary; full suite, nothing skipped
+        run: TEST_SUMMARY="$GITHUB_STEP_SUMMARY" python3 scripts/gate.py --base "$BASE" --summary "$GITHUB_STEP_SUMMARY"
       - name: Refresh CI history (best effort, read-only GitHub API call)
         if: always()
         continue-on-error: true

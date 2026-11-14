@@ -18,3 +18,6 @@ Every metrics run and every CI build regenerates `dashboard/` (scripts/dashboard
 
 ## When a budget is breached
 Pick the top 1–3 suggestions from `metrics/REPORT.md` by saving/effort, do them, record the result as a learning. Change a budget only with a recorded reason.
+
+## Template's own suite: parallel runner (FAST-1)
+`scripts/check.sh` and `metrics.py test` (in template mode) run `python3 scripts/run_tests.py`: the same tests as `unittest discover -s .factory/tests`, as one process per test class (the longest tests alone, first), `-j` workers (default CPUs; 2 when started from inside a test). Each task gets its own `TMPDIR` (removed afterwards, so nothing leaks into /tmp) and a hermetic `GIT_CONFIG_GLOBAL`. Classes that race on thread timing (`test_runner.Parallel*`) run alone after the pool. `run_tests.py <module|module.Class>...` runs a subset; `--serial` is plain discover; `TEST_SUMMARY=<file>` (CI: the step summary) gets a per-set timing table. Nothing is skipped locally or in CI; budget `test_seconds` is 120 s (about 65 s on 4 CPUs).
