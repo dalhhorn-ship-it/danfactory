@@ -41,7 +41,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [~] NEW-1 Template ref recorded so the autonomy pack installs in new projects (TD-022) (docs/specs/new-project-readiness.md) (S) #quality
 - [~] NEW-2 Template-owned files and setup items are not project noise (docs/specs/new-project-readiness.md) (S) #quality
 - [~] NEW-3 New-project smoke test in the template's CI (docs/specs/new-project-readiness.md) (S) #quality
-- [~] FAST-2 Test reliability: flaky parallel tests, TD-021 git config wipe, check back under budget (docs/specs/fast-checks-and-guard-gaps.md) (M) #quality
+- [x] FAST-2 Test reliability: flaky parallel tests, TD-021 git config wipe, check back under budget (docs/specs/fast-checks-and-guard-gaps.md) (M) #quality
 - [x] DOCS-1 Docs index-first for all agents, sections indexed for long docs, doc size budget, full docs sync (docs/specs/docs-index-first.md) (M) #process
 - [x] SIZE-2 Autonomy as an optional pack: bootstrap leaves it out, pack.py adds it from a pinned template commit (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-1) #quality
 - [x] SIZE-3 Split runner.py, acceptance.py, gate.py, dashboard.py, guard_bash_policy.py under the size budget, no behaviour change (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-2) #quality

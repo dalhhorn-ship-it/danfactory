@@ -2,10 +2,12 @@
 import glob
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 HOOKS = os.path.join(ROOT, ".claude", "hooks")
@@ -573,11 +575,46 @@ class AsyncDelivery(unittest.TestCase):
         self.assertIn("exceeded", slow.stderr)
 
 
+
+def copy_repo(d):
+    """cp -r of this checkout into d. In a git worktree .git is a FILE pointing at the main repo's gitdir (shared config):
+    a copy that kept it would make `git remote remove`, `git config`, commits in the copy hit the REAL repo (TD-021).
+    There the pointer is replaced by a fresh repo (same origin url, snapshot commit)."""
+    subprocess.run(["cp", "-r", ROOT, d], check=True)
+    if os.path.isfile(os.path.join(d, ".git")):
+        os.remove(os.path.join(d, ".git"))
+        url = subprocess.run(["git", "-C", ROOT, "config", "--get", "remote.origin.url"], capture_output=True, text=True).stdout.strip()
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+        subprocess.run(["git", "init", "-q"], cwd=d, check=True)
+        if url:
+            subprocess.run(["git", "remote", "add", "origin", url], cwd=d, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=d, check=True, capture_output=True)
+        subprocess.run(git + ["commit", "-q", "--allow-empty", "--no-verify", "-m", "snapshot"], cwd=d, check=True, capture_output=True)
+    return d
+
+
+class CopyRepoInWorktree(unittest.TestCase):
+    def test_copy_of_a_worktree_never_shares_the_main_repo_config(self):  # TD-021
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, True)
+        g = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+        main, wt = os.path.join(tmp, "main"), os.path.join(tmp, "wt")
+        subprocess.run(g + ["init", "-q", main], check=True)
+        subprocess.run(g + ["-C", main, "remote", "add", "origin", "https://example.invalid/x/y"], check=True)
+        subprocess.run(g + ["-C", main, "commit", "-q", "--allow-empty", "-m", "base"], check=True)
+        subprocess.run(g + ["-C", main, "worktree", "add", "-q", "-b", "w", wt], check=True)
+        before = open(os.path.join(main, ".git", "config"), "rb").read()
+        with mock.patch.object(sys.modules[__name__], "ROOT", wt):
+            d = copy_repo(os.path.join(tmp, "copy"))
+        subprocess.run(["git", "-C", d, "remote", "remove", "origin"], check=True)
+        subprocess.run(["git", "-C", d, "config", "core.hooksPath", ".githooks"], check=True)
+        self.assertEqual(open(os.path.join(main, ".git", "config"), "rb").read(), before)
+
+
 @template_only
 class Bootstrap(unittest.TestCase):
     def test_flag_anywhere_and_readme_swap(self):
-        d = os.path.join(tempfile.mkdtemp(), "proj")
-        subprocess.run(["cp", "-r", ROOT, d], check=True)
+        d = copy_repo(os.path.join(tempfile.mkdtemp(), "proj"))
         for extra in (".claude/skills/security-audit", ".claude/skills/cloudflare-deploy"):
             subprocess.run(["rm", "-rf", os.path.join(d, extra)])
         # --codegraph would install software; stub the installer so only parsing is tested
@@ -658,6 +695,12 @@ class Adopt(unittest.TestCase):
                          ("lovable-demo", "lovable", "npm run build"))
         self.assertIn("Row Level Security", open(os.path.join(d, "docs", "TECH-DEBT.md")).read())
         self.assertIn("node_modules", open(os.path.join(d, ".gitignore")).read())
+        # The adopted copy's check.sh runs the project's test dir. Every template test already ran in this suite, so keep the ones that
+        # exercise the adopted layout (docs, PRD guard, size) instead of running the whole suite a third time.
+        keep = ("test_docs_first.py", "test_docs_links.py", "test_prd_guard.py", "test_size.py")
+        for name in os.listdir(os.path.join(d, ".factory", "tests")):
+            if name.startswith("test_") and name not in keep:
+                os.remove(os.path.join(d, ".factory", "tests", name))
         subprocess.run([sys.executable, "scripts/docs_index.py", "--quiet"], cwd=d, check=True)
         chk = subprocess.run(["bash", "scripts/check.sh"], cwd=d, capture_output=True, text=True)
         self.assertEqual(chk.returncode, 0, chk.stdout[-800:] + chk.stderr[-800:])
@@ -713,14 +756,7 @@ class ShortContexts(unittest.TestCase):
         os.remove(self.state_file(sid))
 
     def project_copy(self):
-        d = os.path.join(tempfile.mkdtemp(), "proj")
-        subprocess.run(["cp", "-r", ROOT, d], check=True)
-        if os.path.isfile(os.path.join(d, ".git")):  # a git worktree's .git is a pointer: the copy would commit into the original branch
-            os.remove(os.path.join(d, ".git"))
-            git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
-            subprocess.run(["git", "init", "-q"], cwd=d, check=True)
-            subprocess.run(["git", "add", "-A"], cwd=d, check=True, capture_output=True)
-            subprocess.run(git + ["commit", "-q", "--no-verify", "-m", "snapshot"], cwd=d, check=True, capture_output=True)
+        d = copy_repo(os.path.join(tempfile.mkdtemp(), "proj"))
         env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
         return d, os.path.join(d, ".claude", "hooks"), env, os.path.join(d, ".factory", "HANDOFF.md")
 

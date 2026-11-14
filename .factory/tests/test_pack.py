@@ -29,14 +29,24 @@ def tree_files(d):
     return out
 
 
-def snapshot(dst):
-    """Copy this working tree (tracked and new, not ignored files) into dst and commit it. Returns the commit sha."""
+def snapshot(dst, quick_pack_tests=False):
+    """Copy this working tree (tracked and new, not ignored files) into dst and commit it. Returns the commit sha.
+    quick_pack_tests: the copy's pack manifest lists one small test module, so `pack.py add` (which runs the manifest's tests) does not
+    rerun the whole autonomy suite a second time; the real manifest's modules all run in the normal suite (criterion 8 checks that)."""
     names = subprocess.run(["git", "-C", ROOT, "ls-files", "-co", "--exclude-standard", "-z"], capture_output=True, text=True,
                            check=True).stdout.split("\0")
     for rel in filter(None, names):
         if os.path.isfile(os.path.join(ROOT, rel)):
             os.makedirs(os.path.dirname(os.path.join(dst, rel)), exist_ok=True)
             shutil.copy2(os.path.join(ROOT, rel), os.path.join(dst, rel))
+    if quick_pack_tests:
+        mp = os.path.join(dst, "packs", "autonomy.json")
+        with open(mp, encoding="utf-8") as fh:
+            m = json.load(fh)
+        m["tests"] = [t for t in m["tests"] if t.endswith("test_issues.py")]
+        with open(mp, "w", encoding="utf-8") as fh:
+            json.dump(m, fh, indent=1)
+            fh.write("\n")
     subprocess.run(["git", "-C", dst, "init", "-q"], check=True)
     subprocess.run(["git", "-C", dst, "config", "uploadpack.allowAnySHA1InWant", "true"], check=True)
     subprocess.run(["git", "-C", dst, "add", "-A"], check=True)
@@ -52,7 +62,7 @@ class Project:
         cls.tmp = tempfile.mkdtemp(prefix="pack-test-")
         cls.tpl = os.path.join(cls.tmp, "template")
         os.makedirs(cls.tpl)
-        cls.sha = snapshot(cls.tpl)
+        cls.sha = snapshot(cls.tpl, quick_pack_tests=True)
         cls.proj = os.path.join(cls.tmp, "proj")  # a new project: a copy of the template commit, no origin
         subprocess.run(["git", "clone", "-q", cls.tpl, cls.proj], check=True)
         subprocess.run(["git", "-C", cls.proj, "remote", "remove", "origin"], check=True)

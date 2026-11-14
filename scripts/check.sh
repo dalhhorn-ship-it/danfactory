@@ -5,8 +5,8 @@ cd "$(dirname "$0")/.."
 python3 -m json.tool factory.json >/dev/null
 python3 -m json.tool .claude/settings.json >/dev/null
 python3 scripts/docs_index.py --check
-# Tests must never change the real repo's git config. 2026-11-14 the config was found reset (remote and branch
-# tracking gone) after a parallel run; not reproduced since (TD-021). Snapshot it, restore it and fail loudly if touched.
+# Tests must never change the real repo's git config (TD-021: a test that copied a git worktree shared its config; fixed,
+# run_tests.py also names the set). Snapshot it, restore it and fail loudly if touched.
 GITCFG="$(git rev-parse --git-common-dir 2>/dev/null)/config"
 CFGSNAP=""
 if [ -f "$GITCFG" ]; then CFGSNAP="$(mktemp)"; cp "$GITCFG" "$CFGSNAP"; fi

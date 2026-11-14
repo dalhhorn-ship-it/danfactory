@@ -1212,6 +1212,40 @@ class ParallelConflicts(unittest.TestCase):
             e.cleanup()
 
 
+class AttemptBase(unittest.TestCase):
+    def test_worktree_starts_at_the_sha_recorded_as_base_even_if_staging_moves(self):  # flake: a ledger commit between the two
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, True)
+        g = lambda *a: subprocess.run(["git", "-C", root, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", *a],  # noqa: E731
+                                      capture_output=True, text=True, check=True).stdout.strip()
+        g("init", "-q", "-b", "staging")
+        g("commit", "-q", "--allow-empty", "-m", "one")
+        old = g("rev-parse", "HEAD")
+        g("commit", "-q", "--allow-empty", "-m", "two")
+        new = g("rev-parse", "HEAD")
+        g("checkout", "-q", "--detach")
+        g("update-ref", "refs/heads/staging", old)
+        real, seen = runner_attempt.git, {}
+
+        def git_moving(args, cwd, **kw):
+            res = real(args, cwd, **kw)
+            if args[:2] == ["rev-parse", "staging"]:
+                g("update-ref", "refs/heads/staging", new)  # another thread's commit lands right after the base was read
+            return res
+
+        def fake_claude(prompt, model, turns, cwd, *a, **kw):
+            seen["head"] = real(["rev-parse", "HEAD"], cwd).stdout.strip()
+            return {"cost": 0, "estimated": False, "tokens": {"tokens_in": 0, "tokens_cache": 0, "tokens_out": 0}, "rc": 1, "has_result": False}
+
+        cfg = {"max_attempts": 1, "max_turns": 1, "timeout_s": 5}
+        iss = {"id": "ISS-0001", "title": "t", "state": "open", "path": "issues/open/ISS-0001-t.md", "tests": []}
+        with mock.patch.object(runner_attempt, "git", git_moving), mock.patch.object(runner_attempt, "call_claude", fake_claude), \
+                mock.patch.object(runner_attempt, "fixer_prompt", lambda *a, **k: ""):
+            row, _ = runner_attempt.attempt(root, cfg, iss, "", "run", 1, [], "m", "m", "staging", lambda: 5.0, 0.1)
+        self.assertEqual(seen["head"], old)
+        self.assertEqual(row["base"], old[:9])
+
+
 class ParallelBudget(unittest.TestCase):
     def test_shared_budget_stops_the_third_before_it_pays(self):
         e = ParEnv(autonomy={"daily_budget_usd": 1.2, "run_budget_usd": 5, "max_attempts": 1})
@@ -1224,7 +1258,7 @@ class ParallelBudget(unittest.TestCase):
             stops = [r for r in rows if r["kind"] == "stop"]
             self.assertEqual(len(stops), 1)
             self.assertIn("in flight", stops[0]["reason"])
-            self.assertEqual(sum(1 for r in rows if r["kind"] == "attempt" and r["outcome"] == "merged"), 2)
+            self.assertEqual(sum(1 for r in rows if r["kind"] == "attempt" and r["outcome"] == "merged"), 2, (rows, out))
             self.assertEqual(len(e.staging_files("issues/open")), 1, "the stopped issue stays open")
         finally:
             e.cleanup()

@@ -66,7 +66,9 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
     os.makedirs(os.path.dirname(wtp), exist_ok=True)
     with WT_LOCK:
         base = out_of(git(["rev-parse", staging], root))
-        git(["worktree", "add", "-q", "-B", branch, wtp, staging], root)
+        # from the sha just read, not the branch name: another fixer's ledger commit can move staging in between, and the
+        # `reset --soft base` below would then show that commit's files (metrics/runner.jsonl) as the fixer's changes
+        git(["worktree", "add", "-q", "-B", branch, wtp, base], root)
     w = WT(root, wtp)
     row = {"ts": now(), "kind": "attempt", "run": run_id, "issue": iss["id"], "attempt": k, "model": model, "review_model": review_model,
            "cost_usd": 0.0, "fixer_cost_usd": 0.0, "review_cost_usd": 0.0, "tokens_in": 0, "tokens_cache": 0, "tokens_out": 0,
