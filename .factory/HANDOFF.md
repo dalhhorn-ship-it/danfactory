@@ -21,6 +21,8 @@ User (PM, portfolio, not technical on infra: plain words, one recommendation) ru
 - User 2026-11-14: "what still needs building before I use this template for a new project? Ship all these." Readiness PRD docs/specs/new-project-readiness.md (bf6e37b): NEW-1 template ref (TD-022: pack add fails in new projects), NEW-2 template-owned files/setup items not project noise, NEW-3 new-project smoke in CI. NEW-1..3 developer in a WORKTREE; FAST-2 developer in MAIN tree; AUTO-8 after FAST-2. CI on main 096871a is green. User steps: GitHub "Template repository" setting; tags v0.1.0 (pending) and v0.2.0 for this batch.
 - Ship order: FAST-2 → merge NEW worktree → AUTO-8 → each to main only after gate PASS on that sha → republish dashboard → summary + suggest v0.2.0 tag.
 
+- Shipped to main (gate PASS each): FAST-2 01203ff (TD-021 culprit: test cp -r of a worktree shared the real git config; runner base race; check 76-79 s), NEW-1..3 552c04c (template ref, no template noise, new-project smoke 53 s). AUTO-8 developer running in MAIN tree (last item of the readiness batch). Then: gate → main → republish dashboard → summary: suggest user tags v0.2.0 at the final main sha + sets GitHub Template repository.
+
 ## Next steps
 1. Build AUTO-8 (developer, main tree): docs/specs/fast-checks-and-guard-gaps.md criteria 7-8; ADR 0010 C6; scripts/runner.py, .factory/tests/test_runner.py.
 2. Find the TD-021 culprit: tests that run git without an explicit cwd/`-C` under scripts/run_tests.py parallelism.
