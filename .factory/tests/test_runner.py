@@ -103,7 +103,7 @@ class Env:
         self.write("factory.json", json.dumps({"autonomy": dict({"enabled": True, "max_attempts": 3, "daily_budget_usd": 5, "run_budget_usd": 2},
                                                                  **(autonomy or {}))}))
         os.makedirs(os.path.join(self.root, "scripts"))
-        for f in ("acceptance.py", "sandbox.py"):
+        for f in ("acceptance.py", "acceptance_exec.py", "sandbox.py"):
             shutil.copy(os.path.join(ROOT, "scripts", f), os.path.join(self.root, "scripts", f))
         self.write("docs/specs/demo.md", PRD % ("approved" if approved else "draft"))
         self.write("textkit/__init__.py", '"""textkit."""\n')

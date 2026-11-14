@@ -327,7 +327,8 @@ class GateWiring(unittest.TestCase):
         return r
 
     def install(self, r, man):
-        r.write("scripts/acceptance.py", open(os.path.join(ROOT, "scripts", "acceptance.py"), encoding="utf-8").read())
+        for part in ("acceptance.py", "acceptance_exec.py"):
+            r.write("scripts/" + part, open(os.path.join(ROOT, "scripts", part), encoding="utf-8").read())
         r.write("tests/acceptance/manifest.json", json.dumps(man))
 
     def test_warns_open_questions_and_unmapped(self):
