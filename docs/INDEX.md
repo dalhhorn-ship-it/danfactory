@@ -31,7 +31,7 @@
 | docs/BACKLOG.md | 67 | Milestones and work items; the dashboard reads this file.… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Unplanned:40 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents,… |
-| docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this… — sections: Open:7, Resolved:11 |
+| docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this… — sections: Open:7, Resolved:10 |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
@@ -65,7 +65,7 @@
 | docs/policies/prd-approval.md | 30 | No feature work starts until the product-manager has… — sections: When it applies:5, Flow:14, Enforcement:22 |
 | docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How you promote what… |
 | docs/policies/runner-safety.md | 19 | Part of the autonomy pack (ADR 0011). The second reading… |
-| docs/policies/runner.md | 41 | Part of the autonomy pack (ADR 0011). A new project does… — sections: Start a run:7, What a run does:15, Parallel fixers and…:26, Caps:38 |
+| docs/policies/runner.md | 42 | Part of the autonomy pack (ADR 0011). A new project does… — sections: Start a run:7, What a run does:15, Parallel fixers and…:26, Caps:39 |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known forms and… |
 | docs/policies/template-maintenance.md | 11 | How a checkout is recognised as the template itself, and… |
 | docs/policies/testing-and-metrics.md | 28 | Fast feedback is a feature. Measure test time, coverage,… |

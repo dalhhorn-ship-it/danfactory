@@ -38,7 +38,7 @@
   {"id": "docs/policies/prd-approval.md", "title": "Policy: PRD before build", "lines": 30, "summary": "No feature work starts until the product-manager has written a PRD and the user has\u2026"},
   {"id": "docs/policies/runner-release.md", "title": "Policy: fixer runner, release and learning", "lines": 20, "summary": "Part of the autonomy pack (ADR 0011). How you promote what the runner merged to staging,\u2026"},
   {"id": "docs/policies/runner-safety.md", "title": "Policy: fixer runner, safety and limits", "lines": 19, "summary": "Part of the autonomy pack (ADR 0011). The second reading of acceptance tests and the\u2026"},
-  {"id": "docs/policies/runner.md", "title": "Policy: fixer runner (autonomy mode)", "lines": 41, "summary": "Part of the autonomy pack (ADR 0011). A new project does not have it until `python3\u2026"},
+  {"id": "docs/policies/runner.md", "title": "Policy: fixer runner (autonomy mode)", "lines": 42, "summary": "Part of the autonomy pack (ADR 0011). A new project does not have it until `python3\u2026"},
   {"id": "docs/policies/security.md", "title": "Policy: security", "lines": 32, "summary": "Secure defaults always; guards block known forms and credential scoping covers the rest;\u2026"},
   {"id": "docs/policies/template-maintenance.md", "title": "Policy: template maintenance", "lines": 11, "summary": "How a checkout is recognised as the template itself, and how learnings flow back from\u2026"},
   {"id": "docs/policies/testing-and-metrics.md", "title": "Policy: testing and delivery metrics", "lines": 28, "summary": "Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the\u2026"},
