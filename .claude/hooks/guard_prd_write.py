@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""PreToolUse guard (Edit, Write, MultiEdit, NotebookEdit): no approved PRD, no product code.
+"""PreToolUse guard (Edit, Write, MultiEdit, NotebookEdit, Bash): no approved PRD, no product code.
+
+Bash commands are checked for literal-path writes to product paths (redirects, tee, sed/perl -i, cp/mv/install/ln,
+truncate, dd of=, inline interpreter writes; see _shellwrites.py). Writes made by a generated program are not visible
+here; the merge gate catches them. A `waiver` exemption must quote the user's words, else it is ignored.
 
 Allows a write to a product path only when docs/BACKLOG.md has an in-progress item (`[~]`) linked to a
 docs/specs/<slug>.md with `Status: approved`, or .factory/prd-exemption has a line dated today. docs/, issues/,
@@ -24,7 +28,8 @@ MSG = (
     "     link it from a docs/BACKLOG.md item and mark that item `[~]` (in progress). Then retry.\n"
     "  2. If this is a bug fix restoring approved behaviour, a chore, a user waiver or a requested spike, add one line to\n"
     "     .factory/prd-exemption: `{today} <bugfix|chore|waiver|spike>: <reason>` (valid today only, shows in the gate verdict).\n"
-    "     A `waiver` needs the user to name the work and say to skip the PRD in chat; \"quick job\" or \"just do it\" is not one.\n"
+    "     A `waiver` must quote the user's own words: `{today} waiver: \"<user words>\" - <reason>`; unquoted waivers are\n"
+    "     ignored, and \"quick job\" or \"just do it\" is not one.\n"
     "  3. Ask the user what to do.\n"
     "See docs/policies/prd-approval.md."
 )
@@ -47,10 +52,21 @@ def main():
     try:
         ev = read_event()
         ti = ev.get("tool_input") or {}
-        raw = next((ti[k] for k in TOOL_KEYS if isinstance(ti.get(k), str) and ti[k]), "")
-        rel = _prd.rel_path(raw, ROOT, ev.get("cwd"))
+        if ev.get("tool_name") == "Bash":
+            import _shellwrites
+            try:
+                rels = _shellwrites.product_writes(str(ti.get("command") or ""), ROOT, ev.get("cwd"))
+            except ValueError:  # unparseable quoting: nothing we can name, the gate still covers the commit
+                rels = []
+        else:
+            raw = next((ti[k] for k in TOOL_KEYS if isinstance(ti.get(k), str) and ti[k]), "")
+            rels = [_prd.rel_path(raw, ROOT, ev.get("cwd"))]
         factory = load_factory()
-        ok, why, _via = _prd.decide(ROOT, rel, str(factory.get("phase") or ""), template_mode(factory=factory))
+        ok, why, rel = True, "", ""
+        for rel in rels:
+            ok, why, _via = _prd.decide(ROOT, rel, str(factory.get("phase") or ""), template_mode(factory=factory))
+            if not ok:
+                break
     except Exception as ex:  # noqa: BLE001 - our own bug must not stop the user's work
         sys.stderr.write("guard_prd_write: internal error, allowing the edit (%s: %s)\n" % (type(ex).__name__, ex))
         return
