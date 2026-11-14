@@ -27,6 +27,7 @@
 | Run tests / builds | run `metrics.py test` directly (one line when green); delegate when it fails or output is long | `test-runner` | haiku |
 | Failing acceptance tests → issues | L2+ in autonomy mode: after a build or a failing gate (docs/policies/issue-ledger.md) | `finder` | sonnet |
 | Fix issues unattended (autonomy mode) | L2+, `autonomy.enabled`, open issues with an approved PRD, you start it (docs/policies/runner.md) | `python3 scripts/runner.py run --next` (fixer and reviewer are headless agents it starts; not a subagent) | sonnet (`autonomy.model`) |
+| Release (user promotes) | staging has fixes main lacks, or a post-deploy smoke failed (docs/policies/runner.md) | `python3 scripts/release.py verify`, then `python3 scripts/release.py report`; `python3 scripts/release.py smoke-failed <sha>` after a failed smoke. You run the promote commands; no agent pushes or merges to main | none (script; gate in the tree sandbox) |
 | Debug | first attempt by the main agent fails, or production incident | `ultrathink-debugger` | opus |
 | UI changed | user-facing screens or flows touched | `ui-comprehensive-tester` | sonnet |
 | Task done? | see ladder | `task-completion-validator` | sonnet |

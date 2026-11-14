@@ -24,14 +24,18 @@ After the cap the issue moves to `issues/blocked/` with an attempt log and the l
 ## Caps
 The budget is checked before every paid call, never after: before an attempt, stop if today's spend plus the estimate (the mean attempt cost, or `attempt_estimate_usd` for the first) would pass `daily_budget_usd`, or this run's spend plus the estimate would pass `run_budget_usd`; before the reviewer, stop if the fixer used up what was left. Each call gets `--max-budget-usd` with the remaining budget. A call that reports no usage (timeout, crash) is booked at the estimate with `cost_estimated: true`. `acceptance.py second-reading` checks and books against the same daily cap. A stop keeps the results so far, prints why, and leaves the issue open (exit 3). An attempt costs the fixer plus the reviewer. `metrics/runner.jsonl` (tracked, committed on staging) holds one row per attempt, park, stop, unpark and second reading; the daily total reads it from the working tree and from staging, so a checkout of main still sees today's spend. Days are UTC.
 
-## Promote staging to main (you do this)
-The runner never pushes and never touches the production branch. Review what accumulated, then:
+## Promote staging to main (you)
+The runner and `release.py` never push, never merge into and never check out the production branch (`release.py` refuses `verify --branch main`). You promote, in three steps.
+1. Verify the batch: `python3 scripts/release.py verify`. A fresh checkout of the staging tip goes through the full gate (acceptance suite against the baseline, every check, review required) in the tree sandbox, gated against `main`. It appends a report to `metrics/releases.jsonl` (tracked; commit it with your next change): commits staging has that main lacks, issues fixed (from `Refs: ISS-n` trailers), verdict and codes, cost since the last promotion. Exit 1 when the batch fails: do not promote.
+2. Read it: `python3 scripts/release.py report` prints the latest report in plain words (it warns when staging moved after the verification) followed by the commands below.
+3. Promote, if the verdict is pass and you accept the commits:
 ```
-git log --oneline main..staging          # what would land
-python3 scripts/gate.py --base main      # optional: one gate over the whole stack (checkout staging first)
+git log --oneline main..staging
 git checkout main && git merge --no-ff staging && git push
 ```
 Update the acceptance baseline yourself (`python3 scripts/acceptance.py baseline`, with an `Acceptance-Change` trailer) once you accept the fixes: the runner does not ratchet it. After promoting, `staging` is merged forward by the next run.
+
+**A failed post-deploy smoke:** `python3 scripts/release.py smoke-failed <sha-of-the-promoted-merge> --reason "what failed"` (you, or the deploy-watcher's report points you to it). It creates branch `revert/<sha7>` from main (a new branch: main is not touched) holding `git revert -m 1` of that merge, and files an issue in `issues/open/` with the reason (no PRD link, so the runner does not pick it up; uncommitted, commit it yourself). You review and push the revert branch (`git push origin revert/<sha7>`). If the revert conflicts, no branch is made, the issue says so, and you revert by hand. The Autonomy tab and `dashboard.py --print` show the staging lead over main, the last verify verdict, days since the last promotion and open revert branches.
 
 ## Second reading (TD-014)
 `python3 scripts/acceptance.py second-reading <slug> [--model M]` starts an agent in the same sandbox in a temp directory. It sees the PRD and a layout of the project's source files (paths and public signatures, no bodies, no tests, no docs) and writes a throwaway implementation, then `admit --reference-dir` runs and the directory is deleted. Cost goes to `metrics/runner.jsonl` (kind `second-reading`). The separation is real (different process, no access to the tests or implementation) but not proven: see limits.
