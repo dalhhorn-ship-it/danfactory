@@ -25,6 +25,8 @@ User (PM, portfolio, not technical on infra: plain words, one recommendation) ru
 
 - READINESS BATCH COMPLETE on main 4c6a68d (gate PASS): FAST-2, NEW-1..3, AUTO-8 (parallel fixers as processes, re-review after rebase; haiku smoke 2 issues merged 0.019 USD). Open debt: TD-023 only. check.sh 84-88 s (budget 120; near the 90 s FAST-2 target). User steps left: GitHub Template repository setting; tag v0.2.0 at 4c6a68d (v0.1.0 never pushed: proxy refuses tags). lpdan PRD template-update-v0-1-0 still awaiting approval (should now say v0.2.0).
 
+- 2026-11-14 lpdan UPD-3 (template update to danfactory, gated autonomy + worked example sections, 20 agents) merged to lpdan main at the user's "merge it": main 666f7e7, CI green and deploy-cloudflare success (site not reachable from this session's network, so verified via Actions). Fixes on the way: docs_index ignores git-ignored link targets (lpdan CI 'index is stale' since 2026-11-11); copy_repo copies tracked files into a fresh repo (cp -r race). danfactory main = 134063d: the commit for the user's v0.2.0 tag.
+
 ## Next steps
 1. Build AUTO-8 (developer, main tree): docs/specs/fast-checks-and-guard-gaps.md criteria 7-8; ADR 0010 C6; scripts/runner.py, .factory/tests/test_runner.py.
 2. Find the TD-021 culprit: tests that run git without an explicit cwd/`-C` under scripts/run_tests.py parallelism.
