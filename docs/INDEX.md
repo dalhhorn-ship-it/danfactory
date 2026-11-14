@@ -28,7 +28,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 62 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 70 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 30 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
@@ -82,4 +82,5 @@
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
 | docs/specs/size-monitoring.md | 47 | Status: approved · 2026-11-14 · by user in chat ("Overall evaluate how large this… |
 | docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |
+| docs/specs/trust-hardening.md | 123 | Status: draft · 2026-11-14 · Owner: product-manager · Backlog: M4 — Trusted autonomy →… — sections: Problem:5, Goal and success measure:24, Users and user stories:29, Scope:37, Non-goals:57, Acceptance criteria:65, UX / behaviour notes:90, Risks and assumptions:95, Effort and sequencing:103, Open questions:118 |
 | docs/specs/upstream-from-lpdan-2026-11.md | 24 | Status: approved · 2026-11-11 · by user in chat ("Ok plz do", in the lpdan session,… |

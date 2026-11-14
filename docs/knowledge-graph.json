@@ -1,7 +1,7 @@
 {"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",
  "nodes": [
   {"id": "CLAUDE.md", "title": "CLAUDE.md", "lines": 40, "summary": "Always-loaded instructions. Keep short and stable (it is paid every turn). Details live\u2026"},
-  {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 62, "summary": "Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,\u2026"},
+  {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 70, "summary": "Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,\u2026"},
   {"id": "docs/GOAL.md", "title": "Goal", "lines": 30, "summary": "The agreed goal for this project. Written by the `brainstorm` skill after the user\u2026"},
   {"id": "docs/OPERATING-MODEL.md", "title": "Operating model", "lines": 35, "summary": "How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.\u2026"},
   {"id": "docs/TECH-DEBT.md", "title": "Tech debt register", "lines": 30, "summary": "Known shortcuts and their cost; the dashboard reads this file plus automated signals\u2026"},
@@ -55,6 +55,7 @@
   {"id": "docs/specs/security-hardening-audit-1.md", "title": "PRD: Security hardening after audit run-1", "lines": 82, "summary": "Status: approved \u00b7 2026-11-07 \u00b7 by user in chat \u00b7 Owner: product-manager \u00b7 Backlog:\u2026"},
   {"id": "docs/specs/size-monitoring.md", "title": "PRD: Size monitoring (is the template still fit for purpose?)", "lines": 47, "summary": "Status: approved \u00b7 2026-11-14 \u00b7 by user in chat (\"Overall evaluate how large this\u2026"},
   {"id": "docs/specs/template-mode.md", "title": "PRD: Template mode (the template repo knows it is the template)", "lines": 62, "summary": "Status: approved by user in chat 2026-11-07 \u00b7 2026-11-07 \u00b7 Owner: product-manager \u00b7\u2026"},
+  {"id": "docs/specs/trust-hardening.md", "title": "PRD: Trust hardening (close the fake-pass holes, approval agents cannot write, enforced path and rigor, adversarial pilot, clean reuse)", "lines": 123, "summary": "Status: draft \u00b7 2026-11-14 \u00b7 Owner: product-manager \u00b7 Backlog: M4 \u2014 Trusted autonomy \u2192\u2026"},
   {"id": "docs/specs/upstream-from-lpdan-2026-11.md", "title": "PRD: Upstream from lpdan: two lost security protections and `docs_index.py --related`", "lines": 24, "summary": "Status: approved \u00b7 2026-11-11 \u00b7 by user in chat (\"Ok plz do\", in the lpdan session,\u2026"}
  ],
  "edges": [
@@ -87,6 +88,7 @@
   {"from": "docs/BACKLOG.md", "to": "docs/specs/security-hardening-audit-1.md"},
   {"from": "docs/BACKLOG.md", "to": "docs/specs/size-monitoring.md"},
   {"from": "docs/BACKLOG.md", "to": "docs/specs/template-mode.md"},
+  {"from": "docs/BACKLOG.md", "to": "docs/specs/trust-hardening.md"},
   {"from": "docs/BACKLOG.md", "to": "docs/specs/upstream-from-lpdan-2026-11.md"},
   {"from": "docs/OPERATING-MODEL.md", "to": "docs/BACKLOG.md"},
   {"from": "docs/OPERATING-MODEL.md", "to": "docs/operating-model/AGENT-ROUTING.md"},
@@ -255,6 +257,14 @@
   {"from": "docs/specs/template-mode.md", "to": "README.md"},
   {"from": "docs/specs/template-mode.md", "to": "docs/BACKLOG.md"},
   {"from": "docs/specs/template-mode.md", "to": "docs/GOAL.md"},
-  {"from": "docs/specs/template-mode.md", "to": "docs/TECH-DEBT.md"}
+  {"from": "docs/specs/template-mode.md", "to": "docs/TECH-DEBT.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "CLAUDE.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "docs/GOAL.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "docs/OPERATING-MODEL.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "docs/operating-model/AGENT-ROUTING.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "docs/policies/merge-gate.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "docs/policies/prd-approval.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "docs/specs/gated-autonomy.md"},
+  {"from": "docs/specs/trust-hardening.md", "to": "evals/spikes/pilot-semverlite/README.md"}
  ]
 }

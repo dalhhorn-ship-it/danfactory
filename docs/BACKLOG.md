@@ -37,6 +37,14 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-6 Parallel fixers (2 to 4, worktrees, merges serialised) and scheduled runs only with the user's standing go (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-5) #foundation
 - [x] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
+## Milestone: M4 — Trusted autonomy (target: )
+> Sequence: PRD docs/specs/trust-hardening.md (draft). TRUST-1 first: every later trust claim rests on a gate that cannot be faked, and it should land after or on top of SIZE-3 and AUTO-8 (same files, one builder at a time). TRUST-2 opens with a half-day spike on what a cloud session can do against a protected main. PATH-1 can run beside TRUST-2 (different files). PILOT-3 needs TRUST-1. REUSE-1 needs SIZE-2.
+- [ ] TRUST-1 Close fake-pass holes and fail-open checks, trusted gate copy, tripwire, different-model reviewer, cheating-fixer unit tests, unprotected-main alert (docs/specs/trust-hardening.md) (M) (after: SIZE-3) #security
+- [ ] TRUST-2 Approval agents cannot write and one stop per feature: spike first, Touches scope, CI reads approval from base branch (docs/specs/trust-hardening.md) (L) (after: TRUST-1) #security
+- [ ] PATH-1 Path and rigor the gate enforces: rigor in factory.json, gate profile, one real non-software check via commands.verify (docs/specs/trust-hardening.md) (M) #foundation
+- [ ] PILOT-3 Adversarial pilot: about 6 seeded bugs in existing code, red-team cheating fixer, do-nothing evals fixed, baseline re-taken (docs/specs/trust-hardening.md) (M) (after: TRUST-1) #quality
+- [ ] REUSE-1 Clean start, tagged releases with CHANGELOG, template tests as a pack, pack.py upgrade (docs/specs/trust-hardening.md) (M) (after: SIZE-2) #foundation
+
 ## Unplanned
 - [~] SIZE-2 Autonomy as an optional pack: bootstrap leaves it out, pack.py adds it from a pinned template commit (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-1) #quality
 - [~] SIZE-3 Split runner.py, acceptance.py, gate.py, dashboard.py, guard_bash_policy.py under the size budget, no behaviour change (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-2) #quality
