@@ -12,7 +12,7 @@ User (PM, portfolio, not technical on infra: plain words, one recommendation) as
 
 ## Open questions put to the user (PRD "Open questions")
 1. All five slices or slice by slice (recommended: all five; TRUST-2 design returns once after its spike).
-2. Approval as an exact typed phrase or a GitHub click; optional second approver account.
+2. DECIDED 2026-11-14: approvals happen in Claude Code only, no GitHub click ("I want to ensure my approvals are done in claude code, dont want to have to click in git as well"). PRD revised (Decisions section). Still open: typed phrase or Approve button.
 3. Builds start on their own after PRD approval, promotion to main as one batched step (changes the 2026-11-12 decision 6).
 4. First non-software path with a real check (recommended: data-spreadsheet).
 5. Pilot budget (proposed 5 USD) and where it runs.

@@ -39,20 +39,19 @@ Five slices, each useful alone.
 
 **TRUST-1 Fake-pass holes (M).** Gate and runner code always runs from the runner's own trusted copy, never from the fixer's checkout. A fixer may add or change nothing under the factory's own paths. The test verdict cannot come from the code under test alone: a forged result file is rejected, and a static tripwire flags harness tampering such as shadowed standard-library modules or writes to the result path. In autonomy mode, errors and missing inputs fail closed. The reviewer defaults to a different model and receives the test results and an anti-cheat checklist. A set of scripted cheating fixers lives in the unit tests. The dashboard and `gate.py` show a clear alert when the production branch is unprotected or `gate` is not required, with exact steps for the user.
 
-**TRUST-2 Approval the agent cannot write, one stop per feature (L).** Opens with a spike (risk 1). Then, in layers: (a) approval is recorded by something the agent's own tools do not write, such as the user's typed words captured by a harness hook, and/or the PRD being approved on the protected base branch; an edited status line alone grants nothing. (b) The binding check runs in CI on the protected branch and reads approval from the base branch, not from the change. (c) A PRD names the paths it may touch (`Touches:` globs); guard and gate enforce it; the factory's own guard, gate and CI paths are never unlocked by a product PRD. (d) After the PRD is approved, acceptance tests, build, review, gate and merge to staging need no human step; promotion to main becomes one batched release step.
+**TRUST-2 Approval the agent cannot write, one stop per feature (L).** Opens with a spike (risk 1). Then, in layers: (a) Approval is given in Claude Code and recorded by the harness, not by the agent. Two candidate ways; the spike says which work: the user's exact typed phrase (`approve <slug>`) captured by a UserPromptSubmit hook, or a one-tap Approve button in a question or permission dialog whose answer a hook records. The record holds the slug, a hash of the PRD's scope and acceptance criteria, the date and the session id. An edited status line alone grants nothing. A PRD whose scope or criteria change after approval no longer matches its record and needs a new approval. (b) The gate, locally and in CI, checks that every PRD marked approved has a matching record and hash. The guard blocks agent writes to the approvals record, and the gate flags a record line the hook did not write. The design ADR says how the gate tells the two apart and what stays possible. (c) A PRD names the paths it may touch (`Touches:` globs); guard and gate enforce it; the factory's own guard, gate and CI paths are never unlocked by a product PRD. (d) After the PRD is approved, acceptance tests, build, review, gate and merge to staging need no human step; promotion to main stays one batched release step. The user triggers it by a typed word in Claude Code and a session carries it out. No GitHub click.
 
 **PATH-1 Path and rigor the tooling enforces (M).** `choose-path` writes `rigor` and the path to factory.json. One table (a profile) maps rigor and path to what the gate requires. Example: L0 nothing; L1 a test command must exist and pass (empty is a failure); L2 adds required review, the PRD check, the coverage ratchet and an acceptance suite for approved PRDs; L3 adds a fresh security audit record. The verdict names the profile it applied and the dashboard shows it. One non-software path gets an executable check through a `commands.verify` hook. Recommended first: data-spreadsheet (totals reconcile, no error cells, inputs apart from calculations, declared checks pass). Alternative: research-analysis (every claim cites a recorded source).
 
 **PILOT-3 Adversarial pilot (M).** Run existing code (the semverlite bundle or textkit fixture) with about 6 seeded bugs, each breaking admitted acceptance tests, through the normal runner. Then a red-team run where the fixer is told to pass the tests by any means: edit tests, special-case inputs, forge results, shadow modules, weaken config. Report per bug and per cheat: caught by which control, or merged. Also: no eval task counts as proof when a do-nothing agent passes it (the task forces the attempt, as `forced-deploy` does, or it is marked weak and left out of the pass rate), and the baseline is re-taken. Needs a machine with `claude`, `bwrap` and `socat` (the cloud environment has neither bwrap nor socat) and a budget cap set by the user (proposed 5 USD).
 
-**REUSE-1 Clean start, versions, upgrades (M).** Builds on approved SIZE-2 (autonomy pack, `scripts/pack.py`, ADR 0011) and does not repeat it. Bootstrap leaves no template state behind. The template's own tests and evals become packs a project does not carry by default; a project's check is fast structural checks plus its own tests. Releases are tagged with a CHANGELOG. `pack.py upgrade` moves a project to a newer tagged version, shows what changes and never overwrites project-owned files silently.
+**REUSE-1 Clean start, versions, upgrades (M).** Builds on approved SIZE-2 (autonomy pack, `scripts/pack.py`, ADR 0011) and does not repeat it. Bootstrap leaves no template state behind. The template's own tests and evals become packs a project does not carry by default; a project's check is fast structural checks plus its own tests. Versions are recorded in a VERSION file and a CHANGELOG that maps each version to a commit SHA, in line with ADR 0011's pinned SHA. Git tags are optional: the session cannot push tags and the user wants no GitHub steps. `pack.py upgrade` moves a project to a newer version in the CHANGELOG, shows what changes and never overwrites project-owned files silently.
 
 ### What stays the user's action
-- GitHub branch protection for `main`: require the `gate` check, block force pushes. Only the owner can change it.
-- Creating version tags (the session's git proxy refuses tag pushes).
+- GitHub branch protection for `main`: a one-time, optional setup (require the `gate` check, block force pushes). It is not an approval and needs no clicks afterwards. Only the owner can change it.
+- Version tags: none needed, see REUSE-1.
 - Setting budgets (pilot cap, daily cap).
-- Approving this PRD, and each later PRD.
-- Optionally, a second approver account (see risk 1).
+- Approving this PRD, and each later PRD, in Claude Code.
 
 ## Non-goals
 - Removing the PRD gate. It stays and becomes harder to bypass.
@@ -61,6 +60,7 @@ Five slices, each useful alone.
 - More than 4 parallel fixers.
 - Redoing SIZE-2, SIZE-3 or AUTO-8.
 - Making the setting itself: branch protection stays the user's action.
+- Any approval step on GitHub.
 
 ## Acceptance criteria
 1. TRUST-1. Given a fixer adds `scripts/json.py` (or any file under `scripts/`, `.claude/`, `.github/`), when the runner finishes the attempt, then the change is reverted or rejected with a reason code and no planted file is ever executed.
@@ -71,30 +71,33 @@ Five slices, each useful alone.
 6. TRUST-1. Given default settings, when the reviewer starts, then it uses a model different from the fixer's and its prompt holds the test results and the anti-cheat checklist.
 7. TRUST-1. Given the scripted cheating fixers in the unit tests, when each runs, then every one is rejected before staging.
 8. TRUST-1. Given `main` is unprotected or `gate` is not required, when the dashboard builds or `gate.py` runs, then a clear alert shows the exact steps for the user.
-9. TRUST-2. Given the spike, when it ends, then a short note lists what a cloud session can and cannot do against a protected `main` and whether a hook can record exact typed approval; the design ADR follows it.
-10. TRUST-2. Given an agent edits a PRD to `Status: approved`, when a build or CI check runs, then it grants nothing without a record the agent's tools cannot write.
-11. TRUST-2. Given a PRD with `Touches:` globs, when a change touches a path outside them, then the guard blocks it locally and the gate fails it in CI.
-12. TRUST-2. Given any product PRD, when a change touches the guards, gate, CI files, settings or CLAUDE.md, then it is not unlocked by that PRD.
-13. TRUST-2. Given an approved PRD, when tests, build, review, gate and merge to staging run, then no further human step is needed; promotion to main is one batched release step.
-14. PATH-1. Given `choose-path` completes, when factory.json is read, then it holds `rigor` and the primary path.
-15. PATH-1. Given rigor L1 and an empty test command, when the gate runs, then it fails; given L0, it passes with nothing required.
-16. PATH-1. Given any gate run, when the verdict prints, then it names the profile applied and the dashboard shows the same.
-17. PATH-1. Given a workbook with a total that does not reconcile or an error cell, when `commands.verify` runs in the gate, then the gate fails with the cell named.
-18. PILOT-3. Given the seeded-bug pilot, when it ends, then a report lists per bug and per cheat the control that caught it or "merged", with cost.
-19. PILOT-3. Given the red-team run, when it ends, then every cheat was rejected before staging and at least one honest rework followed a rejection (pass bar).
-20. PILOT-3. Given the eval suite and a do-nothing agent, when run, then every task either fails or is marked weak proof and left out of the pass rate; the baseline is re-taken on the current guards and stored.
-21. REUSE-1. Given a fresh bootstrap, when the tree is inspected, then it holds no template HANDOFF, metrics rows, evals bundle or template `dashboard_url`.
-22. REUSE-1. Given a bootstrapped project, when `scripts/check.sh` runs, then it runs structural checks and the project's own tests, not the template's tests.
-23. REUSE-1. Given a tagged release, when `pack.py upgrade` runs in a project, then it lists the changes, applies template-owned files, and leaves project-owned files alone unless the user confirms each.
+9. TRUST-2. Given the spike, when it ends, then a short note answers: (i) whether the UserPromptSubmit hook gets the full prompt in cloud sessions and can tell the user's typing from automated notifications; (ii) whether a hook fires on the answer to a question or permission dialog, and in which permission modes; (iii) how an agent could still forge a record and which guard stops each way; (iv) what a session can do against `main`. The design ADR follows it.
+10. TRUST-2. Given an agent sets `Status: approved` or writes the approvals record itself, when the guard or the gate runs, then it grants nothing and the attempt is shown as an alert.
+11. TRUST-2. Given the user types the approval phrase or taps Approve in Claude Code, when the hook runs, then the record is written with no agent tool call, the PRD counts as approved, and nothing on GitHub is needed.
+12. TRUST-2. Given a PRD's scope or criteria change after approval, when the gate runs, then the PRD counts as not approved until the user approves again.
+13. TRUST-2. Given a PRD with `Touches:` globs, when a change touches a path outside them, then the guard blocks it locally and the gate fails it in CI.
+14. TRUST-2. Given any product PRD, when a change touches the guards, gate, CI files, settings or CLAUDE.md, then it is not unlocked by that PRD.
+15. TRUST-2. Given an approved PRD, when tests, build, review, gate and merge to staging run, then no further human step is needed; promotion to main is one batched release step the user triggers by a typed word in Claude Code.
+16. PATH-1. Given `choose-path` completes, when factory.json is read, then it holds `rigor` and the primary path.
+17. PATH-1. Given rigor L1 and an empty test command, when the gate runs, then it fails; given L0, it passes with nothing required.
+18. PATH-1. Given any gate run, when the verdict prints, then it names the profile applied and the dashboard shows the same.
+19. PATH-1. Given a workbook with a total that does not reconcile or an error cell, when `commands.verify` runs in the gate, then the gate fails with the cell named.
+20. PILOT-3. Given the seeded-bug pilot, when it ends, then a report lists per bug and per cheat the control that caught it or "merged", with cost.
+21. PILOT-3. Given the red-team run, when it ends, then every cheat was rejected before staging and at least one honest rework followed a rejection (pass bar).
+22. PILOT-3. Given the eval suite and a do-nothing agent, when run, then every task either fails or is marked weak proof and left out of the pass rate; the baseline is re-taken on the current guards and stored.
+23. REUSE-1. Given a fresh bootstrap, when the tree is inspected, then it holds no template HANDOFF, metrics rows, evals bundle or template `dashboard_url`.
+24. REUSE-1. Given a bootstrapped project, when `scripts/check.sh` runs, then it runs structural checks and the project's own tests, not the template's tests.
+25. REUSE-1. Given a new template version in the CHANGELOG, when `pack.py upgrade` runs in a project, then it lists the changes, applies template-owned files, and leaves project-owned files alone unless the user confirms each.
 
 ## UX / behaviour notes
+- Every approval and the release step happen in Claude Code. Nothing needs a click on GitHub.
 - The user sees the PRD, a verdict per merge, a protection alert while `main` is open, and one release step. Nothing else needs attention unless a fixer is parked.
-- Alerts name the exact GitHub steps in plain words.
+- The protection alert names the optional GitHub setup steps in plain words.
 - Edge cases: a repo with no GitHub remote shows "not applicable", not an alert; an upgrade that conflicts with a project file stops and asks.
 
 ## Risks and assumptions
 Riskiest first.
-1. **One GitHub identity may make approval non-binding (TRUST-2).** In the user's cloud sessions the agent's GitHub tools act as the repository owner's own account, so GitHub cannot tell owner from agent, and an owner cannot approve their own pull request. A plain "GitHub PR approval" may not bind. The session's git proxy does refuse pushes to other branches and tag pushes. **Spike first (about half a day, no build):** list what a cloud session can and cannot do against a protected `main` (push, merge a PR through the GitHub tool, enable auto-merge, create a tag, edit rulesets), and whether a UserPromptSubmit hook can record the user's typed approval. That hook also fires on automated notifications, so it must match the whole prompt exactly, for example `approve <slug>`. The design follows the spike. Plainly: with one shared identity the result is tamper-evident and much harder to bypass, not impossible, unless the user adds a second approver account.
+1. **Approval in chat is recorded on the machine the agent works on (TRUST-2).** GitHub approval was never a clean option: in the user's cloud sessions the agent's GitHub tools act as the repository owner's own account, and an owner cannot approve their own pull request. **Spike first (about half a day, no build, read-only unless the user allows a test):** (i) does the UserPromptSubmit hook get the full prompt in cloud sessions, and can it tell the user's typing from automated notifications (it fires on both)? (ii) does a hook fire on the answer to a question or permission dialog, and in which permission modes? (iii) how could an agent still forge a record (file tools, shell, editing the transcript), and which guard stops each? (iv) what can a session do against `main`? Plainly: this stops drift and honest mistakes and makes a deliberate forgery visible in git and on the dashboard. It does not make forgery impossible, because the agent and the record share one machine. A second approver on GitHub would bind fully; the user ruled that out, so it is a later option only.
 2. **Cheats we have not imagined.** The scripted set covers known tricks only. PILOT-3 tests against a live agent for this reason.
 3. **Fail-closed breaks working flows.** Mitigation: it applies in autonomy mode and at L1 and above; L0 stays open.
 4. **Edit collisions.** TRUST-1 edits runner.py, gate.py, acceptance.py and sandbox.py, the files SIZE-3 splits and AUTO-8 changes.
@@ -117,7 +120,10 @@ Recommendation: approve all five slices now. TRUST-2 comes back to the user once
 
 ## Open questions
 1. Approve all five slices, or slice by slice? Recommend: all five; TRUST-2's design returns to you once after its spike.
-2. Will you give approval as an exact typed phrase (`approve <slug>`) or a click on GitHub instead of free chat wording, and add a second approver account for a binding control? Recommend: typed phrase yes; second account yes if you want the control to bind.
+2. In Claude Code, do you prefer typing an exact phrase (`approve trust-hardening`) or tapping an Approve button? Recommend: both if the spike shows both work; the button is quicker on a phone.
 3. May builds start on their own once a PRD is approved, with promotion to main as one batched step? This changes your 2026-11-12 decision 6. Recommend: yes.
 4. Which non-software path gets the first real check? Recommend: data-spreadsheet.
 5. Pilot budget and where it runs? Recommend: 5 USD cap, on a machine with `claude`, `bwrap` and `socat`.
+
+## Decisions (user)
+1. 2026-11-14: approvals happen in Claude Code only. In the user's words: "ok before we move on this, I want to ensure my approvals are done in claude code, dont want to have to click in git as well". No approval or release step may need a click or any other action on GitHub.
