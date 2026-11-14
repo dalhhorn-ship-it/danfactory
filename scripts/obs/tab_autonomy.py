@@ -11,6 +11,10 @@ try:  # a project copy without runner.py (or gate.py) still gets the Issues bloc
     import runner as R  # noqa: E402
 except Exception:  # noqa: BLE001
     R = None
+try:  # release train block (AUTO-5)
+    import release as REL  # noqa: E402
+except Exception:  # noqa: BLE001
+    REL = None
 
 EMPTY = L.EMPTY
 RUNNER_EMPTY = ("No runner activity yet: `python3 scripts/runner.py run --next` after setting factory.json autonomy.enabled "
@@ -35,7 +39,7 @@ def collect(root, base):
         rn = R.summary(root) if R else {"exists": False}
     except Exception as ex:  # noqa: BLE001 - no git, no staging, a broken row: the block is empty, the dashboard still builds
         rn = {"exists": False, "error": str(ex)[:200]}
-    return {"issues": st, "runner": rn}
+    return {"issues": st, "runner": rn, "release": collect_release(root)}
 
 
 def line(d):
@@ -44,6 +48,7 @@ def line(d):
     if rn.get("exists"):
         run = "; runner: %d fixed in %d attempt(s), $%.2f today of $%.2f%s" % (
             rn["fixed"], rn["attempts"], rn["spend_today"], rn["daily_cap"], ", %d parked" % len(rn["parked"]) if rn["parked"] else "")
+    run += release_line(d.get("release"))
     if not st["exists"]:
         return "no issue ledger yet" + run
     old = st["oldest_open"]
@@ -86,7 +91,8 @@ def render_runner(rn):
 
 
 def render(d):
-    return '<div class="stack">%s%s</div>' % (render_issues(d["issues"]), render_runner(d.get("runner") or {"exists": False}))
+    return '<div class="stack">%s%s%s</div>' % (render_issues(d["issues"]), render_runner(d.get("runner") or {"exists": False}),
+                                                render_release(d.get("release") or {"exists": False}))
 
 
 def render_issues(st):
@@ -107,3 +113,39 @@ def render_issues(st):
             '<div class="card"><h2>Open by PRD</h2><table><tbody>%s</tbody></table></div>'
             '<div class="card"><h2>Open issues</h2><div class="scroll"><table><thead><tr><th>ID</th><th>Title</th><th>PRD</th><th>Tests</th><th>Age</th></tr></thead>'
             '<tbody>%s</tbody></table></div>%s</div>' % (kv, trend, prd, rows, cap))
+
+
+# ---- Release train block (AUTO-5, ADR 0010): staging lead, last verify, days since promotion, open revert branches
+RELEASE_EMPTY = "No release verification yet: `python3 scripts/release.py verify` (docs/policies/runner.md)."
+
+
+def collect_release(root):
+    try:
+        return REL.summary(root) if REL else {"exists": False}
+    except Exception as ex:  # noqa: BLE001 - no git, no staging, a broken row: the block is empty, the dashboard still builds
+        return {"exists": False, "error": str(ex)[:200]}
+
+
+def release_line(rl):
+    if not rl or not rl.get("exists"):
+        return ""
+    days = rl["days_since_promotion"]
+    return "; release: %s ahead %s, verify %s, promoted %s%s" % (
+        rl["staging"], "?" if rl["lead"] is None else rl["lead"], rl["verdict"] or "none",
+        "never" if days is None else "%dd ago" % days, ", %d revert branch(es)" % len(rl["reverts"]) if rl["reverts"] else "")
+
+
+def render_release(rl):
+    if not rl.get("exists"):
+        return '<div class="card"><h2>Release train</h2><p class="muted">%s</p></div>' % e(RELEASE_EMPTY)
+    days = rl["days_since_promotion"]
+    verdict = "none yet" if not rl["verdict"] else "%s%s%s" % (
+        rl["verdict"], " [%s]" % ", ".join(rl["codes"]) if rl["codes"] else "", " (stale: %s moved since)" % rl["staging"] if rl["fresh"] is False else "")
+    facts = [("%s ahead of %s" % (rl["staging"], rl["prod"]), "n/a" if rl["lead"] is None else "%d commit(s), not promoted" % rl["lead"]),
+             ("Last verify verdict", verdict), ("Last verified", rl["verified_at"] or "never"),
+             ("Days since last promotion", "never promoted" if days is None else days)]
+    kv = "".join("<tr><td>%s</td><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts)
+    rev = "".join('<tr><td class="mono">%s</td><td>review it and push it yourself</td></tr>' % e(b) for b in rl["reverts"]) \
+        or '<tr><td colspan="2" class="muted">No open revert branches.</td></tr>'
+    return ('<div class="card"><h2>Release train</h2><table><tbody>%s</tbody></table></div>'
+            '<div class="card"><h2>Open revert branches</h2><table><tbody>%s</tbody></table></div>' % (kv, rev))

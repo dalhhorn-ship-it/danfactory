@@ -33,7 +33,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-2 Locked acceptance suite: test-writer, admission, protected paths, baseline ratchet, Acceptance coverage view; risk 1 spike first (docs/specs/gated-autonomy.md) (L) (after: AUTO-1) #foundation
 - [x] AUTO-3 Issue ledger and finder: issues/ as files, issues.py find/sync, finder agent, Autonomy tab with Issues block (docs/specs/gated-autonomy.md, ADR 0008) (M) (after: AUTO-2) #foundation
 - [x] AUTO-4 Fixer loop with rework (cap 3, 5 USD/day), runner refuses self-written trailers (TD-012), automated second reading (TD-014); pilot 2 on a semver library (docs/specs/gated-autonomy.md, ADR 0009) (L) (after: AUTO-3) #foundation
-- [~] AUTO-5 Release train: staging re-verified as a batch, promotion report, revert branch + issue on a failed smoke; user promotes and pushes (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
+- [x] AUTO-5 Release train: staging re-verified as a batch, promotion report, revert branch + issue on a failed smoke; user promotes and pushes (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 - [~] AUTO-6 Parallel fixers (2 to 4, worktrees, merges serialised) and scheduled runs only with the user's standing go (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-5) #foundation
 - [~] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
