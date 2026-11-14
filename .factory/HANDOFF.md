@@ -13,6 +13,8 @@ User (PM, portfolio, not technical on infra: plain words, one recommendation) ru
 
 - 2026-11-14 later: user asked for a size evaluation + monitoring. SIZE-1 PRD docs/specs/size-monitoring.md (087132a); developer building SIZE-1 in MAIN tree. User then approved SIZE-2 (autonomy pack) and SIZE-3 (split 5 large files), in that order AFTER SIZE-1; design ADR 0011 (531108b). Launch SIZE-2 developer when SIZE-1 lands, SIZE-3 after SIZE-2. AUTO-8 still pending (do after SIZE-3: runner.py gets split).
 
+- STANDING PERMISSION (user 2026-11-14): push each verified part to main (fast-forward origin/main to the verified branch head after check.sh + gate pass). main = 8ccb93f (SIZE-1, SIZE-2 incl.). SIZE-3 developer running in MAIN tree; DOCS-1 (docs/specs/docs-index-first.md) in a worktree; AUTO-8 after SIZE-3.
+
 ## Next steps
 1. Build AUTO-8 (developer, main tree): docs/specs/fast-checks-and-guard-gaps.md criteria 7-8; ADR 0010 C6; scripts/runner.py, .factory/tests/test_runner.py.
 2. Find the TD-021 culprit: tests that run git without an explicit cwd/`-C` under scripts/run_tests.py parallelism.
