@@ -9,6 +9,9 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tplfiles  # noqa: E402
+
 SRC_EXT = (".py", ".ts", ".tsx", ".js", ".mjs")
 DEFAULTS = {"file_lines_warn": 400, "file_lines_max": 700, "always_loaded_tokens_max": 2500,
             "agents_max": 20, "code_growth_30d_pct_warn": 25,
@@ -276,9 +279,11 @@ def collect(root, factory=None):
     b = budgets(factory)
     rows = current_files(root)
     now = _count(rows)
-    prod = sorted(({"path": p, "lines": n} for p, n in rows if is_product(p)), key=lambda r: (-r["lines"], r["path"]))
+    tpl = tplfiles.owned(root)  # NEW-2: unchanged template files are upstream's, never flagged here
+    prod = sorted(({"path": p, "lines": n} for p, n in rows if is_product(p) and p not in tpl), key=lambda r: (-r["lines"], r["path"]))
     d = {"budgets": b, "areas": now, "files": prod, "top": prod[:TOP], "always_loaded": always_loaded(root),
-         "counts": counts(root, [p for p, _ in rows]), "growth": growth(root, now), "docs": doc_sizes(root, rows),
+         "counts": counts(root, [p for p, _ in rows]), "growth": growth(root, now),
+         "docs": doc_sizes(root, [r for r in rows if r[0] not in tpl]), "template_files": len(tpl),
          "test_ratio": round(now["tests"]["lines"] / now["code"]["lines"], 2) if now["code"]["lines"] else None}
     d["flags"] = flags(d, b)
     d["files"] = [r for r in prod if r["lines"] > b["file_lines_warn"]]  # data.json keeps flagged files only

@@ -3,6 +3,7 @@ import html
 from collections import Counter
 
 from . import size as Z
+from . import tplfiles
 from . import sources as S
 
 CAP = 10
@@ -16,7 +17,8 @@ def e(x):
 
 
 def collect(root, base):
-    present = set(S.project_files(root))
+    tpl = tplfiles.owned(root)
+    present = set(S.project_files(root)) - tpl
     tests = [p for p in present if S.is_test(p)]
     churn = Counter()
     for c in S.git_log(root, S.hotspot_window(root)):
@@ -40,15 +42,19 @@ def line(d):
 
 
 def _line_hotspots(d):
+    n = d["size"].get("template_files", 0)
+    tail = "; template files: %d (upstream)" % n if n else ""
     if not d["total"]:
-        return "no hotspots yet"
+        return "no hotspots yet" + tail
     top = d["files"][0]
     return "%d hotspots, top %s (%d commits, %d lines); %d of top %d without a test by name" % (
-        d["total"], top["path"], top["commits"], top["lines"], d["untested"], len(d["files"]))
+        d["total"], top["path"], top["commits"], top["lines"], d["untested"], len(d["files"])) + tail
 
 
 def render(d):
-    return _render_hotspots(d) + render_size(d["size"])
+    n = d["size"].get("template_files", 0)
+    note = '<p class="muted small">template files: %d (upstream; update via the template)</p>' % n if n else ""
+    return _render_hotspots(d) + render_size(d["size"]) + note
 
 
 def _render_hotspots(d):

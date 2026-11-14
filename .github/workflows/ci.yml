@@ -7,7 +7,7 @@ permissions:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:  # job level: top level stays contents: read
       contents: read
       actions: read  # read-only run history for the dashboard
@@ -22,6 +22,9 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         # TEST_SUMMARY: check.sh (the structure step) appends per-set test timings to the step summary; full suite, nothing skipped
         run: TEST_SUMMARY="$GITHUB_STEP_SUMMARY" python3 scripts/gate.py --base "$BASE" --summary "$GITHUB_STEP_SUMMARY"
+      - name: New-project smoke (bootstrap a temp copy: check.sh, gate, pack add against a local stand-in remote)
+        # the fast part of this module runs in the suite above; this adds the slow half (NEW-3)
+        run: NEW_PROJECT_SMOKE=1 PYTHONPATH=.factory/tests python3 -W ignore::ResourceWarning -m unittest -q test_new_project_smoke
       - name: Refresh CI history (best effort, read-only GitHub API call)
         if: always()
         continue-on-error: true

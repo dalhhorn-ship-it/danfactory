@@ -66,7 +66,11 @@ class Project:
         cls.proj = os.path.join(cls.tmp, "proj")  # a new project: a copy of the template commit, no origin
         subprocess.run(["git", "clone", "-q", cls.tpl, cls.proj], check=True)
         subprocess.run(["git", "-C", cls.proj, "remote", "remove", "origin"], check=True)
-        cls.boot = run(["bash", "scripts/bootstrap.sh", "demo", "A demo"], cls.proj)
+        src = json.load(open(os.path.join(cls.proj, "factory.json")))["template"]["source_repo"]
+        # the template's GitHub URL is redirected to the local snapshot (env config; no network, no config file touched)
+        cls.env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="url.%s.insteadOf" % cls.tpl,
+                       GIT_CONFIG_VALUE_0="https://github.com/" + src, GIT_CEILING_DIRECTORIES=cls.tmp)
+        cls.boot = run(["bash", "scripts/bootstrap.sh", "demo", "A demo"], cls.proj, env=cls.env)
 
     @classmethod
     def tearDownClass(cls):
@@ -102,6 +106,7 @@ class AddRemove(Project, unittest.TestCase):
         before = tree_files(self.proj)
         f = self.factory()
         f["template"]["source_repo"] = self.tpl  # a local path stands in for the GitHub repo
+        f["template"]["ref"] = ""  # as after an offline bootstrap: pack.py finds the template commit itself (NEW-1)
         json.dump(f, open(os.path.join(self.proj, "factory.json"), "w"), indent=2)
         before_with_conf = tree_files(self.proj)
         r = run([sys.executable, "scripts/pack.py", "add", "autonomy"], self.proj)
@@ -112,6 +117,7 @@ class AddRemove(Project, unittest.TestCase):
         for rel in FILES:  # content equals the pinned commit's
             self.assertEqual(open(os.path.join(self.proj, rel), "rb").read(), open(os.path.join(self.tpl, rel), "rb").read(), rel)
         self.assertIs(self.factory()["packs"]["autonomy"], True)
+        self.assertEqual(self.factory()["template"]["ref"], self.sha)
         self.assertIn("installed", run([sys.executable, "scripts/pack.py", "status"], self.proj).stdout)
         r = run([sys.executable, "scripts/pack.py", "remove", "autonomy"], self.proj)
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -120,7 +126,7 @@ class AddRemove(Project, unittest.TestCase):
         self.assertIs(self.factory()["packs"]["autonomy"], False)
 
     def test_zz_add_refuses_unpinned_or_unknown_refs_and_changes_nothing(self):
-        for ref in ("", "main", "abc123", "0" * 40):
+        for ref in ("main", "abc123", "0" * 40):
             f = self.factory()
             f["template"]["source_repo"], f["template"]["ref"] = self.tpl, ref
             json.dump(f, open(os.path.join(self.proj, "factory.json"), "w"), indent=2)
@@ -128,6 +134,7 @@ class AddRemove(Project, unittest.TestCase):
             r = run([sys.executable, "scripts/pack.py", "add", "autonomy"], self.proj)
             self.assertEqual(r.returncode, 1, ref)
             self.assertIn("pack:", r.stderr)
+            self.assertIn("add --ref <sha>", r.stderr, ref)
             self.assertEqual(tree_files(self.proj), before, ref)
             self.assertIs(self.factory()["packs"]["autonomy"], False)
 
