@@ -7,6 +7,7 @@
 2. **Cheapest adequate model**: Haiku for mechanical work, Sonnet for building and judging, Opus only for architecture and hard debugging.
 3. **Verification ladder, not ritual**: run only the verifiers the rigor level asks for (below). Recommendations inside an agent's reply ("consult @x") are hints; follow them only if the ladder or a concrete finding justifies it.
 4. **Never wait**: long-running watchers (deploy-watcher, big test runs) go in the background.
+5. **Index first**: every agent starts from docs/INDEX.md and reads one section, not a whole doc; a structural test checks the `Finding things` line in each agent file.
 
 ## By moment
 
@@ -27,7 +28,7 @@
 | Run tests / builds | run `metrics.py test` directly (one line when green); delegate when it fails or output is long | `test-runner` | haiku |
 | Failing acceptance tests → issues | L2+ in autonomy mode: after a build or a failing gate (docs/policies/issue-ledger.md) | `finder` | sonnet |
 | Fix issues unattended (autonomy mode) | L2+, `autonomy.enabled`, open issues with an approved PRD, you start it (docs/policies/runner.md) | `python3 scripts/runner.py run --next` (fixer and reviewer are headless agents it starts; not a subagent) | sonnet (`autonomy.model`) |
-| Release (user promotes) | staging has fixes main lacks, or a post-deploy smoke failed (docs/policies/runner.md) | `python3 scripts/release.py verify`, then `python3 scripts/release.py report`; `python3 scripts/release.py smoke-failed <sha>` after a failed smoke. You run the promote commands; no agent pushes or merges to main | none (script; gate in the tree sandbox) |
+| Release (user promotes) | staging has fixes main lacks, or a post-deploy smoke failed (docs/policies/runner-release.md) | `python3 scripts/release.py verify`, then `python3 scripts/release.py report`; `python3 scripts/release.py smoke-failed <sha>` after a failed smoke. You run the promote commands; no agent pushes or merges to main | none (script; gate in the tree sandbox) |
 | Debug | first attempt by the main agent fails, or production incident | `ultrathink-debugger` | opus |
 | UI changed | user-facing screens or flows touched | `ui-comprehensive-tester` | sonnet |
 | Task done? | see ladder | `task-completion-validator` | sonnet |
@@ -81,6 +82,7 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 `bulk-reader`, `test-runner` and `ultrathink-debugger` are available on every path when their trigger fires.
 
 ## Changelog
+- 1.3.1 — every agent file carries the `Finding things` index-first line (DOCS-1).
 - 1.3.0 — 20 agents: `finder` (issue ledger, ADR 0008) for software-product and library-cli (AUTO-3).
 - 1.2.0 — 19 agents: `test-writer` and the Acceptance tests moment (AUTO-2).
 - 1.1.0 — adopt-existing moment and roster.

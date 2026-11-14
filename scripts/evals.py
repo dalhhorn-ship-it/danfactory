@@ -41,6 +41,7 @@ DEFAULTS = {"n": 3, "model": "sonnet", "budget_usd": 5, "regression_threshold": 
 # Never copied into the sandbox: the graders, fixtures and docs that describe them, and this repo's own handoff note.
 EXCLUDE = (".factory/HANDOFF.md", "evals/", "scripts/evals.py", "scripts/evals_graders.py", ".factory/tests/test_evals.py",
            "metrics/evals", "metrics/eval-transcripts/", "docs/policies/evals.md",
+           "docs/policies/evals-visualizations.md",
            "docs/decisions/0006-agent-eval-harness.md", "docs/specs/agent-eval-harness.md")
 TASK_KEYS = ("id", "title", "gates", "prompt", "max_turns", "graders")
 

@@ -205,7 +205,7 @@ class TestOnThisRepo(unittest.TestCase):
         flagged = {f["subject"]: f for f in d["flags"] if f["kind"].startswith("file")}
         self.assertEqual(flagged["scripts/runner.py"]["kind"], "file-over-size")
         self.assertIn("scripts/runner.py", tab_hotspots.render_size(d))
-        for p in ("scripts/acceptance.py", "scripts/gate.py", "scripts/dashboard.py", ".claude/hooks/guard_bash_policy.py"):
+        for p in ("scripts/acceptance.py", "scripts/gate.py", "scripts/dashboard.py"):  # guard_bash_policy.py is at 400 lines, no longer flagged
             self.assertIn(p, flagged)
         if d["growth"]["30"]:
             self.assertTrue(any(f["kind"] == "size-growth" for f in d["flags"]))

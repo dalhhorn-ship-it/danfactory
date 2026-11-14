@@ -11,7 +11,8 @@ import sys
 
 SRC_EXT = (".py", ".ts", ".tsx", ".js", ".mjs")
 DEFAULTS = {"file_lines_warn": 400, "file_lines_max": 700, "always_loaded_tokens_max": 2500,
-            "agents_max": 20, "code_growth_30d_pct_warn": 25}
+            "agents_max": 20, "code_growth_30d_pct_warn": 25,
+            "doc_tokens_sections": 1500, "doc_tokens_warn": 3000}
 AREAS = ("code", "tests", "docs", "hooks", "agents", "skills", "evals")
 LABELS = {"code": "Product code (incl. hooks)", "tests": "Tests", "docs": "Docs (*.md)", "hooks": "Hooks (also in code)",
           "agents": "Agents", "skills": "Skills", "evals": "Evals"}
@@ -98,6 +99,21 @@ def _count(rows):
                 out[a]["files"] += 1
                 out[a]["lines"] += n
     return out
+
+
+RECORD_DIRS = ("docs/specs/", "docs/decisions/")  # records: never split, their sections are indexed instead
+
+
+def doc_sizes(root, rows):
+    """[{path, tokens}] for docs (area docs), biggest first; tokens = bytes / 4 like the always-loaded count."""
+    out = []
+    for p, _ in rows:
+        if area(p) == "docs":
+            try:
+                out.append({"path": p, "tokens": os.path.getsize(os.path.join(root, p)) // 4})
+            except OSError:
+                continue
+    return sorted(out, key=lambda r: (-r["tokens"], r["path"]))
 
 
 def current_files(root):
@@ -219,6 +235,13 @@ def flags(d, b):
         elif r["lines"] > b["file_lines_warn"]:
             out.append({"kind": "file-large", "level": "medium", "subject": r["path"], "value": r["lines"], "budget": b["file_lines_warn"],
                         "action": "agents read it in pieces; split it before it passes %d lines" % b["file_lines_max"]})
+    for r in d.get("docs", []):
+        if r["tokens"] > b["doc_tokens_warn"]:
+            rec = r["path"].startswith(RECORD_DIRS)
+            out.append({"kind": "doc-large", "level": "low" if rec else "medium", "subject": r["path"], "value": r["tokens"],
+                        "budget": b["doc_tokens_warn"],
+                        "action": "indexed record, not split (sections are in docs/INDEX.md)" if rec else
+                        "split by topic, or rely on the indexed sections in docs/INDEX.md"})
     if d["always_loaded"]["total"] > b["always_loaded_tokens_max"]:
         out.append({"kind": "always-loaded", "level": "high", "subject": "CLAUDE.md + session start note",
                     "value": d["always_loaded"]["total"], "budget": b["always_loaded_tokens_max"],
@@ -230,7 +253,7 @@ def flags(d, b):
     if g and g["pct"] is not None and g["pct"] > b["code_growth_30d_pct_warn"]:
         out.append({"kind": "size-growth", "level": "medium", "subject": "product code", "days": d["growth"]["30"]["days"], "value": g["pct"], "budget": b["code_growth_30d_pct_warn"],
                     "action": "pause features and trim, move rarely used code to an optional pack, or raise the budget with a reason"})
-    out.sort(key=lambda f: (f["level"] != "high", -f["value"] / f["budget"]))
+    out.sort(key=lambda f: (f["level"] != "high", f["level"] == "low", -f["value"] / f["budget"]))
     return out
 
 
@@ -239,7 +262,7 @@ def text(f):
     if f["kind"] == "size-growth":
         return "Size: %s grew %s%% in %d days (budget %s%% per 30 days). Action: %s" % (
             f["subject"], f["value"], f.get("days", 30), f["budget"], f["action"])
-    unit = " tokens" if f["kind"] == "always-loaded" else " lines" if f["kind"].startswith("file") else ""
+    unit = " tokens" if f["kind"] in ("always-loaded", "doc-large") else " lines" if f["kind"].startswith("file") else ""
     return "Size: %s is %s%s (budget %s). Action: %s" % (f["subject"], f["value"], unit, f["budget"], f["action"])
 
 
@@ -255,11 +278,12 @@ def collect(root, factory=None):
     now = _count(rows)
     prod = sorted(({"path": p, "lines": n} for p, n in rows if is_product(p)), key=lambda r: (-r["lines"], r["path"]))
     d = {"budgets": b, "areas": now, "files": prod, "top": prod[:TOP], "always_loaded": always_loaded(root),
-         "counts": counts(root, [p for p, _ in rows]), "growth": growth(root, now),
+         "counts": counts(root, [p for p, _ in rows]), "growth": growth(root, now), "docs": doc_sizes(root, rows),
          "test_ratio": round(now["tests"]["lines"] / now["code"]["lines"], 2) if now["code"]["lines"] else None}
     d["flags"] = flags(d, b)
     d["files"] = [r for r in prod if r["lines"] > b["file_lines_warn"]]  # data.json keeps flagged files only
-    d["alerts"] = [text(f) for f in d["flags"]]
+    d["docs"] = [r for r in d["docs"] if r["tokens"] > b["doc_tokens_warn"]]  # data.json keeps flagged docs only
+    d["alerts"] = [text(f) for f in d["flags"] if f["level"] != "low"]  # records are listed, not alerted
     return d
 
 
@@ -273,6 +297,7 @@ def growth_text(g, a="code"):
 
 def line(d):
     over = [f for f in d["flags"] if f["kind"] == "file-over-size"]
-    return "%d flags; code %s lines in %s files, %d over %d lines; always loaded ~%d tokens; code growth %s" % (
+    return "%d flags; code %s lines in %s files, %d over %d lines; %d docs over %d tokens; always loaded ~%d tokens; code growth %s" % (
         len(d["flags"]), format(d["areas"]["code"]["lines"], ","), d["areas"]["code"]["files"], len(over),
-        d["budgets"]["file_lines_max"], d["always_loaded"]["total"], growth_text(d["growth"].get("30")))
+        d["budgets"]["file_lines_max"], len(d.get("docs", [])), d["budgets"]["doc_tokens_warn"], d["always_loaded"]["total"],
+        growth_text(d["growth"].get("30")))

@@ -27,60 +27,64 @@
 
 | File | Lines | Summary |
 |---|---:|---|
-| CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 63 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
-| docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
-| docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 31 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
-| docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
+| CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every… |
+| docs/BACKLOG.md | 63 | Milestones and work items; the dashboard reads this file. Seeded by… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Unplanned:40 |
+| docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill… |
+| docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices,… |
+| docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this file plus… — sections: Open:7, Resolved:13 |
+| docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0003-deploy-credential-scoping.md | 17 | Status: accepted · Date: 2026-11-07 |
 | docs/decisions/0004-dashboard-observability-design.md | 45 | Status: accepted · Date: 2026-11-07 |
-| docs/decisions/0005-auto-compact-handoff-loop.md | 22 | Status: accepted · Date: 2026-11-07 · PRD: docs/specs/auto-compact-handoff-loop.md |
-| docs/decisions/0006-agent-eval-harness.md | 22 | Status: accepted · Date: 2026-11-11 · PRD: docs/specs/agent-eval-harness.md |
-| docs/decisions/0007-merge-gate-and-acceptance-suite.md | 60 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (slice A: C1, C2) |
-| docs/decisions/0008-issue-ledger-and-finder.md | 33 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (C3, step 3,… |
-| docs/decisions/0009-fixer-runner.md | 82 | Status: accepted · Date: 2026-11-13 · PRD: docs/specs/gated-autonomy.md (C4; criteria 8,… |
-| docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/gated-autonomy.md (C5, C6, C7;… |
-| docs/decisions/0011-autonomy-pack-and-file-splits.md | 37 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/size-monitoring.md (SIZE-2,… |
-| docs/operating-model/AGENT-ROUTING.md | 87 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
-| docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version 1.3.0. Keep this file short: details live… |
-| docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |
-| docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished repo) into… |
-| docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts. Default rigor L1. |
-| docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models, workbooks, CSV outputs, generated reports. Default… |
-| docs/operating-model/paths/documents-content.md | 25 | Documents, decks, handbooks, proposals, long-form writing. Default rigor L1. |
-| docs/operating-model/paths/infra-ops.md | 26 | Infrastructure as code, CI/CD pipelines, cloud config, DNS, access. Default rigor L3… |
+| docs/decisions/0005-auto-compact-handoff-loop.md | 22 | Status: accepted · Date: 2026-11-07 · PRD:… |
+| docs/decisions/0006-agent-eval-harness.md | 22 | Status: accepted · Date: 2026-11-11 · PRD:… |
+| docs/decisions/0007-merge-gate-and-acceptance-suite.md | 60 | Status: accepted · Date: 2026-11-12 · PRD:… — sections: Context:5, Options:8, Decision:13, Consequences:56 |
+| docs/decisions/0008-issue-ledger-and-finder.md | 33 | Status: accepted · Date: 2026-11-12 · PRD:… |
+| docs/decisions/0009-fixer-runner.md | 82 | Status: accepted · Date: 2026-11-13 · PRD:… — sections: Context:5, Decision:12, Consequences:59, Implementation notes…:62, Hardening after…:72 |
+| docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | Status: accepted · Date: 2026-11-14 · PRD:… |
+| docs/decisions/0011-autonomy-pack-and-file-splits.md | 37 | Status: accepted · Date: 2026-11-14 · PRD:… |
+| docs/operating-model/AGENT-ROUTING.md | 89 | Which agent gets involved when. The main agent coordinates and… — sections: Principles:5, By moment:12, Verification ladder…:44, Tie-breakers…:55, Path rosters…:68, Changelog:84 |
+| docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version 1.3.0. Keep this file… |
+| docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry tags path(s) and a… — sections: Entries:14 |
+| docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0, or any half-finished… |
+| docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots, one-purpose scripts.… |
+| docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models, workbooks, CSV outputs,… |
+| docs/operating-model/paths/documents-content.md | 25 | Documents, decks, handbooks, proposals, long-form writing. Default… |
+| docs/operating-model/paths/infra-ops.md | 26 | Infrastructure as code, CI/CD pipelines, cloud config, DNS, access.… |
 | docs/operating-model/paths/library-cli.md | 30 | Packages, SDKs, CLIs that others import or invoke. Default rigor L2. |
-| docs/operating-model/paths/prototype-spike.md | 20 | Throwaway code to learn or prove feasibility. Rigor L0. Speed over polish — but… |
-| docs/operating-model/paths/research-analysis.md | 25 | Questions answered from sources or data: market scans, technical comparisons, data… |
-| docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if money/PII/public). Goes live… |
-| docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand off, keep working;… |
-| docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
-| docs/policies/evals.md | 43 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
-| docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
-| docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
-| docs/policies/prd-approval.md | 30 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/runner.md | 72 | Part of the autonomy pack (ADR 0011). A new project does not have it until `python3… |
-| docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
-| docs/policies/testing-and-metrics.md | 28 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
-| docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
-| docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
-| docs/specs/agent-eval-harness.md | 104 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
-| docs/specs/auto-compact-handoff-loop.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/dashboard-carbon-design.md | 82 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/dashboard-delivery-backflow.md | 89 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/dashboard-observability-design.md | 207 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171, Evals tab (EVAL-2):177, Evals tab views (EVAL-4):182, Evals tab: backlog flow…:187, Carbon look (DASH-3):191, Roadmap views (DASH-4):200 |
-| docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |
-| docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/docs-index-first.md | 16 | Status: approved · 2026-11-14 · by user in chat ("update documentation, split files that… |
-| docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
-| docs/specs/fast-checks-and-guard-gaps.md | 29 | Status: approved · 2026-11-14 · by user in chat ("Ok keep doing that, PRD approved",… |
-| docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A: C1 and C2; C3 approved… — sections: Problem:5, Goal and success measure:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user, 2026-11-12):138 |
-| docs/specs/prd-write-guard.md | 39 | Status: approved · 2026-11-13 · by user in chat ("Ok build the guard", after the TD-015… |
-| docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat · 2026-11-11 · Owner: product-manager ·… |
-| docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
-| docs/specs/size-monitoring.md | 49 | Status: approved · 2026-11-14 · by user in chat ("Overall evaluate how large this… |
-| docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner: product-manager ·… |
-| docs/specs/upstream-from-lpdan-2026-11.md | 24 | Status: approved · 2026-11-11 · by user in chat ("Ok plz do", in the lpdan session,… |
+| docs/operating-model/paths/prototype-spike.md | 20 | Throwaway code to learn or prove feasibility. Rigor L0. Speed over… |
+| docs/operating-model/paths/research-analysis.md | 25 | Questions answered from sources or data: market scans, technical… |
+| docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor L2 (L3 if… |
+| docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of a deploy. Push, hand… |
+| docs/policies/documentation.md | 12 | Docs are part of done. Small, true, linked — and indexed so agents… |
+| docs/policies/evals-visualizations.md | 10 | Hook evidence, proof strength per task, the rule inventory and the… |
+| docs/policies/evals.md | 38 | Behavioural evals for the factory: a fixed task suite run by… — sections: Why:5, How to run:8, Rules:27 |
+| docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move.… |
+| docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes, the same locally and in… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:47, Security scan notes:56, Issue ledger:61, Honest limits:64 |
+| docs/policies/prd-approval.md | 30 | No feature work starts until the product-manager has written a PRD… — sections: When it applies:5, Flow:14, Enforcement:22 |
+| docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How you promote what the… |
+| docs/policies/runner-safety.md | 19 | Part of the autonomy pack (ADR 0011). The second reading of… |
+| docs/policies/runner.md | 41 | Part of the autonomy pack (ADR 0011). A new project does not have it… — sections: Start a run:7, What a run does:15, Parallel fixers and…:26, Caps:38 |
+| docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential… |
+| docs/policies/template-maintenance.md | 11 | How a checkout is recognised as the template itself, and how… |
+| docs/policies/testing-and-metrics.md | 28 | Fast feedback is a feature. Measure test time, coverage, deploys and… |
+| docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from… |
+| docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped ·… |
+| docs/specs/agent-eval-harness.md | 104 | Status: approved · 2026-11-11 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:41, Acceptance criteria:50, UX / behaviour notes:65, Risks and assumptions:71, Effort and sequencing:80, Open questions:86, Decisions (user,…:94, Spike findings…:98 |
+| docs/specs/auto-compact-handoff-loop.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:24, Acceptance criteria:30, UX / behaviour notes:44, Risks and assumptions:49, Effort and sequencing:55, Decisions (user,…:66, Open questions…:72 |
+| docs/specs/dashboard-carbon-design.md | 82 | Status: approved · 2026-11-11 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:28, Acceptance criteria:36, UX / behaviour notes:51, Risks and assumptions:59, Effort and sequencing:68, Open questions:74, Decisions (user,…:80 |
+| docs/specs/dashboard-delivery-backflow.md | 89 | Status: approved · 2026-11-07 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:38, Acceptance criteria:45, UX / behaviour notes:58, Security notes…:63, Risks and assumptions:70, Effort and sequencing:76, Decisions (user,…:80, Open questions…:83 |
+| docs/specs/dashboard-observability-design.md | 207 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is…:50, SVG diagram…:79, Traceability keys…:88, data.json additions…:105, --print rows (one…:110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order…:142, Slice 2 as built:165, Slice 3 as built:171, Evals tab (EVAL-2):177, Evals tab views…:182, Evals tab: backlog…:187, Carbon look (DASH-3):191, Roadmap views (DASH-4):200 |
+| docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices;… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:35, Acceptance criteria:41, UX / behaviour notes:54, Risks and assumptions:59, Effort and sequencing:66, Open questions:73 |
+| docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:12, Scope:18, Non-goals:28, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:56, Effort and sequencing:63, Open questions:69 |
+| docs/specs/docs-index-first.md | 16 | Status: approved · 2026-11-14 · by user in chat ("update… |
+| docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:32, Acceptance criteria:44, UX / behaviour notes:61, Risks and assumptions:69, Effort and sequencing:77, Open questions:83, Decisions (user,…:90 |
+| docs/specs/fast-checks-and-guard-gaps.md | 29 | Status: approved · 2026-11-14 · by user in chat ("Ok keep doing… |
+| docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A: C1 and C2;… — sections: Problem:5, Goal and success…:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user,…:138 |
+| docs/specs/prd-write-guard.md | 39 | Status: approved · 2026-11-13 · by user in chat ("Ok build the… |
+| docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat · 2026-11-11 ·… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
+| docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:30, Acceptance criteria:37, UX / behaviour notes:53, Risks and assumptions:58, Effort and sequencing:65, Decisions at…:68, Open questions:76 |
+| docs/specs/size-monitoring.md | 49 | Status: approved · 2026-11-14 · by user in chat ("Overall evaluate… |
+| docs/specs/template-mode.md | 62 | Status: approved by user in chat 2026-11-07 · 2026-11-07 · Owner:… |
+| docs/specs/upstream-from-lpdan-2026-11.md | 24 | Status: approved · 2026-11-11 · by user in chat ("Ok plz do", in the… |

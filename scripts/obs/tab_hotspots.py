@@ -79,9 +79,10 @@ def render_size(z):
     other = [f for f in z["flags"] if not f["kind"].startswith("file")]
     flag_rows = "".join('<li class="alert">%s</li>' % e(Z.text(f)) for f in other)
     ratio = "test-to-code ratio %s" % z["test_ratio"] if z["test_ratio"] is not None else "no product code yet"
-    ctx = ("Always loaded: ~%d tokens (CLAUDE.md %d, session start note %d; budget %d). %d agents (max %d), %d skills, %d hooks, %d scripts; %s." % (
+    ctx = ("Always loaded: ~%d tokens (CLAUDE.md %d, session start note %d; budget %d). %d agents (max %d), %d skills, %d hooks, %d scripts; %d docs over %d tokens (sections indexed above %d); %s." % (
         ac["total"], ac["claude_md"], ac["session_start"], b["always_loaded_tokens_max"], z["counts"]["agents"], b["agents_max"],
-        z["counts"]["skills"], z["counts"]["hooks"], z["counts"]["scripts"], ratio))
+        z["counts"]["skills"], z["counts"]["hooks"], z["counts"]["scripts"], len(z.get("docs", [])), b["doc_tokens_warn"],
+        b["doc_tokens_sections"], ratio))
     return ('<div class="card"><h2>Size (budgets in factory.json budgets.size)</h2><p class="muted">%s</p>%s%s<ul class="plain">%s</ul>'
             '<h3>Areas and growth</h3><div class="scroll"><table><thead><tr><th>Area</th><th>Files</th><th>Lines</th><th>Growth 7 days</th><th>Growth 30 days</th></tr></thead>'
             '<tbody>%s</tbody></table></div></div>' % (e(ctx), files, more, flag_rows, arows))

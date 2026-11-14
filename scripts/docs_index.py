@@ -23,7 +23,7 @@ INDEX = os.path.join(ROOT, "docs", "INDEX.md")
 GRAPH = os.path.join(ROOT, "docs", "knowledge-graph.json")
 # Agents and skills are omitted: Claude Code already puts their descriptions in context.
 SOURCES = ["CLAUDE.md", "docs/**/*.md"]
-LONG_DOC = 120  # list section line numbers only for docs longer than this
+SECTIONS_TOKENS = 1500  # default for factory.json budgets.size.doc_tokens_sections (chars / 4)
 CURATED_RE = re.compile(r"<!-- curated:start -->\n(.*?)<!-- curated:end -->", re.S)
 DEFAULT_CURATED = """| Question | Go to |
 |---|---|
@@ -36,6 +36,16 @@ DEFAULT_CURATED = """| Question | Go to |
 LINK_RE = re.compile(r"\]\(([^)#\s]+\.md)(#[^)]*)?\)|`((?:docs|\.claude)/[^`\s]+\.md)`"
                      r"|(?<![\w./\[-])((?:\.\.?/)?[\w-][\w.-]*(?:/[\w.-]+)*\.md)\b")  # bare paths count when the file exists
 HEAD_RE = re.compile(r"^(#{1,3})\s+(.*?)\s*#*\s*$")
+
+
+def sections_threshold():
+    """Docs over this many tokens get their sections listed with start lines (factory.json budgets.size)."""
+    try:
+        with open(os.path.join(ROOT, "factory.json"), encoding="utf-8") as fh:
+            v = ((json.load(fh).get("budgets") or {}).get("size") or {}).get("doc_tokens_sections")
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else SECTIONS_TOKENS
+    except (OSError, ValueError, AttributeError):
+        return SECTIONS_TOKENS
 
 
 def rel(p):
@@ -100,6 +110,7 @@ def parse(path):
             if (os.path.isfile(full) or full == INDEX) and full != path:  # INDEX may not exist yet on a first run
                 links.add(rel(full))
     return {"file": rel(path), "title": title, "summary": summary, "lines": len(lines),
+            "tokens": sum(len(x) + 1 for x in lines) // 4,
             "headings": heads, "links": sorted(links)}
 
 
@@ -127,10 +138,11 @@ def render(docs, curated):
         "| File | Lines | Summary |",
         "|---|---:|---|",
     ]
+    limit = sections_threshold()
     for d in docs:
-        summary = cell(d["summary"] or d["title"], 90)
-        if d["lines"] > LONG_DOC:
-            secs = ", ".join("%s:%d" % (cell(t, 30), n) for n, lvl, t in d["headings"] if lvl == 2)
+        summary = cell(d["summary"] or d["title"], 70)
+        if d["tokens"] > limit:
+            secs = ", ".join("%s:%d" % (cell(t, 22), n) for n, lvl, t in d["headings"] if lvl == 2)
             summary += " — sections: " + secs
         out.append("| %s | %d | %s |" % (d["file"], d["lines"], summary))
     return "\n".join(out) + "\n"

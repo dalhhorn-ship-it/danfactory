@@ -7,6 +7,8 @@ model: haiku
 
 You watch one deployment. The caller gives you: `url` (a version or health endpoint), `expect` (the short git sha the new version serves), `pushed_at` (epoch seconds), `env` (preview|prod), and optionally `timeout`.
 
+**Finding things:** start from docs/INDEX.md (file:line and section numbers) and `python3 scripts/docs_index.py --related <doc>` to pick what to read if you need project docs; return status and one-line causes, not logs.
+
 1. Run exactly once, **with the Bash tool's `timeout` parameter set to 600000** (the default 120s would kill the wait early):
    `bash scripts/wait-for-url.sh --url <url> --expect <expect> --since <pushed_at> --timeout <T> --record <env>`
    where T = the caller's timeout, else 2 × `budgets.deploy_seconds`, capped at 540.
