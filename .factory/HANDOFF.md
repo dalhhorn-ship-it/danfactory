@@ -1,16 +1,16 @@
-# Handoff — 2026-11-14 — AUTO-5, AUTO-7, TD-017..019 merged; AUTO-6 building
+# Handoff — 2026-11-14 — M3 gated autonomy complete (AUTO-1..7); waiting on user
 
 ## Task
 User approved gated-autonomy SLICE A (AUTO-1 merge gate, AUTO-2 locked acceptance suite) and asked to build it, adding dashboard visibility for anything meaningful. Answers: rework cap 3, 5 USD/day, staging branch first, pilot on both (textkit fixture + a downstream library project). User keeps control of PRD approval, which builds start, and push to main. AUTO-3..7 need a new approval.
 
 ## State
-- Pushed 8cb2179: pilot bundle (evals/spikes/pilot-semverlite/pilot-semverlite.bundle), TD-017/018/019 resolved, AUTO-5 release.py, AUTO-7 learn.py + 3 fixer evals (haiku 3/3 each after fixture fixes, ~0.19 USD). AUTO-5, AUTO-7 ticked.
-- Running: developer AUTO-6 parallel fixers in MAIN tree (runner.py), incl. real haiku smoke --parallel 2 (cap 0.5 USD).
-- Open debt: TD-016 only (+ includes_acceptance heuristic limits noted by developer; release rows left uncommitted for the user by design).
+- Pushed 43f8be5: AUTO-6 parallel fixers (real haiku smoke --parallel 2: both merged attempt 1, 0.012 USD). All AUTO-1..7 ticked. Dashboard v13 republished.
+- Open debt: TD-016 (guard gaps), TD-020 (fixers are threads; gate runs serialised; rebased fix keeps original review).
+- Template gate/check now ~139s vs 120s budget (tests-over-budget risk): propose a speed-up (affected tests / split slow sandbox tests).
+- AUTO-6 developer reported 'waiting on its own background work' after its report; check git status for late changes.
 
 ## Next steps
-1. When AUTO-6 reports: verify, check.sh + gate, push; republish template dashboard (and pilot dashboard optional); final summary to user (M3 complete if AUTO-6 done).
-2. Remaining asks: v0.1.0 tag (unanswered), EVAL-3 (lpdan push), TD-016, check.sh ~111s vs 120s budget.
+1. Ask user: speed up template checks; TD-016/020; v0.1.0 tag; EVAL-3 (lpdan push); merge branch to main is the user's call.
 
 ## Watch out
 - TEMPLATE repo: never build a project here. metrics/history.jsonl is tracked: `git checkout HEAD -- metrics/history.jsonl` before commits if tests changed it.
