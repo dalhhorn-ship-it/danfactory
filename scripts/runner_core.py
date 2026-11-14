@@ -1,6 +1,7 @@
 """Fixer runner base: settings, constants, errors, rows and budget arithmetic, status summary.
 Split from scripts/runner.py (SIZE-3); `runner` re-exports every name, so `runner.<name>` still works."""
 import datetime
+import fcntl
 import json
 import os
 import subprocess
@@ -21,9 +22,41 @@ DEFAULTS = {"enabled": False, "staging_branch": "staging", "max_attempts": 3, "d
             "model": "sonnet", "review_model": "sonnet", "max_turns": 40, "timeout_s": 900, "review_turns": 12,
             "attempt_estimate_usd": 0.5, "max_parallel": 1, "schedule_ok": False}
 PARALLEL_CAP = 4  # hard cap whatever autonomy.max_parallel says
-# One lock per shared resource of a parallel run: git worktree add/remove (they race on .git/worktrees), the in-process gate (it patches
-# module globals), the staging worktree (merges, ledger, commits) and the runner rows file.
-WT_LOCK, GATE_LOCK, MERGE_LOCK, ROWS_LOCK = threading.RLock(), threading.RLock(), threading.RLock(), threading.RLock()
+class ProcLock:
+    """A re-entrant lock that is also held across processes once `path` is set (flock on that file): parallel attempts are separate
+    OS processes (AUTO-8), and `git worktree add/remove` race on .git/worktrees between them too."""
+
+    def __init__(self):
+        self.t, self.path, self.depth, self.fd = threading.RLock(), None, 0, None
+
+    def __enter__(self):
+        self.t.acquire()
+        if self.depth == 0 and self.path:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            self.fd = os.open(self.path, os.O_CREAT | os.O_RDWR)
+            fcntl.flock(self.fd, fcntl.LOCK_EX)
+        self.depth += 1
+        return self
+
+    def __exit__(self, *exc):
+        self.depth -= 1
+        if self.depth == 0 and self.fd is not None:
+            fcntl.flock(self.fd, fcntl.LOCK_UN)
+            os.close(self.fd)
+            self.fd = None
+        self.t.release()
+
+
+# One lock per shared resource of a parallel run: git worktree add/remove (they race on .git/worktrees; a file lock too, since attempts
+# are processes), the in-process gate (it patches module globals: only the merge re-gate and the base check use it in the parent now),
+# the staging worktree (merges, ledger, commits) and the runner rows file.
+WT_LOCK, GATE_LOCK, MERGE_LOCK, ROWS_LOCK = ProcLock(), threading.RLock(), threading.RLock(), threading.RLock()
+
+
+def share_wt_lock(root):
+    WT_LOCK.path = os.path.join(root, ".claude", "worktrees", ".git-wt.lock")
+
+
 # Paths a fixer may never change, on top of gate.protected: the gate and the machinery that judges or records its work.
 RUNNER_PROTECTED = ["metrics/acceptance-baseline.json", "factory.json", ".claude/**", ".github/**", "issues/**", "metrics/**",
                     "scripts/gate.py", "scripts/gate_checks.py", "scripts/acceptance.py", "scripts/acceptance_exec.py", "scripts/runner.py",

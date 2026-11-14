@@ -18,9 +18,10 @@ import issues as L  # noqa: E402
 import sandbox as S  # noqa: E402
 
 from runner_core import (BASELINE, Fail, MERGE_LOCK, ROWS_LOCK, budget_stop, estimate, git, load_rows, now, out_of,
-                         remaining, rows_path, today)
+                         remaining, rows_path, share_wt_lock, today)
 from runner_git import checkout, commit_ledger, remove_wt, wt_dir
-from runner_attempt import attempt, base_problem, gate_reasons, gate_verdict
+from runner_attempt import DIFF_MAX, base_problem, gate_reasons, gate_verdict, run_review
+from runner_child import attempt_in_process
 from runner_pick import attempt_log, pick_batch
 
 
@@ -63,10 +64,12 @@ class Shared:
             self.inflight.pop(key, None)
 
 
-def land(root, swt, iss, row, staging):
+def land(root, swt, iss, row, staging, cfg, left, est):
     """Under MERGE_LOCK: merge the passing fix into staging, re-gated against the CURRENT tip first. None when merged, else the
     reason it became a failed attempt (`stale-after-merge`). The fix was gated against the tip it started from; when staging moved
-    since, the fix is rebased onto the tip once and its tests and the gate run again on a fresh checkout of the result."""
+    since, the fix is rebased onto the tip once, its tests run again, an independent reviewer sees the REBASED diff (AUTO-8: the
+    first verdict was about a different diff; fix-first fails the attempt, ship rewrites the Review trailer) and the gate runs again,
+    all on fresh checkouts of the result. `left()` is the USD still allowed before this attempt's own cost, `est` the guess per call."""
     name, branch = "runner-" + iss["id"], "fix/" + iss["id"]
     sha = out_of(git(["rev-parse", "refs/heads/" + branch], root))
     tip = out_of(git(["rev-parse", "HEAD"], swt))
@@ -84,6 +87,28 @@ def land(root, swt, iss, row, staging):
             still = sorted(x for x in iss["tests"] if tests.get(x, {}).get("status") != "pass")
             if still:
                 return "- after rebasing onto the new staging tip the issue tests fail: %s" % ", ".join(still[:5])
+            diff = git(["diff", "--stat", "--patch", "%s..%s" % (tip, new)], root).stdout
+            if len(diff) > DIFF_MAX:
+                return "- the rebased change is too large to re-review (%d bytes, limit %d)" % (len(diff), DIFF_MAX)
+            cap = left() - row["cost_usd"]
+            if cap <= 0:
+                return "- budget: nothing left to re-review the rebased fix"
+            rv, bad = run_review(root, cfg, iss, iss["meta"]["prd"], new, diff, cfg["review_model"], cap, est, name + "-rereview", None)
+            row["review_cost_usd"] = round(row["review_cost_usd"] + rv["cost"], 5)
+            row["cost_usd"] = round(row["cost_usd"] + rv["cost"], 5)
+            if rv["estimated"]:
+                row["cost_estimated"] = True
+            if bad:
+                return "- the reviewer of the rebased diff changed the tree it was given (%s)" % bad
+            row["review"] = rv["verdict"] or "fix-first"
+            if rv["verdict"] != "ship":
+                row["codes"] = row["codes"] + (["review-unparsed"] if rv["verdict"] is None else [])
+                return "- an independent review of the rebased diff said %s: %s" % (row["review"], " ".join((rv["text"] or "").split())[:300] or "no reasons given")
+            with checkout(root, new, name + "-trailer") as tw:  # same tree, the Review trailer now says what the reviewer said about it
+                msg = out_of(tw.g(["log", "-1", "--format=%B"]))
+                kept = [ln for ln in msg.splitlines() if not ln.startswith(("Review:", "Re-Reviewed:"))]
+                tw.g(["commit", "-q", "--amend", "-m", "\n".join(kept).rstrip() + "\nReview: ship\nRe-Reviewed: rebased onto %s\n" % tip[:9]])
+                new = tw.head()
             with checkout(root, new, name + "-regate") as gt:
                 v = gate_verdict(gt.path, tip)
             if v["verdict"] != "pass":
@@ -111,10 +136,10 @@ def fix_one(sh, root, cfg, swt, iss, cap):
                 break
             row = None
             try:
-                row, reasons = attempt(root, cfg, iss, prd, run_id, k, prev, cfg["model"], cfg["review_model"], staging, lambda: sh.left(key), est)
+                row, reasons = attempt_in_process(root, cfg, iss, prd, run_id, k, prev, cfg["model"], cfg["review_model"], staging, lambda: sh.left(key), est)
                 if row["outcome"] == "pass":
                     with MERGE_LOCK:
-                        why = land(root, swt, iss, row, staging)
+                        why = land(root, swt, iss, row, staging, cfg, lambda: sh.left(key), est)
                         if why:
                             row["outcome"], row["codes"] = "fail", row["codes"] + ["stale-after-merge"]
                             row["detail"] = why[:1000]
@@ -169,6 +194,7 @@ def run_parallel(a, root, cfg, swt, cap, n, scheduled):
         S.append_row(rows_path(swt), {"ts": now(), "kind": "base-unhealthy", "run": run_id, "issue": ",".join(i["id"] for i in batch),
                                       "cost_usd": 0, "detail": sick[:1000]})
         return 1
+    share_wt_lock(root)
     sh = Shared(swt, cfg, run_id)
     res = []
     try:

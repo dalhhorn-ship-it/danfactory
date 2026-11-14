@@ -1068,6 +1068,9 @@ _OLD = FAKE[FAKE.index('sp = os.path.join(here, "state.json")'):FAKE.index("impo
 _NEW = '''import re as _re, time
 iid = _re.search(r"ISS-\\d{4}", prompt).group(0)
 step = (plan.get(iid) or {}).get(role) or {}
+if isinstance(step, list):  # a list is one step per call of this role for this issue (the re-review after a rebase is its second)
+    seen = [json.loads(x) for x in open(os.path.join(here, "calls.jsonl"))] if os.path.exists(os.path.join(here, "calls.jsonl")) else []
+    step = step[min(len([c for c in seen if c["issue"] == iid and c["role"] == role]), len(step) - 1)]
 t0 = time.time()
 time.sleep(step.get("sleep", 0))
 with open(os.path.join(here, "calls.jsonl"), "a") as fh:
@@ -1141,6 +1144,13 @@ class Parallel(unittest.TestCase):
         par = [r for r in self.e.rows() if r["kind"] == "parallel"]
         self.assertEqual([(r["workers"], r["max_concurrent"]) for r in par], [(3, 3)])
 
+    def test_gate_runs_overlap_and_attempts_are_their_own_processes(self):  # AUTO-8 (TD-020): no gate lock between attempts any more
+        rows = [r for r in self.e.rows() if r["kind"] == "attempt"]
+        spans = sorted((r["gate_t0"], r["gate_t1"]) for r in rows)
+        self.assertTrue(any(b[0] < a[1] for a, b in zip(spans, spans[1:])), "two gate runs overlapped in time: %s" % spans)
+        self.assertEqual(len({r["pid"] for r in rows}), 3, "one process per attempt")
+        self.assertNotIn(os.getpid(), {r["pid"] for r in rows}, "none of them is the runner process")
+
     def test_merges_are_serial_and_the_later_ones_are_rechecked_against_the_earlier(self):
         e = self.e
         merges = sh(e.root, "log", "staging", "--merges", "--reverse", "--format=%H").split()
@@ -1208,6 +1218,35 @@ class ParallelConflicts(unittest.TestCase):
             rows = [r for r in e.rows() if r["kind"] == "attempt"]
             self.assertEqual([r["outcome"] for r in rows], ["merged", "merged"])
             self.assertEqual(sum(1 for r in rows if r.get("regated_on")), 1)
+            # AUTO-8: the rebased fix got its own fresh review of the rebased diff, and the merged commit says so
+            self.assertEqual(len(e.calls("review")), 3, "two attempts and one re-review of the rebased diff")
+            late = [r for r in rows if r.get("regated_on")][0]
+            self.assertGreater(late["review_cost_usd"], 0.05, "the re-review is paid and booked on the attempt")
+            body = sh(e.root, "log", "staging", "--no-merges", "--grep=Fixer-Attempt", "--format=%B")
+            self.assertEqual(body.count("Review: ship"), 2)
+            self.assertEqual(body.count("Re-Reviewed: rebased onto"), 1)
+        finally:
+            e.cleanup()
+
+    def test_rebased_fix_that_the_second_review_rejects_fails_stale_after_merge(self):  # AUTO-8
+        def make(n):
+            p = {"a": BASE_INIT.replace("# line 1\n", "def fa():\n    return 1\n# line 1\n"), "b": BASE_INIT + "def fb():\n    return 2\n"}[n]
+            d = par_fix(n, extra={"textkit/__init__.py": p}, sleep=0.2)
+            d["review"] = [{"text": SHIP, "cost": 0.05}, {"text": FIXFIRST, "cost": 0.05}]  # the second look, at the rebased diff
+            return d
+        e = self._env(make)
+        try:
+            rc, out = e.run("run", "--next", "--parallel", "2")
+            self.assertEqual(rc, 1, out)
+            rows = [r for r in e.rows() if r["kind"] == "attempt"]
+            self.assertEqual(sorted(r["outcome"] for r in rows), ["fail", "merged"])
+            bad = [r for r in rows if r["outcome"] == "fail"][0]
+            self.assertIn("stale-after-merge", bad["codes"])
+            self.assertEqual(bad["review"], "fix-first")
+            self.assertIn("rebased diff said fix-first", bad["detail"])
+            self.assertEqual(len(e.calls("review")), 3)
+            merged = e.staged("textkit/__init__.py")
+            self.assertEqual(merged.count("def f"), 1, "only one of the two fixes reached staging")
         finally:
             e.cleanup()
 

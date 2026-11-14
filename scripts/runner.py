@@ -6,6 +6,7 @@ Design: docs/decisions/0009-fixer-runner.md. Policy: docs/policies/runner.md. PR
   runner.py run --next --parallel N [--scheduled]   # AUTO-6: N fixers (N <= autonomy.max_parallel, cap 4), merges serial
   runner.py status [--json]
   runner.py unpark ISS-n
+  runner.py attempt --json   # internal (AUTO-8): one attempt in its own process, spoken to by run --parallel
 
 Per attempt (at most autonomy.max_attempts): fresh git worktree from the staging branch (.claude/worktrees/runner-ISS-n, branch
 fix/ISS-n) -> headless fixer in the eval sandbox (scripts/sandbox.py) -> the runner commits with trailers it controls
@@ -37,6 +38,7 @@ from runner_git import *  # noqa: E402,F401,F403
 from runner_agent import *  # noqa: E402,F401,F403
 from runner_attempt import *  # noqa: E402,F401,F403
 from runner_pick import *  # noqa: E402,F401,F403
+from runner_child import *  # noqa: E402,F401,F403
 from runner_parallel import *  # noqa: E402,F401,F403
 
 
@@ -257,6 +259,8 @@ def main(argv=None, root=None):
     s.add_argument("--dry-run", action="store_true")
     s.add_argument("--parallel", type=int, default=1, metavar="N")
     s.add_argument("--scheduled", action="store_true")
+    s = sub.add_parser("attempt")  # internal: one attempt in its own process (AUTO-8), driven by run --parallel; not for people
+    s.add_argument("--json", action="store_true", required=True)
     s = sub.add_parser("status")
     s.add_argument("--json", action="store_true")
     s = sub.add_parser("unpark")
@@ -267,6 +271,8 @@ def main(argv=None, root=None):
         return 0 if ex.code in (0, None) else 2
     root = os.path.abspath(a.root or root or os.getcwd())
     try:
+        if a.cmd == "attempt":
+            return child_main(root)
         return {"run": cmd_run, "status": cmd_status, "unpark": cmd_unpark}[a.cmd](a, root)
     except (Refuse, L.Usage) as ex:
         print("runner: refused: %s" % ex, file=sys.stderr)

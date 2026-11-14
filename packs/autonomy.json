@@ -42,6 +42,7 @@
   "scripts/runner.py",
   "scripts/runner_agent.py",
   "scripts/runner_attempt.py",
+  "scripts/runner_child.py",
   "scripts/runner_core.py",
   "scripts/runner_git.py",
   "scripts/runner_parallel.py",

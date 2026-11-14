@@ -57,6 +57,23 @@ def gate_reasons(v):
     return ["- gate `%s` [%s]: %s" % (c["id"], ", ".join(c["codes"]), c["detail"][:300]) for c in v["checks"] if c["status"] == "fail"]
 
 
+def run_review(root, cfg, iss, prd, commit, diff, review_model, cap, est, name, row=None):
+    """The independent, read-only review of `diff` in a fresh checkout of `commit`. Returns (call result with "verdict" added, what was
+    tampered with or None). The cost is booked into row["review_cost_usd"] when a row is given (before any tamper check)."""
+    nonce = secrets.token_hex(8)
+    with checkout(root, commit, name) as rtree:
+        rv = call_claude(review_prompt(iss, prd, diff, nonce), review_model, int(cfg["review_turns"]), rtree.path, cfg, S.READ_TOOLS,
+                         max_budget=cap, est=est, reviewer=True)
+        if row is not None:
+            row["review_cost_usd"] += rv["cost"]
+            if rv["estimated"]:
+                row["cost_estimated"] = True
+        drop_sandbox_artifacts(rtree)  # the reviewer's Bash sandbox leaves empty mount points here too (smoke run); nothing else is tolerated
+        bad = rtree.identity() or ("HEAD moved" if rtree.head() != commit else None) or ("the tree was modified: " + rtree.dirty()[:100] if rtree.dirty() else None)
+    rv["verdict"] = parse_verdict(rv["text"], nonce) if rv["has_result"] else None
+    return rv, bad
+
+
 def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, left, est):
     """One attempt in a fresh worktree. Returns (row, reasons for the next attempt). `left()` is the USD still allowed by the
     caps before this attempt; `est` the cost guess for a call that gives no usage."""
@@ -72,7 +89,7 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
     w = WT(root, wtp)
     row = {"ts": now(), "kind": "attempt", "run": run_id, "issue": iss["id"], "attempt": k, "model": model, "review_model": review_model,
            "cost_usd": 0.0, "fixer_cost_usd": 0.0, "review_cost_usd": 0.0, "tokens_in": 0, "tokens_cache": 0, "tokens_out": 0,
-           "seconds": 0.0, "gate": "skip", "codes": [], "review": "-", "outcome": "fail", "base": base[:9]}
+           "seconds": 0.0, "gate": "skip", "codes": [], "review": "-", "outcome": "fail", "base": base[:9], "pid": os.getpid()}
     t0 = time.time()
     reasons = []
 
@@ -143,19 +160,11 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
         cap_now = left_now()
         if cap_now <= 0:
             raise Fail("budget-stop", "budget: nothing left for the reviewer")
-        nonce = secrets.token_hex(8)
-        with checkout(root, c1, name + "-review") as rtree:
-            rv = call_claude(review_prompt(iss, prd, diff, nonce), review_model, int(cfg["review_turns"]), rtree.path, cfg, S.READ_TOOLS,
-                             max_budget=cap_now, est=est, reviewer=True)
-            row["review_cost_usd"] = rv["cost"]
-            if rv["estimated"]:
-                row["cost_estimated"] = True
-            drop_sandbox_artifacts(rtree)  # the reviewer's Bash sandbox leaves empty mount points here too (smoke run); nothing else is tolerated
-            bad = rtree.identity() or ("HEAD moved" if rtree.head() != c1 else None) or ("the tree was modified: " + rtree.dirty()[:100] if rtree.dirty() else None)
-            if bad:
-                raise Fail("reviewer-modified-tree", "- the reviewer changed the tree it was given (%s): attempt lost" % bad)
+        rv, bad = run_review(root, cfg, iss, prd, c1, diff, review_model, cap_now, est, name + "-review", row)
+        if bad:
+            raise Fail("reviewer-modified-tree", "- the reviewer changed the tree it was given (%s): attempt lost" % bad)
         intact(w, "during the review", branch)
-        verdict = parse_verdict(rv["text"], nonce) if rv["has_result"] else None
+        verdict = rv["verdict"]
         row["review"] = verdict or "fix-first"
         if verdict is None:
             row["codes"].append("review-unparsed")
@@ -165,7 +174,9 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
         if out_of(w.g(["rev-parse", c1 + "^{tree}"])) != out_of(w.g(["rev-parse", c2 + "^{tree}"])):
             raise Fail("worktree-tampered", "- the tree changed between review and gate: attempt lost")
         with checkout(root, c2, name + "-gate") as gt:
+            row["gate_t0"] = round(time.time(), 3)
             v = gate_verdict(gt.path, base)
+            row["gate_t1"] = round(time.time(), 3)
         row["gate"] = v["verdict"]
         codes = list(v["codes"]) + [c for c in row["codes"] if c not in v["codes"]]
         if v["verdict"] == "pass" and row["review"] == "ship":
