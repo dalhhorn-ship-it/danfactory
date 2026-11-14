@@ -1,5 +1,5 @@
 """Autonomy tab: Issues block (ADR 0008) from the issues/ ledger and its git history, Runner block (ADR 0009) from
-metrics/runner.jsonl and the staging branch. C7 extends it later.
+metrics/runner.jsonl and the staging branch, Learning block (ADR 0010 C7, scripts/learn.py) from the same rows and the gate rows.
 Empty state when there is no ledger or runner activity yet; nothing here ever fails the dashboard build."""
 import html
 import os
@@ -11,6 +11,10 @@ try:  # a project copy without runner.py (or gate.py) still gets the Issues bloc
     import runner as R  # noqa: E402
 except Exception:  # noqa: BLE001
     R = None
+try:  # C7 learning block (ADR 0010); optional like the runner
+    import learn as LN  # noqa: E402
+except Exception:  # noqa: BLE001
+    LN = None
 
 EMPTY = L.EMPTY
 RUNNER_EMPTY = ("No runner activity yet: `python3 scripts/runner.py run --next` after setting factory.json autonomy.enabled "
@@ -35,7 +39,14 @@ def collect(root, base):
         rn = R.summary(root) if R else {"exists": False}
     except Exception as ex:  # noqa: BLE001 - no git, no staging, a broken row: the block is empty, the dashboard still builds
         rn = {"exists": False, "error": str(ex)[:200]}
-    return {"issues": st, "runner": rn}
+    return {"issues": st, "runner": rn, "learning": collect_learning(root)}
+
+
+def collect_learning(root):
+    try:
+        return LN.analyze(root) if LN else {"exists": False}
+    except Exception as ex:  # noqa: BLE001 - a bad row file must not fail the dashboard build
+        return {"exists": False, "error": str(ex)[:200]}
 
 
 def line(d):
@@ -44,6 +55,9 @@ def line(d):
     if rn.get("exists"):
         run = "; runner: %d fixed in %d attempt(s), $%.2f today of $%.2f%s" % (
             rn["fixed"], rn["attempts"], rn["spend_today"], rn["daily_cap"], ", %d parked" % len(rn["parked"]) if rn["parked"] else "")
+    lrn = d.get("learning") or {}
+    if lrn.get("exists"):
+        run += "; learning: %d candidate rule(s)%s" % (len(lrn["candidates"]), (" (" + ", ".join(c["code"] for c in lrn["candidates"][:3]) + ")") if lrn["candidates"] else "")
     if not st["exists"]:
         return "no issue ledger yet" + run
     old = st["oldest_open"]
@@ -85,8 +99,47 @@ def render_runner(rn):
             '<tbody>%s</tbody></table></div>' % (kv, parked))
 
 
+LEARN_EMPTY = ("No rejection data yet: `python3 scripts/learn.py report` lists recurring failure codes once the runner or the gate "
+               "has recorded rejections (docs/policies/runner.md, Learning).")
+WEEKS = 6
+
+
+def render_learning(ln):
+    """Learning block (C7): codes over time, rework and cost per fixed issue, candidate rules, first-try trend."""
+    if not ln or not ln.get("exists"):
+        return '<div class="card"><h2>Learning</h2><p class="muted">%s</p></div>' % e(LEARN_EMPTY)
+    pct = lambda v: "n/a" if v is None else "%d%%" % round(100 * v)  # noqa: E731
+    num = lambda v, f: "n/a" if v is None else f % v  # noqa: E731
+    facts = [("Rejection codes recorded", ln["rejections"]), ("First-try pass rate", pct(ln["first_try_rate"])),
+             ("Rework per fixed issue", num(ln["rework_per_fixed"], "%.1f")), ("Cost per fixed issue", num(ln["cost_per_fixed"], "$%.2f"))]
+    kv = "".join("<tr><td>%s</td><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts)
+    weeks = list(ln["per_week"])[-WEEKS:]
+    tot = {}
+    for w in weeks:
+        for c, n in ln["per_week"][w].items():
+            tot[c] = tot.get(c, 0) + n
+    codes = sorted(tot, key=lambda c: (-tot[c], c))[:8]
+    codes_t = ('<div class="scroll"><table><thead><tr><th>Week</th>%s</tr></thead><tbody>%s</tbody></table></div>' % (
+        "".join('<th class="mono">%s</th>' % e(c) for c in codes),
+        "".join("<tr><td>%s</td>%s</tr>" % (e(w), "".join("<td>%d</td>" % ln["per_week"][w].get(c, 0) for c in codes)) for w in weeks))
+        if codes else '<p class="muted small">No rejection codes.</p>')
+    trend = "".join("<tr><td>%s</td><td>%d of %d</td><td>%s</td></tr>" % (e(t["week"]), t["passed"], t["issues"], pct(t["rate"]))
+                    for t in ln["first_try"][-WEEKS:]) or '<tr><td colspan="3" class="muted">No attempts yet.</td></tr>'
+    cand = "".join('<tr><td class="mono">%s</td><td>%s</td><td>%d in %d days (%d total)</td><td class="small">%s</td></tr>' % (
+        e(c["code"]), e(c["source"]), c["in_window"], ln["window"], c["total"], e(c["examples"][-1] if c["examples"] else ""))
+        for c in ln["candidates"]) or '<tr><td colspan="4" class="muted">No code recurs %d times in %d days.</td></tr>' % (ln["threshold"], ln["window"])
+    return ('<div class="card"><h2>Learning</h2><table><tbody>%s</tbody></table></div>'
+            '<div class="card"><h2>Failure codes over time</h2>%s</div>'
+            '<div class="card"><h2>First-try pass trend</h2><table><thead><tr><th>Week</th><th>Passed first try</th><th>Rate</th></tr></thead>'
+            '<tbody>%s</tbody></table></div>'
+            '<div class="card"><h2>Candidate rules</h2><table><thead><tr><th>Code</th><th>Source</th><th>Recurrence</th><th>Latest example</th></tr></thead>'
+            '<tbody>%s</tbody></table><p class="muted small">Suggestions only: a rule needs a PRD (metrics/LEARN.md has the examples).</p></div>'
+            % (kv, codes_t, trend, cand))
+
+
 def render(d):
-    return '<div class="stack">%s%s</div>' % (render_issues(d["issues"]), render_runner(d.get("runner") or {"exists": False}))
+    return '<div class="stack">%s%s%s</div>' % (render_issues(d["issues"]), render_runner(d.get("runner") or {"exists": False}),
+                                               render_learning(d.get("learning")))
 
 
 def render_issues(st):

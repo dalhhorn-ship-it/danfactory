@@ -35,7 +35,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-4 Fixer loop with rework (cap 3, 5 USD/day), runner refuses self-written trailers (TD-012), automated second reading (TD-014); pilot 2 on a semver library (docs/specs/gated-autonomy.md, ADR 0009) (L) (after: AUTO-3) #foundation
 - [~] AUTO-5 Release train: staging re-verified as a batch, promotion report, revert branch + issue on a failed smoke; user promotes and pushes (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 - [~] AUTO-6 Parallel fixers (2 to 4, worktrees, merges serialised) and scheduled runs only with the user's standing go (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-5) #foundation
-- [~] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
+- [x] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
 ## Unplanned
 - [~] TD-PILOT Fix pilot 2 debt: TD-017 bootstrap resets template records, TD-018 issue titles, TD-019 runner ratchets the acceptance baseline (S) #debt

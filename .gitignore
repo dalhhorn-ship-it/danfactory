@@ -32,3 +32,4 @@ metrics/ci-runs.json
 metrics/eval-transcripts/
 metrics/gate.local.jsonl
 metrics/guard.local.jsonl
+metrics/LEARN.md
