@@ -97,7 +97,7 @@ def sh(cwd, *a):
 class Env:
     """A temp project with an admitted failing acceptance test and one open issue, plus a fake claude."""
 
-    def __init__(self, plan, autonomy=None, admit=True, issue=True, approved=True):
+    def __init__(self, plan, autonomy=None, admit=True, issue=True, approved=True, tests=None, files=None, fake=None):
         self.root = tempfile.mkdtemp()
         self.bin = tempfile.mkdtemp()
         self.write("factory.json", json.dumps({"autonomy": dict({"enabled": True, "max_attempts": 3, "daily_budget_usd": 5, "run_budget_usd": 2},
@@ -107,7 +107,10 @@ class Env:
             shutil.copy(os.path.join(ROOT, "scripts", f), os.path.join(self.root, "scripts", f))
         self.write("docs/specs/demo.md", PRD % ("approved" if approved else "draft"))
         self.write("textkit/__init__.py", '"""textkit."""\n')
-        self.write("tests/acceptance/demo/test_demo.py", TEST)
+        for rel, text in (tests or {"test_demo.py": TEST}).items():
+            self.write("tests/acceptance/demo/" + rel, text)
+        for rel, text in (files or {}).items():
+            self.write(rel, text)
         self.write(".gitignore", "__pycache__/\n.claude/worktrees/\n")
         sh(self.root, "init", "-q", "-b", "main")
         if admit:
@@ -123,7 +126,7 @@ class Env:
         self.set_plan(plan)
         p = os.path.join(self.bin, "claude")
         with open(p, "w") as fh:
-            fh.write(FAKE)
+            fh.write(fake or FAKE)
         os.chmod(p, os.stat(p).st_mode | stat.S_IEXEC)
 
     def write(self, rel, text):
@@ -1054,6 +1057,238 @@ class Empty(unittest.TestCase):
             self.assertIn("No runner activity yet", runner.human(runner.summary(d)))
         finally:
             shutil.rmtree(d, ignore_errors=True)
+
+
+# ---------------------------------------------------------------- AUTO-6: parallel fixers (ADR 0010 C6)
+
+# A fake claude for concurrent calls: the step comes from the plan entry of the issue id found in the prompt (no shared counter to race
+# on), and every call logs when it started and ended so a test can see the calls overlap.
+_OLD = FAKE[FAKE.index('sp = os.path.join(here, "state.json")'):FAKE.index("import re\ntext_out")]
+_NEW = '''import re as _re, time
+iid = _re.search(r"ISS-\\d{4}", prompt).group(0)
+step = (plan.get(iid) or {}).get(role) or {}
+t0 = time.time()
+time.sleep(step.get("sleep", 0))
+with open(os.path.join(here, "calls.jsonl"), "a") as fh:
+    fh.write(json.dumps({"role": role, "issue": iid, "cwd": os.getcwd(), "t0": t0, "t1": time.time(), "prompt": prompt, "argv": argv}) + "\\n")
+'''
+FAKE_PAR = FAKE.replace(_OLD, _NEW)
+assert FAKE_PAR != FAKE
+
+
+WORDS = {"a": "alpha", "b": "bravo", "c": "charlie"}
+
+
+def par_tests(*names):
+    """One failing test per name; the failure message differs in its words, so the finder files one issue each (not one group)."""
+    return {"test_%s.py" % n: ("import importlib.util\nimport unittest\n\n\nclass T(unittest.TestCase):\n    def test_c1_%s(self):\n"
+                               "        self.assertIsNotNone(importlib.util.find_spec(\"textkit.%s\"), \"%s is missing\")\n") % (n, n, WORDS[n])
+            for n in names}
+
+
+def par_fix(n, extra=None, sleep=0.4, cost=0.1):
+    return {"fixer": {"write": dict({"textkit/%s.py" % n: 'def f():\n    return "%s"\n' % n.upper()}, **(extra or {})), "cost": cost, "sleep": sleep},
+            "review": {"text": SHIP, "cost": 0.05}}
+
+
+class ParEnv(Env):
+    def __init__(self, names=("a", "b", "c"), autonomy=None, **kw):
+        auto = dict({"max_parallel": 4}, **(autonomy or {}))
+        Env.__init__(self, {}, autonomy=auto, tests=par_tests(*names), fake=FAKE_PAR, **kw)
+
+    def plan_for(self, make):
+        """Set the plan from make(name) for every issue; the issue ids exist only after the finder ran."""
+        ids = {}
+        for i in issues.load(self.root):
+            for n in "abc":
+                if any("test_c1_%s" % n in t for t in i["tests"]):
+                    ids[n] = i["id"]
+        self.ids = ids
+        self.set_plan({ids[n]: make(n) for n in ids})
+
+
+class Parallel(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.e = ParEnv()
+        cls.e.plan_for(par_fix)
+        cls.rc, cls.out = cls.e.run("run", "--next", "--parallel", "3")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.e.cleanup()
+
+    def test_three_issues_three_worktrees_one_run(self):  # AC15
+        e = self.e
+        self.assertEqual(self.rc, 0, self.out)
+        self.assertEqual(len(e.ids), 3)
+        fixers = e.calls("fixer")
+        self.assertEqual(len(fixers), 3)
+        cwds = {c["cwd"] for c in fixers}
+        self.assertEqual(len(cwds), 3, "each fixer in its own worktree")
+        for c in cwds:
+            self.assertIn(".claude/worktrees/runner-ISS-", c)
+        for n in "abc":
+            self.assertEqual(e.staged("textkit/%s.py" % n), 'def f():\n    return "%s"\n' % n.upper())
+        self.assertEqual(len(e.staging_files("issues/fixed")), 3)
+        self.assertEqual(e.staging_files("issues/open"), [])
+
+    def test_fixers_really_overlap_in_time(self):
+        spans = sorted((c["t0"], c["t1"]) for c in self.e.calls("fixer"))
+        self.assertLess(spans[1][0], spans[0][1], "second fixer started before the first ended")
+        self.assertLess(spans[2][0], min(s[1] for s in spans[:2]), "third fixer started while the others still ran")
+        par = [r for r in self.e.rows() if r["kind"] == "parallel"]
+        self.assertEqual([(r["workers"], r["max_concurrent"]) for r in par], [(3, 3)])
+
+    def test_merges_are_serial_and_the_later_ones_are_rechecked_against_the_earlier(self):
+        e = self.e
+        merges = sh(e.root, "log", "staging", "--merges", "--reverse", "--format=%H").split()
+        self.assertEqual(len(merges), 3)
+        for prev, cur in zip(merges, merges[1:]):
+            self.assertEqual(subprocess.run(["git", "merge-base", "--is-ancestor", prev, cur], cwd=e.root).returncode, 0,
+                             "each merge builds on the previous one")
+        rows = [r for r in e.rows() if r["kind"] == "attempt"]
+        self.assertEqual([r["outcome"] for r in rows], ["merged"] * 3)
+        regated = [r for r in rows if r.get("regated_on")]
+        self.assertEqual(len(regated), 2, "the first merged on its own base, the other two were re-gated on the tip")
+        tips = {sh(e.root, "rev-parse", "--short=9", m + "^1") for m in merges}
+        self.assertTrue({r["regated_on"] for r in regated} <= tips)
+
+    def test_status_and_clean_up(self):
+        e = self.e
+        st = runner.summary(e.root)["parallel"]
+        self.assertEqual(st, {"runs": 1, "max_concurrent": 3, "stale_after_merge": 0})
+        self.assertIn("up to 3 fixer(s) at once", runner.human(runner.summary(e.root)))
+        self.assertIn("max concurrency 3", tab_autonomy.render(tab_autonomy.collect(e.root, {})))
+        self.assertEqual(sh(e.root, "worktree", "list").count("\n"), 0, "worktrees removed")
+        self.assertEqual(sh(e.root, "branch", "--list", "fix/*"), "", "fix branches deleted after the merge")
+        lines = (e.staged("metrics/runner.jsonl") or "").splitlines()
+        self.assertEqual(len(lines), 4, "3 attempts and the parallel row, none torn")
+        self.assertTrue(all(json.loads(x) for x in lines))
+
+
+BASE_INIT = '"""textkit."""\n' + "".join("# line %d\n" % i for i in range(1, 9))
+
+
+class ParallelConflicts(unittest.TestCase):
+    def _env(self, make):
+        e = ParEnv(names=("a", "b"), autonomy={"max_attempts": 1}, files={"textkit/__init__.py": BASE_INIT})
+        e.plan_for(make)
+        return e
+
+    def test_same_lines_in_both_fixes_second_is_stale_after_merge(self):
+        e = self._env(lambda n: par_fix(n, extra={"textkit/shared.py": "VALUE = %r\n" % n}, sleep=0.2))  # both add the same new file
+        try:
+            rc, out = e.run("run", "--next", "--parallel", "2")
+            self.assertEqual(rc, 1, out)
+            rows = [r for r in e.rows() if r["kind"] == "attempt"]
+            self.assertEqual(sorted(r["outcome"] for r in rows), ["fail", "merged"])
+            bad = [r for r in rows if r["outcome"] == "fail"][0]
+            self.assertIn("stale-after-merge", bad["codes"])
+            self.assertEqual(len(e.staging_files("issues/blocked")), 1, "parked after the attempt cap")
+            self.assertEqual(runner.summary(e.root)["parallel"]["stale_after_merge"], 1)
+            self.assertIn("stale-after-merge", out)
+            self.assertIn(e.staged("textkit/shared.py"), ("VALUE = 'a'\n", "VALUE = 'b'\n"))
+        finally:
+            e.cleanup()
+
+    def test_same_file_different_regions_second_is_rebased_and_regated(self):
+        def make(n):
+            body = {"a": BASE_INIT.replace("# line 1\n", "def fa():\n    return 1\n# line 1\n"),
+                    "b": BASE_INIT + "def fb():\n    return 2\n"}[n]
+            return par_fix(n, extra={"textkit/__init__.py": body}, sleep=0.2)
+        e = self._env(make)
+        try:
+            rc, out = e.run("run", "--next", "--parallel", "2")
+            self.assertEqual(rc, 0, out)
+            merged = e.staged("textkit/__init__.py")
+            self.assertIn("def fa()", merged)
+            self.assertIn("def fb()", merged)
+            rows = [r for r in e.rows() if r["kind"] == "attempt"]
+            self.assertEqual([r["outcome"] for r in rows], ["merged", "merged"])
+            self.assertEqual(sum(1 for r in rows if r.get("regated_on")), 1)
+        finally:
+            e.cleanup()
+
+
+class ParallelBudget(unittest.TestCase):
+    def test_shared_budget_stops_the_third_before_it_pays(self):
+        e = ParEnv(autonomy={"daily_budget_usd": 1.2, "run_budget_usd": 5, "max_attempts": 1})
+        try:
+            e.plan_for(lambda n: par_fix(n, cost=0.2, sleep=0.3))
+            rc, out = e.run("run", "--next", "--parallel", "3")
+            self.assertEqual(rc, 3, out)
+            self.assertEqual(len(e.calls("fixer")), 2, "the 0.5 estimates of two running fixers leave no room for a third")
+            rows = e.rows()
+            stops = [r for r in rows if r["kind"] == "stop"]
+            self.assertEqual(len(stops), 1)
+            self.assertIn("in flight", stops[0]["reason"])
+            self.assertEqual(sum(1 for r in rows if r["kind"] == "attempt" and r["outcome"] == "merged"), 2)
+            self.assertEqual(len(e.staging_files("issues/open")), 1, "the stopped issue stays open")
+        finally:
+            e.cleanup()
+
+
+class ParallelRefusals(unittest.TestCase):
+    def test_flag_limits(self):
+        e, e1, e2 = Env({}, autonomy={"max_parallel": 9}), Env({}, autonomy={"max_parallel": 3}), Env({})
+        try:
+            rc, out = e.run("run", "--next", "--parallel", "5")
+            self.assertEqual(rc, 2)
+            self.assertIn("hard cap 4", out)
+            self.assertEqual(e1.run("run", "--next", "--parallel", "4")[0], 2, "above autonomy.max_parallel")
+            rc, out = e2.run("run", "--next", "--parallel", "2")
+            self.assertEqual(rc, 2, "max_parallel defaults to 1")
+            self.assertIn("autonomy.max_parallel is 1", out)
+            self.assertEqual(e.run("run", "--issue", "ISS-0001", "--parallel", "2")[0], 2)
+            self.assertEqual(e.calls() + e1.calls() + e2.calls(), [])
+        finally:
+            for x in (e, e1, e2):
+                x.cleanup()
+
+    def test_scheduled_is_refused_by_default(self):
+        e = Env({})
+        try:
+            rc, out = e.run("run", "--next", "--scheduled", "--dry-run")
+            self.assertEqual(rc, 2)
+            self.assertIn("autonomy.schedule_ok", out)
+            self.assertEqual(e.calls(), [])
+        finally:
+            e.cleanup()
+
+    def test_scheduled_only_takes_approved_prds_whose_item_is_in_progress(self):
+        e = Env({}, autonomy={"schedule_ok": True})
+
+        def commit(msg):
+            sh(e.root, "add", "-A")
+            sh(e.root, "commit", "-q", "-m", msg)
+        try:
+            self.assertIn("would fix nothing", e.run("run", "--next", "--scheduled", "--dry-run")[1], "no backlog at all")
+            e.write("docs/BACKLOG.md", "# Backlog\n\n- [ ] X-1 Demo\n")
+            commit("todo")
+            self.assertIn("would fix nothing", e.run("run", "--next", "--scheduled", "--dry-run")[1], "item not started")
+            e.write("docs/BACKLOG.md", "# Backlog\n\n- [~] X-1 Demo\n")
+            commit("doing")
+            self.assertIn("would fix ISS-0001", e.run("run", "--next", "--scheduled", "--dry-run")[1])
+            self.assertEqual(e.run("run", "--issue", "ISS-0001", "--scheduled", "--dry-run")[0], 0)
+            e.write("docs/BACKLOG.md", "# Backlog\n\n- [ ] X-1 Demo\n")
+            commit("paused")
+            self.assertEqual(e.run("run", "--issue", "ISS-0001", "--scheduled", "--dry-run")[0], 2, "named issue is held to the same rule")
+        finally:
+            e.cleanup()
+
+    def test_batch_skips_issues_that_share_a_test_or_fingerprint(self):
+        e = ParEnv()
+        try:
+            iss = issues.load(e.root)
+            self.assertEqual(len(runner.pick_batch(e.root, 4)), 3)
+            iss[1]["meta"]["fp"] = iss[0]["meta"]["fp"]
+            iss[2]["tests"] = dict(iss[2]["tests"], **iss[0]["tests"])
+            with mock.patch.object(runner.L, "load", return_value=iss):
+                got = runner.pick_batch(e.root, 3)
+            self.assertEqual([i["id"] for i in got], [iss[0]["id"]])
+        finally:
+            e.cleanup()
 
 
 if __name__ == "__main__":

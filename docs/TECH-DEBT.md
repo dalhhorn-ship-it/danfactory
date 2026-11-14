@@ -5,6 +5,7 @@
 Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area: <area>` under **Open**; move to **Resolved** with `[x]` when paid down. A table with the header `Id | Severity | Item | Where | Size | Source | Status` is read too (severity major counts as high; a status starting with done/resolved/fixed/closed/dropped/wontfix/paid is closed; use `\|` or a code span for a literal pipe).
 
 ## Open
+- [ ] TD-020 Parallel fixers (AUTO-6) are threads in one runner process and gate evaluations are serialised by a lock, because gate.py is driven in-process through patched module globals; the paid fixer and reviewer calls and all sandboxed evaluations are separate child processes and do overlap. A rebased fix keeps the reviewer verdict of its pre-rebase diff (the re-gate checks tests and every gate check, not a second review) — impact: low · effort: M · area: runner — fix: run gate.py as a child process per evaluation, which also removes the lock
 - [ ] TD-016 PRD write guard gaps (GRD-1): Bash-generated writes (`echo > file`, `sed -i`) are not seen by the hook, `factory.json` is always writable (phase changes need it, so `gate.prd` or `phase` can be edited), and `.factory/prd-exemption` lines are self-asserted. The merge gate `prd` check and review catch the first at merge; the others leave a git trace only — impact: medium · effort: M · area: guardrails
 
 ## Resolved

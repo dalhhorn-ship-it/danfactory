@@ -84,6 +84,12 @@ def _bars(trend):
             % (len(trend) * 16, "".join(rects), e(trend[0]["day"]), e(trend[-1]["day"])))
 
 
+def _par(p):
+    if not p.get("runs"):
+        return "none yet (runner.py run --next --parallel N)"
+    return "%d run(s), max concurrency %d, %d stale-after-merge" % (p["runs"], p["max_concurrent"], p["stale_after_merge"])
+
+
 def render_runner(rn):
     if not rn.get("exists"):
         return '<div class="card"><h2>Runner</h2><p class="muted">%s</p></div>' % e(RUNNER_EMPTY)
@@ -94,6 +100,7 @@ def render_runner(rn):
              ("Cost per fixed issue", num(rn["cost_per_fixed"], "$%.2f")),
              ("Spend today / daily cap", "$%.2f / $%.2f" % (rn["spend_today"], rn["daily_cap"])),
              ("%s ahead of %s" % (rn["staging"], rn["prod"]), "n/a" if rn["staging_lead"] is None else "%d commit(s), not promoted" % rn["staging_lead"]),
+             ("Parallel runs", _par(rn.get("parallel") or {})),
              ("Autonomy", "enabled" if rn["enabled"] else "disabled")]
     kv = "".join("<tr><td>%s</td><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts)
     parked = "".join('<tr><td class="mono nowrap">%s</td><td>%s</td><td class="mono">%s</td></tr>' % (

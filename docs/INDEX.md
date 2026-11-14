@@ -31,7 +31,7 @@
 | docs/BACKLOG.md | 56 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
-| docs/TECH-DEBT.md | 28 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
+| docs/TECH-DEBT.md | 29 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
 | docs/decisions/0000-template.md | 15 | Status: proposed \| accepted \| superseded by NNNN · Date: YYYY-MM-DD (add ` · Supersedes:… |
 | docs/decisions/0001-use-danfactory-template.md | 12 | Status: accepted · Date: 2026-11-06 |
 | docs/decisions/0002-prd-approval-gate.md | 16 | Status: accepted · Date: 2026-11-06 |
@@ -61,7 +61,7 @@
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
 | docs/policies/merge-gate.md | 67 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 29 | No feature work starts until the product-manager has written a PRD and the user has… |
-| docs/policies/runner.md | 57 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
+| docs/policies/runner.md | 70 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
 | docs/policies/testing-and-metrics.md | 20 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |

@@ -68,6 +68,8 @@
     "model": "sonnet",
     "review_model": "sonnet",
     "max_turns": 40,
+    "max_parallel": 1,
+    "schedule_ok": false,
     "learn_threshold": 3
   },
   "dashboard": {

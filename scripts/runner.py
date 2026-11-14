@@ -3,6 +3,7 @@
 Design: docs/decisions/0009-fixer-runner.md. Policy: docs/policies/runner.md. PRD: docs/specs/gated-autonomy.md (C4).
 
   runner.py run [--issue ISS-n | --next] [--model M] [--max-attempts N] [--dry-run]   # spends money; you start every run
+  runner.py run --next --parallel N [--scheduled]   # AUTO-6: N fixers (N <= autonomy.max_parallel, cap 4), merges serial
   runner.py status [--json]
   runner.py unpark ISS-n
 
@@ -14,8 +15,12 @@ removed; fail: the next attempt gets the gate's reasons. After the cap the issue
 The budget (autonomy.daily_budget_usd, run_budget_usd) is checked before every paid call, never after. Hardening (ADR 0009): fixer-written
 code runs only in the tree sandbox on a fresh checkout of the commit; the reviewer is read-only in its own checkout. The runner never pushes
 and never touches the production branch. Rows: metrics/runner.jsonl, committed on staging.
+Parallel (AUTO-6, ADR 0010 C6): one worktree and fixer thread per issue (the paid work is separate claude processes), merges to staging
+one at a time under a lock, each re-gated against the CURRENT staging tip (one rebase-and-regate, else `stale-after-merge`), one shared
+budget (daily cap against all spend plus in-flight estimates), `--scheduled` only with autonomy.schedule_ok.
 Exit codes: 0 fixed and merged (or nothing to do), 1 parked, 2 refused or usage error, 3 stopped by a budget cap."""
 import argparse
+import concurrent.futures
 import contextlib
 import datetime
 import io
@@ -27,6 +32,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +46,11 @@ BASELINE = "metrics/acceptance-baseline.json"
 
 DEFAULTS = {"enabled": False, "staging_branch": "staging", "max_attempts": 3, "daily_budget_usd": 5, "run_budget_usd": 2,
             "model": "sonnet", "review_model": "sonnet", "max_turns": 40, "timeout_s": 900, "review_turns": 12,
-            "attempt_estimate_usd": 0.5}
+            "attempt_estimate_usd": 0.5, "max_parallel": 1, "schedule_ok": False}
+PARALLEL_CAP = 4  # hard cap whatever autonomy.max_parallel says
+# One lock per shared resource of a parallel run: git worktree add/remove (they race on .git/worktrees), the in-process gate (it patches
+# module globals), the staging worktree (merges, ledger, commits) and the runner rows file.
+WT_LOCK, GATE_LOCK, MERGE_LOCK, ROWS_LOCK = threading.RLock(), threading.RLock(), threading.RLock(), threading.RLock()
 # Paths a fixer may never change, on top of gate.protected: the gate and the machinery that judges or records its work.
 RUNNER_PROTECTED = ["metrics/acceptance-baseline.json", "factory.json", ".claude/**", ".github/**", "issues/**", "metrics/**",
                     "scripts/gate.py", "scripts/acceptance.py", "scripts/runner.py", "scripts/sandbox.py", "scripts/issues.py",
@@ -145,22 +155,24 @@ def estimate(rows, cfg):
     return float(cfg.get("attempt_estimate_usd", DEFAULTS["attempt_estimate_usd"]))
 
 
-def remaining(rows, run_id, cfg):
-    """USD left under the tighter of the daily and the run cap (may be negative)."""
+def remaining(rows, run_id, cfg, extra=0.0):
+    """USD left under the tighter of the daily and the run cap (may be negative). `extra` = estimates of other fixers' running calls."""
     run = spent([r for r in rows if r.get("run") == run_id])
-    return min(float(cfg["daily_budget_usd"]) - spent(rows, today()), float(cfg["run_budget_usd"]) - run)
+    return min(float(cfg["daily_budget_usd"]) - spent(rows, today()), float(cfg["run_budget_usd"]) - run) - extra
 
 
-def budget_stop(rows, run_id, cfg):
-    """Why the next attempt may not start, or None. Estimate of the next attempt = estimate()."""
+def budget_stop(rows, run_id, cfg, extra=0.0):
+    """Why the next attempt may not start, or None. Estimate of the next attempt = estimate(). `extra` is the sum of the estimates of
+    attempts running in parallel that have not booked their cost yet (AUTO-6: one shared budget)."""
     est = estimate(rows, cfg)
     day = spent(rows, today())
     run = spent([r for r in rows if r.get("run") == run_id])
     dcap, rcap = float(cfg["daily_budget_usd"]), float(cfg["run_budget_usd"])
-    if day >= dcap or day + est > dcap:
-        return "daily budget: $%.2f spent today plus ~$%.2f for the next attempt would pass the $%.2f cap" % (day, est, dcap)
-    if run >= rcap or run + est > rcap:
-        return "run budget: $%.2f spent in this run plus ~$%.2f for the next attempt would pass the $%.2f cap" % (run, est, rcap)
+    run_note = " plus ~$%.2f in flight" % extra if extra else ""
+    if day >= dcap or day + extra + est > dcap:
+        return "daily budget: $%.2f spent today%s plus ~$%.2f for the next attempt would pass the $%.2f cap" % (day, run_note, est, dcap)
+    if run >= rcap or run + extra + est > rcap:
+        return "run budget: $%.2f spent in this run%s plus ~$%.2f for the next attempt would pass the $%.2f cap" % (run, run_note, est, rcap)
     return None
 
 
@@ -206,7 +218,15 @@ def summary(root):
             "rework_per_fixed": (sum(len(g) - 1 for g in fixed) / len(fixed)) if fixed else None,
             "cost_per_fixed": (spend / len(fixed)) if fixed else None, "spend_total": round(spend, 4),
             "spend_today": round(spent(rows, today()), 4), "daily_cap": float(cfg["daily_budget_usd"]),
-            "parked": parked, "staging": cfg["staging_branch"], "prod": prod, "staging_lead": staging_lead(root, cfg, prod)}
+            "parked": parked, "staging": cfg["staging_branch"], "prod": prod, "staging_lead": staging_lead(root, cfg, prod),
+            "parallel": parallel_numbers(rows)}
+
+
+def parallel_numbers(rows):
+    """AUTO-6: parallel runs, the highest number of fixers seen working at once, attempts that ended `stale-after-merge`."""
+    par = [r for r in rows if r.get("kind") == "parallel"]
+    return {"runs": len(par), "max_concurrent": max([int(r.get("max_concurrent") or 0) for r in par] or [0]),
+            "stale_after_merge": sum(1 for r in rows if r.get("kind") == "attempt" and "stale-after-merge" in (r.get("codes") or []))}
 
 
 def human(st):
@@ -220,6 +240,9 @@ def human(st):
            "spend today $%.2f of $%.2f; autonomy %s" % (st["spend_today"], st["daily_cap"], "enabled" if st["enabled"] else "disabled"),
            "%s is %s commit(s) ahead of %s (promote it yourself, docs/policies/runner.md)"
            % (st["staging"], "?" if st["staging_lead"] is None else st["staging_lead"], st["prod"])]
+    pl = st.get("parallel") or {}
+    if pl.get("runs"):
+        out.append("parallel: %d run(s), up to %d fixer(s) at once, %d attempt(s) stale-after-merge" % (pl["runs"], pl["max_concurrent"], pl["stale_after_merge"]))
     for p in st["parked"]:
         out.append("parked %s: %s [%s]" % (p["id"], p["title"], ", ".join(p["codes"]) or "no codes"))
     return "\n".join(out)
@@ -250,10 +273,11 @@ def wt_dir(root, name):
 
 
 def remove_wt(root, path):
-    if os.path.exists(path):
-        git(["worktree", "remove", "--force", path], root, check=False)
-        shutil.rmtree(path, ignore_errors=True)
-    git(["worktree", "prune"], root, check=False)
+    with WT_LOCK:
+        if os.path.exists(path):
+            git(["worktree", "remove", "--force", path], root, check=False)
+            shutil.rmtree(path, ignore_errors=True)
+        git(["worktree", "prune"], root, check=False)
 
 
 def ensure_staging(root, cfg):
@@ -337,7 +361,8 @@ def checkout(root, commit, name):
     path = wt_dir(root, name)
     remove_wt(root, path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    git(["worktree", "add", "-q", "--detach", path, commit], root)
+    with WT_LOCK:
+        git(["worktree", "add", "-q", "--detach", path, commit], root)
     try:
         w = WT(root, path)
         w.commit = commit
@@ -503,12 +528,12 @@ def call_claude(prompt, model, turns, cwd, cfg, tools, max_budget=None, est=0.0,
 def gate_verdict(path, base):
     """gate.py in-process with review forced to required, in a fresh checkout; the gate module is the runner's own, not the
     fixer's copy, and everything it executes from the checkout runs in the tree sandbox (no network, scrubbed environment)."""
-    orig = gate.config
+    with GATE_LOCK, S.TreeSandbox(path) as ts:  # the lock: the patched module globals are shared by the parallel fixers
+        orig = gate.config
 
-    def cfg(root):
-        f, g = orig(root)
-        return f, dict(g, review="required")
-    with S.TreeSandbox(path) as ts:
+        def cfg(root):
+            f, g = orig(root)
+            return f, dict(g, review="required")
         gate.config, gate.WRAP = cfg, ts.gate_wrap
         try:
             return gate.run_gate(path, base)
@@ -525,7 +550,7 @@ def base_problem(root, swt, run_id):
     tip = out_of(git(["rev-parse", "HEAD"], swt)).strip()
     with checkout(root, tip, run_id + "-base") as bt:
         orig = gate.config
-        with S.TreeSandbox(bt.path) as ts:
+        with GATE_LOCK, S.TreeSandbox(bt.path) as ts:
             gate.WRAP = ts.gate_wrap
             try:
                 v = gate.run_gate(bt.path, tip, only=BASE_CHECKS)
@@ -545,8 +570,9 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
     wtp, branch = wt_dir(root, name), "fix/" + iss["id"]
     remove_wt(root, wtp)
     os.makedirs(os.path.dirname(wtp), exist_ok=True)
-    base = out_of(git(["rev-parse", staging], root))
-    git(["worktree", "add", "-q", "-B", branch, wtp, staging], root)
+    with WT_LOCK:
+        base = out_of(git(["rev-parse", staging], root))
+        git(["worktree", "add", "-q", "-B", branch, wtp, staging], root)
     w = WT(root, wtp)
     row = {"ts": now(), "kind": "attempt", "run": run_id, "issue": iss["id"], "attempt": k, "model": model, "review_model": review_model,
            "cost_usd": 0.0, "fixer_cost_usd": 0.0, "review_cost_usd": 0.0, "tokens_in": 0, "tokens_cache": 0, "tokens_out": 0,
@@ -672,9 +698,44 @@ def preconditions(root, cfg, dry=False):
         raise Refuse("the working tree is not clean: commit or stash first (the runner builds on committed state)")
 
 
-def pick_issue(ledger_root, ref, nxt):
+ITEM_RE = re.compile(r"[A-Z][A-Z0-9]*-\d+")
+
+
+def in_progress_slugs(root):
+    """Slugs of PRDs that are approved AND whose backlog item (the `Backlog:` field of the PRD header) is `[~]` in docs/BACKLOG.md."""
+    try:
+        with open(os.path.join(root, "docs", "BACKLOG.md"), encoding="utf-8") as fh:
+            doing = set(re.findall(r"(?m)^\s*[-*]\s*\[~\]\s+([A-Z][A-Z0-9]*-\d+)\b", fh.read()))
+        from obs import sources
+        return {p["slug"] for p in sources.prds(root) if p["status"] == "approved" and doing & set(ITEM_RE.findall(p["backlog"]))}
+    except Exception:  # noqa: BLE001 - nothing readable: nothing is in progress, so a scheduled run does nothing
+        return set()
+
+
+def approved_for(root, scheduled=False):
+    ok = gate.approved_slugs(root)
+    return ok & in_progress_slugs(root) if scheduled else ok
+
+
+def pick_batch(root, n, scheduled=False):
+    """Up to n open issues of approved PRDs that share no failing test and no fingerprint (two such issues would edit the same thing)."""
+    ok, chosen, tests, fps = approved_for(root, scheduled), [], set(), set()
+    for iss in L.load(root):
+        if iss["state"] != "open" or iss["meta"]["prd"] not in ok or not iss["tests"]:
+            continue
+        if tests & set(iss["tests"]) or iss["meta"]["fp"] in fps:
+            continue
+        chosen.append(iss)
+        tests |= set(iss["tests"])
+        fps.add(iss["meta"]["fp"])
+        if len(chosen) >= n:
+            break
+    return chosen
+
+
+def pick_issue(ledger_root, ref, nxt, scheduled=False):
     issues = L.load(ledger_root)
-    approved = gate.approved_slugs(ledger_root)
+    approved = approved_for(ledger_root, scheduled)
     if ref:
         iss = L._get(issues, ref)
         if iss["state"] == "blocked":
@@ -682,8 +743,8 @@ def pick_issue(ledger_root, ref, nxt):
         if iss["state"] != "open":
             raise Refuse("%s is %s, not open" % (iss["id"], iss["state"]))
         if iss["meta"]["prd"] not in approved:
-            raise Refuse("the PRD of %s (%s) is not approved: no build without an approved PRD (docs/policies/prd-approval.md)"
-                         % (iss["id"], iss["meta"]["prd"]))
+            raise Refuse("the PRD of %s (%s) is not approved%s: no build without an approved PRD (docs/policies/prd-approval.md)"
+                         % (iss["id"], iss["meta"]["prd"], " and in progress ([~] in docs/BACKLOG.md), which a scheduled run needs" if scheduled else ""))
         return iss
     for iss in issues:
         if iss["state"] == "open" and iss["meta"]["prd"] in approved and iss["tests"]:
@@ -713,13 +774,28 @@ def cmd_run(a, root):
         raise Refuse("autonomy.max_attempts must be a whole number of at least 1 (got %r)" % (cfg["max_attempts"],))
     if not a.issue and not a.next:
         raise Refuse("give --issue ISS-n or --next")
+    sched, par = bool(getattr(a, "scheduled", False)), getattr(a, "parallel", 1)
+    if sched and cfg.get("schedule_ok") is not True:
+        raise Refuse("--scheduled needs your standing go: set factory.json autonomy.schedule_ok to true (it is false by default; docs/policies/runner.md)")
+    try:
+        top = min(PARALLEL_CAP, int(cfg["max_parallel"]))
+    except (TypeError, ValueError):
+        top = 1
+    if not isinstance(par, int) or par < 1 or par > max(top, 1):
+        raise Refuse("--parallel %s is outside 1..%d (autonomy.max_parallel is %s, hard cap %d)" % (par, max(top, 1), cfg["max_parallel"], PARALLEL_CAP))
+    if par > 1 and not a.next:
+        raise Refuse("--parallel picks its own issues: use --next, not --issue")
     preconditions(root, cfg, a.dry_run)
     if a.dry_run:
-        iss = pick_issue(root, a.issue, a.next)
+        if par > 1:
+            batch = pick_batch(root, par, sched)
+            what = ", ".join(i["id"] for i in batch) or "nothing (no open issue with an approved PRD)"
+        else:
+            iss = pick_issue(root, a.issue, a.next, sched)
+            what = iss["id"] if iss else "nothing (no open issue with an approved PRD)"
         rows = load_rows(root, cfg["staging_branch"])
-        print("runner (dry run): would fix %s, up to %d attempt(s), model %s; spent today $%.2f of $%.2f; %s"
-              % (iss["id"] if iss else "nothing (no open issue with an approved PRD)", cap, cfg["model"], spent(rows, today()),
-                 float(cfg["daily_budget_usd"]), budget_stop(rows, "dry-run", cfg) or "budget ok"))
+        print("runner (dry run): would fix %s, up to %d attempt(s) each, model %s; spent today $%.2f of $%.2f; %s"
+              % (what, cap, cfg["model"], spent(rows, today()), float(cfg["daily_budget_usd"]), budget_stop(rows, "dry-run", cfg) or "budget ok"))
         return 0
     lock = os.path.join(root, ".claude", "worktrees", ".runner.lock")
     os.makedirs(os.path.dirname(lock), exist_ok=True)
@@ -728,10 +804,12 @@ def cmd_run(a, root):
         acquire_lock(lock)
         held = True
         try:  # refuse before anything is created when the root's own ledger already shows the problem
-            pick_issue(root, a.issue, a.next)
+            pick_issue(root, a.issue, a.next, sched)
         except L.Usage:
             pass  # the issue may exist on staging only; the staging ledger decides
         swt, temp = ensure_staging(root, cfg)
+        if par > 1:
+            return run_parallel(a, root, cfg, swt, cap, par, sched)
         return run_issue(a, root, cfg, swt, cap)
     finally:
         if swt and temp:
@@ -787,7 +865,7 @@ def acquire_lock(lock):
 
 def run_issue(a, root, cfg, swt, cap):
     staging = cfg["staging_branch"]
-    iss = pick_issue(swt, a.issue, a.next)
+    iss = pick_issue(swt, a.issue, a.next, bool(getattr(a, "scheduled", False)))
     if iss is None:
         print("runner: no open issue with an approved PRD: nothing to do")
         return 0
@@ -852,6 +930,172 @@ def run_issue(a, root, cfg, swt, cap):
         remove_wt(root, wt_dir(root, "runner-" + iss["id"]))
         commit_ledger(swt, "runner: %s %s (run %s)\n\nRefs: %s\nRunner: %s" % (
             iss["id"], "stopped by a budget cap" if stop else "parked" if not merged else "rows", run_id, iss["id"], run_id))
+
+
+# ---------------------------------------------------------------- parallel fixers (AUTO-6, ADR 0010 C6)
+
+class Shared:
+    """Budget and rows shared by the parallel fixers. One lock: the daily cap is checked against all spend booked so far plus the
+    estimate of every attempt still running, so the fixers cannot together pass the cap; rows are appended one at a time."""
+
+    def __init__(self, swt, cfg, run_id):
+        self.swt, self.cfg, self.run_id = swt, cfg, run_id
+        self.lock = threading.RLock()
+        self.inflight, self.peak = {}, 0
+
+    def _others(self, key):
+        return sum(v for k, v in self.inflight.items() if k != key)
+
+    def begin(self, key):
+        """(reason to stop or None, estimate). On success the attempt's estimate counts against everybody else's budget."""
+        with self.lock:
+            rows = load_rows(self.swt)
+            est = estimate(rows, self.cfg)
+            stop = budget_stop(rows, self.run_id, self.cfg, extra=self._others(key))
+            if not stop:
+                self.inflight[key] = est
+                self.peak = max(self.peak, len(self.inflight))
+            return stop, est
+
+    def left(self, key):
+        with self.lock:
+            return remaining(load_rows(self.swt), self.run_id, self.cfg, extra=self._others(key))
+
+    def append(self, row):
+        with self.lock, ROWS_LOCK:
+            S.append_row(rows_path(self.swt), row)
+
+    def end(self, key, row=None):
+        """Book the attempt (its row) and drop its in-flight estimate in one step, so the cost is never counted twice or not at all."""
+        with self.lock:
+            if row is not None:
+                self.append(row)
+            self.inflight.pop(key, None)
+
+
+def land(root, swt, iss, row, staging):
+    """Under MERGE_LOCK: merge the passing fix into staging, re-gated against the CURRENT tip first. None when merged, else the
+    reason it became a failed attempt (`stale-after-merge`). The fix was gated against the tip it started from; when staging moved
+    since, the fix is rebased onto the tip once and its tests and the gate run again on a fresh checkout of the result."""
+    name, branch = "runner-" + iss["id"], "fix/" + iss["id"]
+    sha = out_of(git(["rev-parse", "refs/heads/" + branch], root))
+    tip = out_of(git(["rev-parse", "HEAD"], swt))
+    if git(["merge-base", "--is-ancestor", tip, sha], root, check=False).returncode != 0:
+        row["regated_on"] = tip[:9]
+        try:
+            with checkout(root, sha, name + "-rebase") as rb:
+                r = rb.g(["rebase", tip], check=False)
+                if r.returncode != 0:
+                    rb.g(["rebase", "--abort"], check=False)
+                    return "- staging moved while this fix was running and the fix conflicts with it (rebase failed): " + " ".join((r.stderr or r.stdout).split())[:200]
+                new = rb.head()
+            with checkout(root, new, name + "-retests") as t, S.TreeSandbox(t.path) as ts:
+                tests, _adm = L.results(t.path, None, env=ts.acceptance_env())
+            still = sorted(x for x in iss["tests"] if tests.get(x, {}).get("status") != "pass")
+            if still:
+                return "- after rebasing onto the new staging tip the issue tests fail: %s" % ", ".join(still[:5])
+            with checkout(root, new, name + "-regate") as gt:
+                v = gate_verdict(gt.path, tip)
+            if v["verdict"] != "pass":
+                return "- after rebasing onto the new staging tip the gate fails:\n" + "\n".join(gate_reasons(v))
+            sha = new
+        except (Fail, L.Usage, S.SandboxUnavailable) as ex:
+            return "- the re-check against the new staging tip did not run: %s" % str(ex)[:200]
+    m = git(["merge", "--no-ff", "-q", "-m", "runner: merge fix/%s (%s)\n\nRefs: %s\nRunner: %s" % (iss["id"], iss["title"][:60], iss["id"], row["run"]), sha], swt, check=False)
+    if m.returncode != 0:
+        git(["merge", "--abort"], swt, check=False)
+        return "- merge into %s failed: %s" % (staging, " ".join((m.stderr or m.stdout).split())[:200])
+    return None
+
+
+def fix_one(sh, root, cfg, swt, iss, cap):
+    """One fixer thread: up to `cap` attempts for one issue. Returns (issue id, outcome: merged|parked|stopped, message)."""
+    key, staging, run_id = iss["id"], cfg["staging_branch"], sh.run_id
+    prd, mine, prev, stop = iss["meta"]["prd"], [], [], None
+    try:
+        for k in range(1, cap + 1):
+            stop, est = sh.begin(key)
+            if stop:
+                with MERGE_LOCK:
+                    sh.append({"ts": now(), "kind": "stop", "run": run_id, "issue": key, "attempt": k, "cost_usd": 0, "reason": stop})
+                break
+            row = None
+            try:
+                row, reasons = attempt(root, cfg, iss, prd, run_id, k, prev, cfg["model"], cfg["review_model"], staging, lambda: sh.left(key), est)
+                if row["outcome"] == "pass":
+                    with MERGE_LOCK:
+                        why = land(root, swt, iss, row, staging)
+                        if why:
+                            row["outcome"], row["codes"] = "fail", row["codes"] + ["stale-after-merge"]
+                            row["detail"] = why[:1000]
+                            reasons = [why]
+                            sh.end(key, row)
+                        else:
+                            row["outcome"] = "merged"
+                            sh.end(key, row)
+                            remove_wt(root, wt_dir(root, "runner-" + key))
+                            git(["branch", "-q", "-D", "fix/" + key], root, check=False)
+                            sync_ledger(root, swt, run_id)
+                            commit_ledger(swt, "runner: %s fixed (run %s)\n\nRefs: %s\nRunner: %s" % (key, run_id, key, run_id))
+                else:
+                    sh.end(key, row)
+            finally:
+                sh.end(key)  # a crash must not leave an estimate in flight (no-op when the row was booked)
+            mine.append(row)
+            if "budget-stop" in row["codes"]:
+                stop = reasons[0]
+                with MERGE_LOCK:
+                    sh.append({"ts": now(), "kind": "stop", "run": run_id, "issue": key, "attempt": k, "cost_usd": 0, "reason": stop})
+                break
+            if row["outcome"] == "merged":
+                return key, "merged", "attempt %d: merged into %s ($%.2f)" % (k, staging, row["cost_usd"])
+            prev = reasons
+        if stop:
+            return key, "stopped", "stopped by a budget cap: " + stop
+        with MERGE_LOCK:
+            sh.append({"ts": now(), "kind": "park", "run": run_id, "issue": key, "attempt": len(mine), "cost_usd": 0,
+                       "codes": mine[-1]["codes"] if mine else []})
+            L.cmd_block(swt, key, attempt_log(run_id, cfg["model"], mine) + ("\n\nLast gate reasons:\n" + "\n".join(prev) if prev else ""))
+        return key, "parked", "parked in issues/blocked/ after %d attempt(s) (codes %s; branch fix/%s kept)" % (len(mine), ",".join(mine[-1]["codes"]) or "-", key)
+    finally:
+        remove_wt(root, wt_dir(root, "runner-" + key))
+        with MERGE_LOCK:
+            commit_ledger(swt, "runner: %s %s (run %s)\n\nRefs: %s\nRunner: %s" % (key, "rows", run_id, key, run_id))
+
+
+def run_parallel(a, root, cfg, swt, cap, n, scheduled):
+    """`run --next --parallel N`: N fixers on issues that share no failing test or fingerprint; merges are serial."""
+    staging = cfg["staging_branch"]
+    batch = pick_batch(swt, n, scheduled)
+    if not batch:
+        print("runner: no open issue with an approved PRD%s: nothing to do" % (" that is in progress ([~])" if scheduled else ""))
+        return 0
+    run_id = "%s-par%d" % (datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ"), len(batch))
+    print("runner: run %s, %d fixer(s) in parallel on %s, model %s, up to %d attempt(s) each, staging %s"
+          % (run_id, len(batch), ", ".join(i["id"] for i in batch), cfg["model"], cap, staging))
+    sick = base_problem(root, swt, run_id)
+    if sick:
+        print("runner: refused before any paid call: the staging base already fails the gate: %s" % sick)
+        S.append_row(rows_path(swt), {"ts": now(), "kind": "base-unhealthy", "run": run_id, "issue": ",".join(i["id"] for i in batch),
+                                      "cost_usd": 0, "detail": sick[:1000]})
+        return 1
+    sh = Shared(swt, cfg, run_id)
+    res = []
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(batch)) as ex:
+            futs = [ex.submit(fix_one, sh, root, cfg, swt, iss, cap) for iss in batch]
+            for f in futs:
+                res.append(f.result())
+    finally:
+        sh.append({"ts": now(), "kind": "parallel", "run": run_id, "workers": len(batch), "max_concurrent": sh.peak, "cost_usd": 0,
+                   "issues": [i["id"] for i in batch]})
+        with MERGE_LOCK:
+            commit_ledger(swt, "runner: parallel run %s\n\nRefs: %s\nRunner: %s" % (run_id, batch[0]["id"], run_id))
+    for key, outcome, msg in res:
+        print("runner: %s %s" % (key, msg))
+    outs = {r[1] for r in res}
+    print("runner: parallel run done: %s (max %d fixer(s) at once; nothing pushed, nothing promoted)" % (", ".join("%s %s" % (r[0], r[1]) for r in res), sh.peak))
+    return 3 if "stopped" in outs else 1 if "parked" in outs else 0
 
 
 def sync_ledger(root, swt, run_id):
@@ -933,6 +1177,8 @@ def main(argv=None, root=None):
     s.add_argument("--model")
     s.add_argument("--max-attempts", type=int)
     s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--parallel", type=int, default=1, metavar="N")
+    s.add_argument("--scheduled", action="store_true")
     s = sub.add_parser("status")
     s.add_argument("--json", action="store_true")
     s = sub.add_parser("unpark")
