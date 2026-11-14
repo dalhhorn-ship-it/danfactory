@@ -96,7 +96,8 @@ class Verdict(Base):
     def test_cli_runs_as_script_and_writes_summary(self):
         r = self.repo()
         os.makedirs(os.path.join(r.root, "scripts"))
-        shutil.copy(os.path.join(ROOT, "scripts", "gate.py"), os.path.join(r.root, "scripts", "gate.py"))
+        for part in ("gate.py", "gate_checks.py"):
+            shutil.copy(os.path.join(ROOT, "scripts", part), os.path.join(r.root, "scripts", part))
         summ = os.path.join(r.root, "summary.md")
         p = subprocess.run([sys.executable, "scripts/gate.py", "--base", "", "--summary", summ, "--no-record"], cwd=r.root,
                            capture_output=True, text=True)
@@ -492,8 +493,10 @@ class Security(Base):
         self.assertEqual(r.check("security")["codes"], ["secret-in-diff"])
 
     def test_gate_source_has_no_findings_itself(self):
-        with open(os.path.join(ROOT, "scripts", "gate.py"), encoding="utf-8") as fh:
-            lines = [("scripts/gate.py", i + 1, l) for i, l in enumerate(fh.read().splitlines())]
+        lines = []
+        for part in ("gate.py", "gate_checks.py"):  # the secret patterns moved to gate_checks.py (SIZE-3)
+            with open(os.path.join(ROOT, "scripts", part), encoding="utf-8") as fh:
+                lines += [("scripts/" + part, i + 1, l) for i, l in enumerate(fh.read().splitlines())]
         self.assertEqual(gate.scan(lines, []), [])
 
 

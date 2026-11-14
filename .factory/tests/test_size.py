@@ -200,13 +200,12 @@ def in_template_checkout():
 
 @unittest.skipUnless(in_template_checkout(), "needs the template git checkout")
 class TestOnThisRepo(unittest.TestCase):
-    def test_criterion_1_flags_the_known_big_files(self):
+    def test_criterion_1_and_9_no_product_file_is_over_the_max(self):
+        """Criterion 1 flagged the five big files; the SIZE-3 splits (criterion 9) leave none over file_lines_max."""
         d = size.collect(ROOT)
-        flagged = {f["subject"]: f for f in d["flags"] if f["kind"].startswith("file")}
-        self.assertEqual(flagged["scripts/runner.py"]["kind"], "file-over-size")
-        self.assertIn("scripts/runner.py", tab_hotspots.render_size(d))
-        for p in ("scripts/acceptance.py", "scripts/gate.py", "scripts/dashboard.py", ".claude/hooks/guard_bash_policy.py"):
-            self.assertIn(p, flagged)
+        over = [f["subject"] for f in d["flags"] if f["kind"] == "file-over-size"]
+        self.assertEqual(over, [])
+        self.assertIn("Size", tab_hotspots.render_size(d))
         if d["growth"]["30"]:
             self.assertTrue(any(f["kind"] == "size-growth" for f in d["flags"]))
 
