@@ -28,7 +28,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 55 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 56 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 28 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
@@ -42,6 +42,7 @@
 | docs/decisions/0007-merge-gate-and-acceptance-suite.md | 60 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (slice A: C1, C2) |
 | docs/decisions/0008-issue-ledger-and-finder.md | 33 | Status: accepted · Date: 2026-11-12 · PRD: docs/specs/gated-autonomy.md (C3, step 3,… |
 | docs/decisions/0009-fixer-runner.md | 82 | Status: accepted · Date: 2026-11-13 · PRD: docs/specs/gated-autonomy.md (C4; criteria 8,… |
+| docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/gated-autonomy.md (C5, C6, C7;… |
 | docs/operating-model/AGENT-ROUTING.md | 86 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
 | docs/operating-model/LEARNINGS.md | 56 | Append-only log written by `retro`. Each entry tags path(s) and a type; `[upstream]`… |

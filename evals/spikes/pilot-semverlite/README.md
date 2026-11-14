@@ -24,3 +24,10 @@ Independent check after the merge: 11/11 acceptance tests pass; the spec's prece
 
 Lesson: the runner now records the full failure reason per attempt (`detail`) and refuses on an unhealthy base, so a failure like these costs nothing to diagnose.
 Total: 3.01 USD of the 5 USD daily cap; useful work 0.29 USD.
+
+## The whole pilot repo
+`pilot-semverlite.bundle` holds every branch and commit (main, staging with the fixer's merge, the fix branch). Restore and push it to a repo of your own:
+```
+git clone evals/spikes/pilot-semverlite/pilot-semverlite.bundle semverlite
+cd semverlite && git remote set-url origin <your-new-repo-url> && git push origin main staging
+```
