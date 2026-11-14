@@ -58,6 +58,17 @@ A, B, C = "textkit/test_a::A.test_one", "textkit/test_a::A.test_two", "textkit/t
 
 
 class Find(unittest.TestCase):
+    def test_title_keeps_identifiers_and_fingerprint_is_stable(self):
+        msg = "AttributeError: module 'semverlite' has no attribute 'parse'"
+        self.assertEqual(issues.title_of(msg), msg)
+        t = {"id": "a/m::C.t", "message": msg, "where": "x.py:3:f"}
+        # pinned: fingerprints of existing issues must not change (TD-018)
+        self.assertEqual(issues.fingerprint(t), "1429afad32e4")
+        self.assertEqual(issues.fingerprint(dict(t, message="AssertionError: 3 != 4")), "9fc648db16fb")
+        d = project()
+        run(d, [T(A, message=msg)])
+        self.assertIn("module 'semverlite' has no attribute 'parse'", read(d, "open").splitlines()[0])
+
     def test_same_error_and_frame_is_one_issue(self):
         d = project()
         run(d, [T(A), T(B, message="ImportError: cannot import name 'wrap' from 'textkit'")])

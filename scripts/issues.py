@@ -65,6 +65,14 @@ def frame(where):
     return parts[0] if parts else ""
 
 
+def title_of(msg):
+    """Readable title: exception type and message with identifiers kept (only the fingerprint masks them)."""
+    first = (msg or "").strip().splitlines()[0] if (msg or "").strip() else ""
+    m = EXC_RE.match(first)
+    body = " ".join((first[m.end():].lstrip(": ") if m else first).split())
+    return ((m.group(1) + ": " + body) if m else body)[:90]
+
+
 def fingerprint(test):
     etype, body = normalise(test.get("message"))
     raw = "\x1f".join((slug_of(test["id"]), etype, body, frame(test.get("where"))))
@@ -261,8 +269,7 @@ def cmd_find(root, tests, admitted):
         num = max([_next_num(root, issues)] + [i["num"] + 1 for i in new_issues])
         first = g[0]["id"]
         slug = _slugify("%s-%s" % (slug_of(first) or "issue", first.split("::")[-1].split(".")[-1]))
-        etype, body = normalise(g[0]["message"])
-        title = (etype + ": " + body if etype else body or g[0]["message"] or first)[:90]
+        title = title_of(g[0]["message"]) or first[:90]
         iss = {"num": num, "id": "ISS-%04d" % num, "slug": slug, "state": "open", "path": "", "title": title,
                "meta": {"status": "open", "prd": slug_of(first) or "-", "item": "-", "fp": fp, "opened": _today(),
                         "updated": _today(), "fixed": "-"},
