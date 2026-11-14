@@ -7,9 +7,11 @@ Question (docs/specs/trust-hardening.md, risk 1): can an approval given in Claud
 |---|---|---|---|
 | 1 | Does a hook see the answer to a button dialog? | **Yes.** `PostToolUse` for `AskUserQuestion` carries `tool_input.answers` with the option the user tapped, plus `session_id`, `prompt_id`, `tool_use_id`, `transcript_path`, `permission_mode`. `PermissionRequest` and `Notification` fire while the dialog is open. | Tap "Button for both" at 09:37:30 arrived in the probe row. |
 | 2 | Can the agent pre-fill the answer? | **No.** A call that passed its own `answers` ("FORGED-BY-AGENT") had the field removed before `PreToolUse`; the dialog was still shown and `PostToolUse` held the user's real tap. | Rows 09:37:50 to 09:38:11: no `answers` at PreToolUse or PermissionRequest, the real one at PostToolUse. |
-| 3 | Can a hook tell the user's typing from automated turns? | **Yes, through the session log.** Every user-type row in the transcript carries `turnOrigin` (`human`, `task_notification`, `peer`) and `promptSource` (`sdk` for typed, `system` for automated); hook input carries the same `prompt_id`. `UserPromptSubmit` also fires on automated turns, so the prompt text alone is not enough. | Transcript of this session: 5 typed prompts `human`/`sdk`, 6 automated `peer` or `task_notification`/`system`. Open: whether the row is already in the log when the hook runs (the probe logs this on the next typed prompt). |
+| 3 | Can a hook tell the user's typing from automated turns? | **Yes, through the session log.** Every user-type row in the transcript carries `turnOrigin` (`human`, `task_notification`, `peer`) and `promptSource` (`sdk` for typed, `system` for automated); hook input carries the same `prompt_id`. `UserPromptSubmit` also fires on automated turns, so the prompt text alone is not enough. | Transcript of this session: 5 typed prompts `human`/`sdk`, 6 automated `peer` or `task_notification`/`system`. Timing, measured: the row for the current prompt is not in the log yet when `UserPromptSubmit` fires (on an automated turn the newest row was still the previous typed one); it is there during the rest of the turn. So a typed phrase is noted at submit time and confirmed at the next hook event of the same `prompt_id`. |
 | 4 | Do hook changes need a restart? | **No.** A hook added to `.claude/settings.local.json` ran on the very next tool call. | Glob at 09:37:07, three seconds after the file was written. |
 | 5 | What can a session do against `main`? | Push to it and merge into it: an earlier session moved `main` at the user's request, and the GitHub tool acts as the owner's own account. Tag pushes are refused by the session's git proxy. `main` has no protection. | .factory/HANDOFF.md of 2026-11-14; GitHub API `protected: false`. |
+
+| 6 | Is the dialog answer in the session log when the hook runs? | **The call is, the answer is not yet.** At `PostToolUse` the transcript holds the `tool_use` row for this `tool_use_id` and no `tool_result`. A hook run by hand later finds the real result, which must match. | Probe row for a Glob call: `{"tool_use": true, "tool_result": false}`. |
 
 ## How an agent could still forge an approval, and what stops each way
 | Way | Stopped by |
@@ -23,6 +25,6 @@ Question (docs/specs/trust-hardening.md, risk 1): can an approval given in Claud
 Plainly: both ways of approving work, and the cheap forgeries are closed. A deliberate, multi-step forgery stays possible because the agent and the record share one machine; it would be visible as a blocked attempt or as a record without a session event.
 
 ## Open after the spike
-- Finding 3: timing of the transcript row at `UserPromptSubmit` (answered by the next typed prompt).
+- Finding 3 was measured on an automated turn; confirm the same timing on a typed prompt during the build (ADR 0013 handles both cases).
 - Behaviour in other permission modes and in the terminal app was not tested here.
 - Headless runs (`claude -p`, the fixer runner) have no user, so nothing there can approve: by design.
