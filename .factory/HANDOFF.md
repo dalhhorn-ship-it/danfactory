@@ -8,6 +8,8 @@ User approved gated-autonomy SLICE A (AUTO-1 merge gate, AUTO-2 locked acceptanc
 - Running: FAST-1 developer in MAIN tree; GRD-2 developer in a WORKTREE.
 - NOT approved (still the user's call): v0.1.0 tag, lpdan push for EVAL-3, merging the branch to main.
 
+- 2026-11-14 user: "add the tag, push access to lpdan granted and move to main". main fast-forwarded to e0345f5 on origin. v0.1.0 tag created locally but the session git proxy refuses tag pushes (5 tries); told the user how to add it (GitHub release or git push from their machine). lpdan attached with push (clone /home/user/lpdan); draft PRD docs/specs/template-update-v0-1-0.md pushed on lpdan branch claude/template-update-v0-1-0, awaiting the user's approval (lpdan's own PRD gate). EVAL-3 unblocked (landing part already shipped; LLM-judge graders remain, approved PRD agent-eval-harness slice 3).
+
 ## Next steps
 1. FAST-1 reports → verify (check.sh 3x within budget, gate), push → launch AUTO-8 developer in main tree (runner.py, test_runner.py).
 2. GRD-2 reports → merge worktree, check.sh + gate, push, remove worktree.
