@@ -10,6 +10,8 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import metrics  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "scripts", "obs"))
+import tplfiles  # noqa: E402
 
 PHASES = ["brainstorm", "operating-model", "build"]
 STATES = {" ": "todo", "~": "doing", "x": "done", "X": "done", "!": "blocked", "-": "dropped"}
@@ -168,7 +170,8 @@ def parse_debt(text):
 
 
 def debt_signals(f):
-    files = [p for p in git("ls-files").splitlines() if p and not p.startswith(SKIP_DIRS)]
+    tpl = tplfiles.owned(ROOT)  # NEW-2: unchanged template files are upstream's, not this project's debt
+    files = [p for p in git("ls-files").splitlines() if p and not p.startswith(SKIP_DIRS) and p not in tpl]
     markers = {}
     out = git("grep", "-I", "-o", "-E", MARKER_RE, "--", *files) if files else ""
     for line in out.splitlines():

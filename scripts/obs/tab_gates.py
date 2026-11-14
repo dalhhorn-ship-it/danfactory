@@ -15,6 +15,7 @@ MANIFESTS = ("package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
 CAP = 25
 GATE_EMPTY = "No gate runs yet: run `python3 scripts/gate.py`."
 GATE_WINDOW = 20
+SETUP_RE = re.compile(r"\bset[- ]?up\b", re.I)
 EMPTY = "No backlog items yet: gates appear once docs/BACKLOG.md has items; PRD status comes from docs/specs/."
 
 
@@ -193,8 +194,8 @@ def collect(root, base):
     items = []
     for ms in (base.get("progress") or {}).get("milestones", []):
         for i in ms["items"]:
-            if i["state"] == "dropped":
-                continue
+            if i["state"] == "dropped" or "process" in (i.get("tags") or []) or SETUP_RE.search(ms["name"]):
+                continue  # process items and the setup milestone never need a PRD (NEW-2)
             m = S.ID_RE.match(i["title"])
             title = i["title"][len(m.group(1)):].strip() if m else i["title"]
             prd = by_title.get(title.casefold())
