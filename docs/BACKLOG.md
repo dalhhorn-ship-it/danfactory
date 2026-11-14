@@ -38,6 +38,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
 ## Unplanned
+- [~] SIZE-1 Size monitoring: budgets in factory.json, Size block + alerts on the dashboard, gate warns on oversize files and growth (docs/specs/size-monitoring.md) (M) #quality
 - [x] FAST-1 Template checks within the 120 s budget: parallel or split slow set, CI runs everything (docs/specs/fast-checks-and-guard-gaps.md) (M) #quality
 - [x] GRD-2 PRD guard covers shell-made writes; self-claimed waivers need the user's words (TD-016) (docs/specs/fast-checks-and-guard-gaps.md) (M) #security
 - [~] AUTO-8 Parallel fixers as processes; re-review after rebase (TD-020) (docs/specs/fast-checks-and-guard-gaps.md) (M) (after: FAST-1) #foundation
