@@ -7,6 +7,10 @@ import re
 EXEMPTION_FILE = ".factory/prd-exemption"
 KINDS = ("bugfix", "chore", "waiver", "spike")
 EXEMPT_LINE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\s+(%s):\s*(\S.*?)\s*$" % "|".join(KINDS))
+# A waiver is the user's decision, not the agent's: the line must quote the user's words from the chat,
+# `waiver: "<user words>" - <reason>` (hyphen, en or em dash). Unquoted waivers are ignored.
+WAIVER_RE = re.compile(r'^["“]([^"”]{3,})["”]\s*(?:—|–|--?)\s*\S')
+WEAK_WAIVER_WORDS = ("just do it", "quick job", "quick fix", "go ahead", "do it", "whatever", "fine", "ok", "okay")
 PRE_BUILD_PHASES = ("brainstorm", "operating-model")
 
 # Always allowed: they can't change what the product does. Everything else (including .claude/ hooks and
@@ -45,14 +49,23 @@ def read(root, rel):
         return ""
 
 
+def waiver_quoted(reason):
+    """True when a waiver reason quotes the user's words (and not just a stock phrase) before the reason."""
+    m = WAIVER_RE.match(reason)
+    return bool(m) and m.group(1).strip().strip(".!").lower() not in WEAK_WAIVER_WORDS
+
+
 def exemptions(root, today=None):
-    """[{date, kind, reason, active}] from .factory/prd-exemption; malformed lines are ignored. Active = dated today."""
+    """[{date, kind, reason, active, ignored}] from .factory/prd-exemption; malformed lines are ignored. Active = dated
+    today and honoured; `ignored` marks today's waivers without the user's quoted words (they grant nothing)."""
     today = today or datetime.date.today().isoformat()
     out = []
     for ln in read(root, EXEMPTION_FILE).splitlines():
         m = EXEMPT_LINE_RE.match(ln.strip())
         if m:
-            out.append({"date": m.group(1), "kind": m.group(2), "reason": m.group(3), "active": m.group(1) == today})
+            ignored = m.group(2) == "waiver" and not waiver_quoted(m.group(3))
+            out.append({"date": m.group(1), "kind": m.group(2), "reason": m.group(3),
+                        "active": m.group(1) == today and not ignored, "ignored": ignored and m.group(1) == today})
     return out
 
 
@@ -128,4 +141,8 @@ def decide(root, rel, phase, template, today=None):
         return True, "", "prd:" + slugs[0]
     if ex:
         return True, "", "exemption:" + ex[0]["kind"]
-    return False, "no in-progress backlog item (`[~]`) is linked to a PRD with `Status: approved`, and there is no exemption dated today", ""
+    why = "no in-progress backlog item (`[~]`) is linked to a PRD with `Status: approved`, and there is no exemption dated today"
+    if any(x["ignored"] for x in exemptions(root, today)):
+        why += (" (a `waiver` line is ignored: it must quote the user's words, "
+                '`waiver: "<user words>" - <reason>`; "just do it" is not a waiver)')
+    return False, why, ""

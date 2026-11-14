@@ -523,6 +523,17 @@ def _prd_rules(root):
 
 
 def c_prd(ctx):
+    """`prd` plus a standing `prd-waiver-active` warning while a user waiver is in force (GRD-2)."""
+    status, codes, detail = _c_prd(ctx)
+    rules = _prd_rules(ctx["root"]) if ctx["gate"].get("prd", "required") != "off" else None
+    waivers = [x for x in rules.exemptions(ctx["root"]) if x["active"] and x["kind"] == "waiver"] if rules else []
+    if not waivers:
+        return status, codes, detail
+    note = " [WAIVER ACTIVE until end of day: %s]" % "; ".join(x["reason"][:80] for x in waivers)
+    return ("fail" if status == "fail" else "warn"), codes + ["prd-waiver-active"], detail + note
+
+
+def _c_prd(ctx):
     """Product-code commits in range need `Refs:` to an item with an approved PRD (or an ISS-n of one), or `PRD-Exempt:`."""
     mode = ctx["gate"].get("prd", "required")
     if mode == "off":

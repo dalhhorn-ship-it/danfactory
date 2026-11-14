@@ -1,4 +1,5 @@
 """PRD write guard (GRD-1, docs/specs/prd-write-guard.md): hook criteria 1-4 and 7, gate check `prd` (criterion 5),
+shell-made writes and quoted waivers (GRD-2, docs/specs/fast-checks-and-guard-gaps.md criteria 4-6),
 exemptions, template mode, dashboard numbers. Temp dirs only, no network, no model."""
 import datetime
 import json
@@ -58,6 +59,11 @@ class Proj:
         env = dict(os.environ, CLAUDE_PROJECT_DIR=self.root)
         return subprocess.run([sys.executable, HOOK], input=json.dumps(ev), capture_output=True, text=True, env=env)
 
+    def bash(self, cmd, cwd=None):
+        ev = {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": cwd or self.root}
+        env = dict(os.environ, CLAUDE_PROJECT_DIR=self.root)
+        return subprocess.run([sys.executable, HOOK], input=json.dumps(ev), capture_output=True, text=True, env=env)
+
 
 class Base(unittest.TestCase):
     def proj(self, **kw):
@@ -113,7 +119,7 @@ class HookCriteria(Base):
         p = self.proj(backlog="")
         self.assertEqual(p.edit("src/app.py").returncode, 2)
         for kind in _prd.KINDS:
-            p.write(".factory/prd-exemption", "%s %s: because\n" % (TODAY, kind))
+            p.write(".factory/prd-exemption", "%s %s: %sbecause\n" % (TODAY, kind, '"fix it please" - ' if kind == "waiver" else ""))
             self.assertEqual(p.edit("src/app.py").returncode, 0, kind)
         p.write(".factory/prd-exemption", "2020-01-01 bugfix: old\n")           # expired
         self.assertEqual(p.edit("src/app.py").returncode, 2)
@@ -179,7 +185,7 @@ class HookCriteria(Base):
             pre = json.load(fh)["hooks"]["PreToolUse"]
         hit = [e for e in pre if any("guard_prd_write.py" in h["command"] for h in e["hooks"])]
         self.assertEqual(len(hit), 1)
-        self.assertEqual(set(hit[0]["matcher"].split("|")), {"Edit", "Write", "MultiEdit", "NotebookEdit"})
+        self.assertEqual(set(hit[0]["matcher"].split("|")), {"Edit", "Write", "MultiEdit", "NotebookEdit", "Bash"})
 
 
 class EvalGrader(unittest.TestCase):
@@ -298,6 +304,156 @@ class Dashboard(Base):
         self.assertEqual((g["blocks_30d"], g["open_exemptions"], g["no_approved_prd_runs"], g["window"]), (2, 1, 1, 2))
         self.assertIn("2 block(s) in 30d, 1 open exemption(s), no-approved-prd in 1 of last 2", tab_gates.guard_line(g))
         self.assertIn("PRD write guard", tab_gates.render_guard(g))
+
+
+SHELL_WRITES = (
+    "echo hi > src/a.py", "echo hi>>src/a.py", "printf x &> src/a.py", "cmd 2>src/err.txt", "ls | tee src/a.py",
+    "tee -a src/a.py < x", "sed -i 's/a/b/' src/a.py", "sed -i.bak -e 's/a/b/' src/a.py", "perl -pi -e 's/a/b/' src/a.pl",
+    "cp /tmp/x src/a.py", "mv /tmp/x src/a.py", "install -m 755 /tmp/x bin/tool", "ln -s /tmp/x src/link", "cp -t src /tmp/x",
+    "truncate -s 0 src/a.py", "dd if=/dev/zero of=src/a.bin count=1", "cat > src/a.py <<'EOF'\nx = 1\nEOF",
+    "cat <<EOF > src/a.py\nx\nEOF", "python3 -c \"open('src/a.py', 'w').write('x')\"",
+    "python3 -c \"open('src/a.py', mode='a').write('x')\"", "node -e \"require('fs').writeFileSync('src/a.js', 'x')\"",
+    "python3 - <<EOF\nfrom pathlib import Path\nPath('src/a.py').write_text('x')\nEOF", "bash -c 'echo x > src/a.py'",
+    "cd src && echo x > a.py", "sudo tee src/a.py", "echo x > CLAUDE.md", "echo x > .claude/hooks/guard_prd_write.py",
+    "mv src/a.py /tmp/gone.py",
+)
+SHELL_FREE = (
+    "echo hi > docs/notes.md", "echo hi >> .factory/prd-exemption", "cat > tests/acceptance/test_x.py <<EOF\nx\nEOF",
+    "echo x > /tmp/out.txt", "echo x > /dev/null", "ls > build.log", "git status 2>&1 | head", "python3 scripts/metrics.py test > /dev/null 2>&1",
+    "sed -n '1,5p' src/a.py", "sed 's/a/b/' src/a.py > /tmp/b.py", "cp src/a.py /tmp/a.py", "cat src/a.py | wc -l",
+    "grep -r 'a > b' src", "git commit -m 'x > y'", "echo '>src/a.py'", "python3 -c \"print(open('src/a.py').read())\"",
+    "cd docs && echo x > a.md", "echo $((1>2))", "[[ a > b ]] && echo ok", "echo x > README.md", "echo x > metrics/history.jsonl",
+    "echo x > $HOME/y", "git log > .git/x", "rm -rf node_modules/x", "python3 scripts/gate.py --base main 2>/dev/null",
+    "cat <<'EOF'\nredirect > src/a.py in prose\nEOF", "mkdir -p src", "touch /tmp/x", "echo 'a' | sed 's/a/b/'",
+)
+
+
+class ShellGuard(Base):
+    """GRD-2 criterion 4: shell-made writes to product paths are blocked like edits."""
+
+    def test_c4_shell_writes_blocked_with_the_edit_message(self):
+        p = self.proj(backlog="")
+        for cmd in SHELL_WRITES:
+            r = p.bash(cmd)
+            self.assertEqual(r.returncode, 2, cmd)
+            self.assertIn("no approved PRD covers it", r.stderr, cmd)
+            self.assertIn("docs/policies/prd-approval.md", r.stderr)
+        edit = p.edit("src/a.py")
+        self.assertEqual(edit.stderr.split("(")[0], p.bash("echo x > src/a.py").stderr.split("(")[0])
+
+    def test_free_paths_and_reads_are_not_blocked(self):
+        p = self.proj(backlog="")
+        for cmd in SHELL_FREE:
+            self.assertEqual(p.bash(cmd).returncode, 0, cmd)
+
+    def test_allowed_with_approved_item_or_exemption(self):
+        p = self.proj()
+        for cmd in SHELL_WRITES:
+            self.assertEqual(p.bash(cmd).returncode, 0, cmd)
+        q = self.proj(backlog="")
+        q.write(".factory/prd-exemption", "%s chore: tidy\n" % TODAY)
+        self.assertEqual(q.bash("echo x > src/a.py").returncode, 0)
+
+    def test_pre_build_phase_blocks_shell_writes(self):
+        p = self.proj(phase="brainstorm")
+        self.assertEqual(p.bash("echo x > src/a.py").returncode, 2)
+
+    def test_unparseable_command_is_left_to_the_other_guards_and_the_gate(self):
+        p = self.proj(backlog="")
+        self.assertEqual(p.bash("echo 'unterminated > src/a.py").returncode, 0)
+
+    def test_every_repo_bash_command_in_docs_passes_the_detector(self):
+        """False-positive corpus: fenced shell blocks and inline commands in the repo's own docs write no product file."""
+        import re
+        import _shellwrites
+        n = 0
+        for base, dirs, files in os.walk(ROOT):
+            dirs[:] = [d for d in dirs if d not in (".git", "node_modules", "worktrees", "spikes")]
+            for f in files:
+                if not f.endswith(".md"):
+                    continue
+                with open(os.path.join(base, f), encoding="utf-8", errors="replace") as fh:
+                    txt = fh.read()
+                lines = [ln for blk in re.findall(r"```(?:bash|sh|shell)\n(.*?)```", txt, re.S) for ln in blk.split("\n")]
+                lines += re.findall(r"`((?:python3|bash|git|npm|node|sed|cp|mv)[^`\n]{3,})`", txt)
+                for ln in lines:
+                    ln = ln.strip().lstrip("$ ").strip()
+                    if not ln or ln.startswith("#"):
+                        continue
+                    n += 1
+                    try:
+                        hit = _shellwrites.product_writes(ln, ROOT, ROOT)
+                    except ValueError:
+                        continue
+                    self.assertEqual(hit, [], "%s: %s" % (f, ln))
+        self.assertGreater(n, 50)
+
+
+class Waivers(Base):
+    """GRD-2 criterion 5: only bugfix/chore stand alone; a waiver must quote the user; active waivers warn in the gate."""
+
+    def test_c5_unquoted_waiver_is_ignored_with_a_clear_message(self):
+        p = self.proj(backlog="")
+        for bad in ("quick job, just do it", '"just do it" - quick job', '"" - x', '"user said skip the PRD"', "user said skip - x",
+                    '"ok" - fine'):
+            p.write(".factory/prd-exemption", "%s waiver: %s\n" % (TODAY, bad))
+            for r in (p.edit("src/a.py"), p.bash("echo x > src/a.py")):
+                self.assertEqual(r.returncode, 2, bad)
+                self.assertIn("waiver", r.stderr)
+                self.assertIn("ignored", r.stderr, bad)
+
+    def test_quoted_waiver_is_honoured_and_dashes_vary(self):
+        p = self.proj(backlog="")
+        for dash in ("-", "--", "\u2013", "\u2014"):
+            p.write(".factory/prd-exemption", '%s waiver: "skip the PRD for the logo tweak" %s the user asked in chat\n' % (TODAY, dash))
+            self.assertEqual(p.edit("src/a.py").returncode, 0, dash)
+            self.assertEqual(p.bash("echo x > src/a.py").returncode, 0, dash)
+        self.assertTrue(_prd.waiver_quoted('\u201cskip the PRD\u201d \u2014 why'))
+
+    def test_bugfix_and_chore_are_still_honoured_as_today(self):
+        p = self.proj(backlog="")
+        for kind in ("bugfix", "chore"):
+            p.write(".factory/prd-exemption", "%s %s: reason\n" % (TODAY, kind))
+            self.assertEqual(p.bash("echo x > src/a.py").returncode, 0, kind)
+
+    def test_gate_lists_active_waivers_in_every_verdict(self):
+        p = self.proj(backlog="")
+        p.write(".factory/prd-exemption", '%s waiver: "skip the PRD for the logo" - asked in chat\n'
+                '%s waiver: unquoted words - x\n2020-01-01 waiver: "old words here" - gone\n' % (TODAY, TODAY))
+        p.write("README.md", "x\n")
+        p.commit("base")
+        base = p.g("rev-parse", "HEAD").strip()
+        c = {x["id"]: x for x in gate.run_gate(p.root, base, {"prd"})["checks"]}["prd"]
+        self.assertEqual((c["status"], c["codes"]), ("warn", ["prd-waiver-active"]))
+        self.assertIn("WAIVER ACTIVE", c["detail"])
+        self.assertIn("skip the PRD for the logo", c["detail"])
+        self.assertNotIn("unquoted words", c["detail"])
+        p.write("src/app.py", "x = 1\n")
+        p.commit("feat: thing")                                              # still fails, now with both codes
+        c = {x["id"]: x for x in gate.run_gate(p.root, base, {"prd"})["checks"]}["prd"]
+        self.assertEqual((c["status"], c["codes"]), ("fail", ["no-approved-prd", "prd-waiver-active"]))
+        p.write(".factory/prd-exemption", '2020-01-01 waiver: "old words here" - gone\n')   # expired: no warning
+        p.commit("expire")
+        c = {x["id"]: x for x in gate.run_gate(p.root, base, {"prd"})["checks"]}["prd"]
+        self.assertNotIn("prd-waiver-active", c["codes"])
+        base2 = p.g("rev-parse", "HEAD").strip()
+        c = {x["id"]: x for x in gate.run_gate(p.root, base2, {"prd"})["checks"]}["prd"]
+        self.assertEqual((c["status"], c["codes"]), ("pass", []))
+
+
+class GateCatchesShellWrites(Base):
+    """GRD-2 criterion 6: a Bash-made product write that bypassed the hook still fails `prd` at merge."""
+
+    def test_c6_shell_written_file_without_refs_fails_the_gate(self):
+        p = self.proj(backlog="")
+        p.write("README.md", "x\n")
+        p.commit("base")
+        base = p.g("rev-parse", "HEAD").strip()
+        self.assertEqual(p.bash("echo 'x = 1' > src/app.py").returncode, 2)         # the hook stops it ...
+        subprocess.run("mkdir -p src && echo 'x = 1' > src/app.py", shell=True, cwd=p.root, check=True)  # ... a bypass writes it
+        p.commit("feat: via shell")
+        c = {x["id"]: x for x in gate.run_gate(p.root, base, {"prd"})["checks"]}["prd"]
+        self.assertEqual((c["status"], c["codes"]), ("fail", ["no-approved-prd"]))
 
 
 if __name__ == "__main__":
