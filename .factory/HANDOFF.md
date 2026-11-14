@@ -15,6 +15,9 @@ User (PM, portfolio, not technical on infra: plain words, one recommendation) ru
 
 - STANDING PERMISSION (user 2026-11-14): push each verified part to main (fast-forward origin/main to the verified branch head after check.sh + gate pass). main = 8ccb93f (SIZE-1, SIZE-2 incl.). SIZE-3 developer running in MAIN tree; DOCS-1 (docs/specs/docs-index-first.md) in a worktree; AUTO-8 after SIZE-3.
 
+- 2026-11-14 SIZE-3 (files split, max 552 lines) + DOCS-1 (index-first agents, docs split, README synced) merged; main = 096871a. MISTAKE: main was pushed although that gate run FAILED (two flaky test sets; reruns pass 4/4). RULE: only fast-forward main after a gate verdict PASS on that exact sha.
+- FAST-2 developer running in MAIN tree: flaky parallel tests, TD-021 culprit (git config wiped again during SIZE-3), check back to <= 90 s (now 115-123 s). Then AUTO-8.
+
 ## Next steps
 1. Build AUTO-8 (developer, main tree): docs/specs/fast-checks-and-guard-gaps.md criteria 7-8; ADR 0010 C6; scripts/runner.py, .factory/tests/test_runner.py.
 2. Find the TD-021 culprit: tests that run git without an explicit cwd/`-C` under scripts/run_tests.py parallelism.
