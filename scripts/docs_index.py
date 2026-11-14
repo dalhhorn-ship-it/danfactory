@@ -48,6 +48,26 @@ def sections_threshold():
         return SECTIONS_TOKENS
 
 
+_IGNORED = None
+
+
+def is_doc_target(path):
+    """A link target counts only when the file exists and git does not ignore it: generated, ignored files
+    (e.g. dashboard/SUMMARY.md) exist on one machine and not in a clean checkout, which made the index
+    differ between a laptop and CI (lpdan main, 2026-11-14)."""
+    global _IGNORED
+    if not os.path.isfile(path):
+        return False
+    if _IGNORED is None:
+        try:
+            out = subprocess.run(["git", "-C", ROOT, "ls-files", "--others", "--ignored", "--exclude-standard", "-z"],
+                                 capture_output=True, text=True, timeout=30).stdout
+            _IGNORED = {os.path.normpath(os.path.join(ROOT, x)) for x in out.split("\0") if x}
+        except (OSError, subprocess.SubprocessError):
+            _IGNORED = set()
+    return os.path.normpath(path) not in _IGNORED
+
+
 def rel(p):
     return os.path.relpath(p, ROOT).replace(os.sep, "/")
 
@@ -104,10 +124,10 @@ def parse(path):
                 continue
             base = ROOT if lm.group(3) or target.startswith(("docs/", ".claude/")) else os.path.dirname(path)
             full = os.path.normpath(os.path.join(base, target))
-            if lm.group(4) and not os.path.isfile(full):  # bare path: try repo-root relative, then docs/
+            if lm.group(4) and not is_doc_target(full):  # bare path: try repo-root relative, then docs/
                 full = next((c for c in (os.path.join(ROOT, target), os.path.join(ROOT, "docs", target))
-                             if os.path.isfile(c) or os.path.normpath(c) == INDEX), full)  # INDEX: as below
-            if (os.path.isfile(full) or full == INDEX) and full != path:  # INDEX may not exist yet on a first run
+                             if is_doc_target(c) or os.path.normpath(c) == INDEX), full)  # INDEX: as below
+            if (is_doc_target(full) or full == INDEX) and full != path:  # INDEX may not exist yet on a first run
                 links.add(rel(full))
     return {"file": rel(path), "title": title, "summary": summary, "lines": len(lines),
             "tokens": sum(len(x) + 1 for x in lines) // 4,

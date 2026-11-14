@@ -1,0 +1,1 @@
+2026-11-14 bugfix: docs_index counted git-ignored generated files as link targets, so the index differed between local and CI (lpdan main CI failure)
