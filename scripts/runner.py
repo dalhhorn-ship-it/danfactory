@@ -36,6 +36,8 @@ import gate  # noqa: E402
 import issues as L  # noqa: E402
 import sandbox as S  # noqa: E402
 
+BASELINE = "metrics/acceptance-baseline.json"
+
 DEFAULTS = {"enabled": False, "staging_branch": "staging", "max_attempts": 3, "daily_budget_usd": 5, "run_budget_usd": 2,
             "model": "sonnet", "review_model": "sonnet", "max_turns": 40, "timeout_s": 900, "review_turns": 12,
             "attempt_estimate_usd": 0.5}
@@ -408,6 +410,8 @@ def revert(w, paths):
 
 def commit_ledger(wt, msg):
     git(["add", "-A", "--", "issues", S.RUNNER_ROWS], wt, check=False)
+    if os.path.exists(os.path.join(wt, BASELINE)):  # a missing pathspec would fail the whole add
+        git(["add", "--", BASELINE], wt, check=False)
     if git(["diff", "--cached", "--quiet"], wt, check=False).returncode != 0:
         git(["commit", "-q", "-m", msg], wt)
 
@@ -863,10 +867,30 @@ def sync_ledger(root, swt, run_id):
             json.dump({"tests": list(tests.values()), "admitted": sorted(adm)}, fh)
         with contextlib.redirect_stdout(io.StringIO()):
             L.main(["--root", swt, "sync", "--from-json", path])
+        ratchet_baseline(swt, tests, adm)
     except (L.Usage, S.SandboxUnavailable, Fail) as ex:
         print("runner: could not sync the issue ledger (%s): run `python3 scripts/issues.py sync` yourself" % str(ex)[:120], file=sys.stderr)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def ratchet_baseline(swt, tests, adm):
+    """TD-019: record the admitted tests that pass on the fresh checkout of the merge in the baseline on staging (never shrinks),
+    so the gate's acceptance-regression check protects them from now on. Committed with the merge rows by commit_ledger."""
+    path = os.path.join(swt, BASELINE)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            old = json.load(fh)
+    except (OSError, ValueError):
+        old = {}
+    have = set(old.get("passing") or []) if isinstance(old, dict) else set()
+    now = {t["id"] for t in tests.values() if t.get("status") == "pass" and t["id"] in adm}
+    if now <= have:
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"passing": sorted(have | now), "date": today(), "sha": out_of(git(["rev-parse", "--short", "HEAD"], swt))}, fh, indent=2)
+        fh.write("\n")
 
 
 def rewrite_last(swt, row):

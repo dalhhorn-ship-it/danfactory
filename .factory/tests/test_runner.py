@@ -194,6 +194,13 @@ class Pass(unittest.TestCase):
         self.assertEqual(rows[0]["tokens_cache"], 10)
         self.assertEqual(sh(e.root, "worktree", "list").count("\n"), 0, "worktrees removed")
 
+    def test_baseline_ratcheted_on_staging_with_the_merge(self):  # TD-019
+        b = json.loads(self.e.staged("metrics/acceptance-baseline.json") or "{}")
+        self.assertTrue(b.get("passing"), "passing admitted tests recorded")
+        self.assertEqual(len(b["passing"]), 1)
+        self.assertIn("test_c1_shout", b["passing"][0])
+        self.assertEqual(sh(self.e.root, "status", "--porcelain", "--", "metrics/acceptance-baseline.json"), "")
+
     def test_empty_sandbox_mount_files_are_not_committed(self):  # found in the smoke run: bwrap leaves them in the cwd
         self.assertIsNone(self.e.staged(".env"))
         self.assertIsNone(self.e.staged("package.json"))
