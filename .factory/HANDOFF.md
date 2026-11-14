@@ -11,6 +11,8 @@ User (PM, portfolio, not technical on infra: plain words, one recommendation) ru
 - Open debt: TD-020 (= AUTO-8), TD-021 HIGH (real repo .git/config found reset after parallel test runs + a container restart; not reproduced in 4 runs; check.sh now snapshots/restores it and fails loudly).
 - Pilot repo preserved: evals/spikes/pilot-semverlite/pilot-semverlite.bundle (restore steps in its README).
 
+- 2026-11-14 later: user asked for a size evaluation + monitoring. SIZE-1 PRD docs/specs/size-monitoring.md (087132a); developer building SIZE-1 in MAIN tree. User then approved SIZE-2 (autonomy pack) and SIZE-3 (split 5 large files), in that order AFTER SIZE-1; design ADR 0011 (531108b). Launch SIZE-2 developer when SIZE-1 lands, SIZE-3 after SIZE-2. AUTO-8 still pending (do after SIZE-3: runner.py gets split).
+
 ## Next steps
 1. Build AUTO-8 (developer, main tree): docs/specs/fast-checks-and-guard-gaps.md criteria 7-8; ADR 0010 C6; scripts/runner.py, .factory/tests/test_runner.py.
 2. Find the TD-021 culprit: tests that run git without an explicit cwd/`-C` under scripts/run_tests.py parallelism.
