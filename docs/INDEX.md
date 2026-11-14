@@ -44,6 +44,7 @@
 | docs/decisions/0009-fixer-runner.md | 82 | Status: accepted · Date: 2026-11-13 · PRD: docs/specs/gated-autonomy.md (C4; criteria 8,… |
 | docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/gated-autonomy.md (C5, C6, C7;… |
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 37 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/size-monitoring.md (SIZE-2,… |
+| docs/decisions/0012-trusted-gate-and-result-integrity.md | 89 | Status: accepted · Date: 2026-11-14 · PRD: docs/specs/trust-hardening.md (TRUST-1,… |
 | docs/decisions/0013-approval-capture-and-scope.md | 66 | Status: proposed · Date: 2026-11-14 · PRD: docs/specs/trust-hardening.md (TRUST-2,… |
 | docs/operating-model/AGENT-ROUTING.md | 87 | Which agent gets involved when. The main agent coordinates and decides; subagents are… |
 | docs/operating-model/DECISION-TREE.md | 73 | Picks the operating model for a goal. Version 1.2.0. Keep this file short: details live… |
