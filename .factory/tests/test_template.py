@@ -576,9 +576,22 @@ class Bootstrap(unittest.TestCase):
         # --codegraph would install software; stub the installer so only parsing is tested
         with open(os.path.join(d, "scripts", "install-codegraph.sh"), "w") as fh:
             fh.write("echo stub-codegraph\n")
+        r = subprocess.run(["bash", "scripts/bootstrap.sh", "demo", "A demo app"], cwd=d, capture_output=True, text=True)
+        if subprocess.run(["git", "-C", d, "config", "--get", "remote.origin.url"], capture_output=True).returncode == 0:
+            self.assertEqual(r.returncode, 2, "refuses in the template repo itself")  # the copy still has the template origin
+            subprocess.run(["git", "-C", d, "remote", "remove", "origin"], check=True)
         r = subprocess.run(["bash", "scripts/bootstrap.sh", "demo", "--codegraph", "A demo app"], cwd=d,
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
+        # TD-017: clean records for the new project
+        bl = open(os.path.join(d, "docs", "BACKLOG.md")).read()
+        self.assertIn("M0", bl)
+        self.assertNotIn("## Milestone: M1", bl)
+        self.assertEqual(os.listdir(os.path.join(d, "docs", "specs")), ["_TEMPLATE.md"])
+        self.assertEqual(sorted(os.listdir(os.path.join(d, "docs", "decisions"))), ["0000-template.md", "0001-use-danfactory-template.md"])
+        self.assertNotIn("TD-0", open(os.path.join(d, "docs", "TECH-DEBT.md")).read())
+        self.assertNotIn("\n### 20", open(os.path.join(d, "docs", "operating-model", "LEARNINGS.md")).read())
+        self.assertEqual(subprocess.run(["python3", "scripts/docs_index.py", "--check"], cwd=d, capture_output=True).returncode, 0)
         self.assertIn("stub-codegraph", r.stdout)
         f = json.load(open(os.path.join(d, "factory.json")))
         self.assertEqual((f["project"]["name"], f["project"]["one_liner"]), ("demo", "A demo app"))

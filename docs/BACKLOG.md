@@ -38,7 +38,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [~] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
 ## Unplanned
-- [~] TD-PILOT Fix pilot 2 debt: TD-017 bootstrap resets template records, TD-018 issue titles, TD-019 runner ratchets the acceptance baseline (S) #debt
+- [x] TD-PILOT Fix pilot 2 debt: TD-017 bootstrap resets template records, TD-018 issue titles, TD-019 runner ratchets the acceptance baseline (S) #debt
 - [x] GRD-1 PRD write guard: hook blocks product-code edits without an in-progress approved item, gate check `prd`, exemption file (docs/specs/prd-write-guard.md) (M) #security
 - [x] TPL-1 Template mode: template repo detects itself via origin remote; maintenance session/dashboard/test (docs/specs/template-mode.md) (M) #foundation
 - [x] UPS-1 Upstream from lpdan: adopt_scan report sanitiser, pipe-to-shell deploy guard, docs_index.py --related (docs/specs/upstream-from-lpdan-2026-11.md) (S) #security

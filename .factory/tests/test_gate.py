@@ -184,6 +184,15 @@ class Commands(Base):
         self.assertEqual((c["status"], c["codes"]), ("warn", ["tests-over-budget"]))
         self.assertEqual(slow.run("tests")["verdict"], "pass")  # warn never fails
 
+    def test_tests_include_acceptance_warns(self):  # TD-017: the acceptance check runs those; open issues fail by design
+        for cmd, want in (("pytest tests/acceptance && true", True), ("python3 -m unittest discover -s tests/unit", False), ("pytest tests/unit", False),
+                          ("pytest --ignore=tests/acceptance", False)):
+            self.assertEqual(gate.includes_acceptance(cmd), want, cmd)
+        r = self.repo({"commands": {"test": "true tests/acceptance"}, "budgets": {"test_seconds": 120}})
+        self._with_metrics(r)
+        c = r.check("tests")
+        self.assertEqual((c["status"], c["codes"]), ("warn", ["tests-include-acceptance"]))
+
     def test_tests_skipped_in_template_mode_or_without_command(self):
         r = self.repo({"commands": {"test": "false"}})
         with mock.patch.object(gate, "is_template", return_value=True):

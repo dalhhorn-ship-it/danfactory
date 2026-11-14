@@ -13,7 +13,7 @@ description: Phase 2. Walk the decision tree with the agreed goal, pick the oper
 4. Read only the chosen path file(s) in `docs/operating-model/paths/`.
 5. Pick the agent roster from docs/operating-model/AGENT-ROUTING.md (path rosters + verification ladder for the rigor level). Propose the operating model in ≤15 bullets: path(s), rigor level, roster, key practices, quality gates, budgets. Get a yes.
 6. Write `docs/OPERATING-MODEL.md` from its headings. Be concrete: real commands, real thresholds, which subagents/skills are used when. Where a path default doesn't fit, override it and say why.
-7. Update `factory.json`: `paths.primary`, `paths.secondary`, `agents.roster`, `commands.*` (once the stack is known — leave blank rather than guess), `budgets` overrides, `"phase": "build"`.
+7. Update `factory.json`: `paths.primary`, `paths.secondary`, `agents.roster`, `commands.*` (once the stack is known — leave blank rather than guess; `commands.test` must not include `tests/acceptance`: the acceptance check runs those and open issues' tests fail by design, so point it at the unit tests or add an ignore/exclude), `budgets` overrides, `"phase": "build"`.
 8. Record the choice as an ADR: `docs/decisions/0002-operating-model.md` (copy 0000-template.md).
 9. If no path fits well, pick the closest, note the gap in LEARNINGS.md tagged `[tree-gap]` — `retro` will turn it into a new branch.
 10. Seed `docs/BACKLOG.md` with `product-manager` (tick M0 items done; first milestone as S/M/L slices). For L2+ software or data paths, run the architect (`software-architect` / `spreadsheet-architect`) before building.

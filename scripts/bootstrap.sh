@@ -15,6 +15,11 @@ for arg in "$@"; do
     *) POS+=("$arg") ;;
   esac
 done
+# Refuse in the template repo itself: the reset below deletes the template's own records.
+if python3 -c "import sys; sys.path.insert(0, '.claude/hooks'); from _common import template_mode; sys.exit(0 if template_mode(root='.') else 1)"; then
+  echo "bootstrap.sh refused: this is the danfactory template repo itself. Run it in a NEW repo made from the template." >&2
+  exit 2
+fi
 NAME="${POS[0]:-$(basename "$ROOT")}"
 DESC="${POS[1]:-}"
 python3 - "$NAME" "$DESC" <<'PY'
@@ -36,6 +41,26 @@ if [ ! -f docs/TEMPLATE-GUIDE.md ]; then
 Built from the danfactory template (see docs/TEMPLATE-GUIDE.md). Goal: docs/GOAL.md · How we work: docs/OPERATING-MODEL.md · Status: \`python3 scripts/dashboard.py --open\`.
 MD
 fi
+# Clean records for the new project (TD-017): the template's own backlog, debt, PRDs, ADRs and learnings stay in the
+# template repo (and its git history); they would mislead the dashboard, the PRD gate and the finder here.
+python3 - <<'PY'
+import glob, os, re
+def rw(path, fn):
+    t = open(path, encoding="utf-8").read()
+    open(path, "w", encoding="utf-8").write(fn(t))
+# BACKLOG: keep the format header and the M0 set-up milestone only
+rw("docs/BACKLOG.md", lambda t: re.split(r"(?m)^## Milestone: M1\b", t)[0].rstrip("\n") + "\n")
+# TECH-DEBT: keep the header, empty Open and Resolved
+rw("docs/TECH-DEBT.md", lambda t: t.split("## Open")[0] + "## Open\n\n## Resolved\n")
+# LEARNINGS: keep the format header; entries are the template's (new ones are appended by retro, upstream_learnings.py reads "### " entries)
+rw("docs/operating-model/LEARNINGS.md", lambda t: t.split("## Entries")[0] + "## Entries\n")
+for f in glob.glob("docs/specs/*.md"):
+    if os.path.basename(f) != "_TEMPLATE.md":
+        os.remove(f)
+for f in glob.glob("docs/decisions/00*.md"):
+    if os.path.basename(f) not in ("0000-template.md", "0001-use-danfactory-template.md"):
+        os.remove(f)
+PY
 # fresh metrics for the new project
 rm -f metrics/history.jsonl metrics/tokens.jsonl metrics/REPORT.md
 chmod +x .claude/hooks/*.py scripts/*.py scripts/*.sh .githooks/*

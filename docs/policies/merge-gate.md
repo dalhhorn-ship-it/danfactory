@@ -14,7 +14,7 @@
 | structure | `bash scripts/check.sh` (template structure and its own tests) | `structure-failed` |
 | build | `commands.build` | `build-failed` |
 | lint | `commands.lint` | `lint-failed` |
-| tests | `python3 scripts/metrics.py test`; skipped in template mode (check.sh runs the suite) | `tests-failed`, `tests-over-budget` (warn) |
+| tests | `python3 scripts/metrics.py test`; skipped in template mode (check.sh runs the suite) | `tests-failed`, `tests-over-budget` (warn), `tests-include-acceptance` (warn: `commands.test` would discover tests/acceptance) |
 | coverage | last full-run coverage against `budgets.min_coverage_pct` and `max_coverage_drop_pct` | `coverage-below-min`, `coverage-dropped` |
 | acceptance | `scripts/acceptance.py run --json` once the suite exists (AUTO-2), else skip | `acceptance-regression`, `test-not-admitted`, `acceptance-error` (also: the suite or script is gone while the baseline lists tests, a collection error, a runner error), `open-prd-questions` (warn), `acceptance-unmapped` (warn) |
 | protected | changed paths matching `gate.protected`; baseline ids removed | `protected-path`, `baseline-shrunk` |

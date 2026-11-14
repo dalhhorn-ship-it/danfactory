@@ -223,6 +223,27 @@ def c_lint(ctx):
     return run_cmd(cmd, ctx["root"], "lint-failed") if cmd else ("skip", [], "commands.lint not set")
 
 
+def includes_acceptance(cmd):
+    """Cheap heuristic: would commands.test discover tests/acceptance? (open issues' tests fail by design there)."""
+    c = cmd or ""
+    if re.search(r"ignore|exclude|deselect|skip|--dir|-k\s", c):
+        return False
+    if "tests/acceptance" in c:
+        return True
+    if "acceptance" in c:
+        return False
+    args = c.split()
+    if re.search(r"unittest\s+discover", c):  # bare, or started from the root or tests/
+        m = re.search(r"\s-s\s*(\S+)", c)
+        return not m or m.group(1).strip("./") in ("", "tests")
+    for i, w in enumerate(args):
+        if w in ("pytest", "py.test", "vitest", "jest") and not [x for x in args[i + 1:] if not x.startswith("-") and x != "run"]:
+            return True
+        if w == "pytest" or w == "vitest" or w == "jest":
+            return any(x.strip("./") in ("", "tests") for x in args[i + 1:] if not x.startswith("-"))
+    return "go test ./..." in c
+
+
 def c_tests(ctx):
     if ctx["template"]:
         return "skip", [], "covered by structure (check.sh)"
@@ -234,6 +255,8 @@ def c_tests(ctx):
     secs = time.monotonic() - t0
     if st == "pass" and budget and secs > budget:
         return "warn", ["tests-over-budget"], "%.0fs over the %ss budget" % (secs, budget)
+    if st == "pass" and includes_acceptance(ctx["factory"]["commands"]["test"]):
+        return "warn", ["tests-include-acceptance"], "commands.test would run tests/acceptance, which fails by design while issues are open: exclude it (the acceptance check runs it)"
     return st, codes, detail
 
 

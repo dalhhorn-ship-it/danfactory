@@ -12,6 +12,7 @@
    ```bash
    bash scripts/bootstrap.sh "my-project" "one line description"   # flags: --codegraph, --cloudflare (Worker scaffold, route A: connect the repo in the Cloudflare dashboard)
    ```
+   Bootstrap gives the project clean records: BACKLOG.md holds only the M0 set-up milestone, TECH-DEBT.md is empty, and the template's own PRDs, ADRs 0002 and up and LEARNINGS entries are removed (they stay in the template repo). It refuses to run in the template repo itself.
 3. Start Claude Code (`claude`) and say **"let's start"**. The SessionStart hook tells Claude which phase you're in.
 
 ## Adopt an existing build (e.g. migrate a Lovable app)
