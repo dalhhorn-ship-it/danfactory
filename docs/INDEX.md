@@ -28,7 +28,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every… |
-| docs/BACKLOG.md | 63 | Milestones and work items; the dashboard reads this file. Seeded by… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Unplanned:40 |
+| docs/BACKLOG.md | 67 | Milestones and work items; the dashboard reads this file. Seeded by… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Unplanned:40 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices,… |
 | docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this file plus… — sections: Open:7, Resolved:13 |
@@ -82,6 +82,7 @@
 | docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:32, Acceptance criteria:44, UX / behaviour notes:61, Risks and assumptions:69, Effort and sequencing:77, Open questions:83, Decisions (user,…:90 |
 | docs/specs/fast-checks-and-guard-gaps.md | 29 | Status: approved · 2026-11-14 · by user in chat ("Ok keep doing… |
 | docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A: C1 and C2;… — sections: Problem:5, Goal and success…:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user,…:138 |
+| docs/specs/new-project-readiness.md | 30 | Status: approved · 2026-11-14 · by user in chat ("identify what… |
 | docs/specs/prd-write-guard.md | 39 | Status: approved · 2026-11-13 · by user in chat ("Ok build the… |
 | docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat · 2026-11-11 ·… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
 | docs/specs/security-hardening-audit-1.md | 82 | Status: approved · 2026-11-07 · by user in chat · Owner:… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:30, Acceptance criteria:37, UX / behaviour notes:53, Risks and assumptions:58, Effort and sequencing:65, Decisions at…:68, Open questions:76 |
