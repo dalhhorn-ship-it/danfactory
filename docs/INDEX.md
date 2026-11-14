@@ -60,11 +60,11 @@
 | docs/policies/documentation.md | 11 | Docs are part of done. Small, true, linked — and indexed so agents never read more than… |
 | docs/policies/evals.md | 43 | Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in… |
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become files; fixed ones move. Design:… |
-| docs/policies/merge-gate.md | 67 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
+| docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes, the same locally and in CI. Design:… |
 | docs/policies/prd-approval.md | 30 | No feature work starts until the product-manager has written a PRD and the user has… |
 | docs/policies/runner.md | 70 | One open issue, one sandboxed agent per attempt, the gate decides, merges go to a… |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known forms and credential scoping covers the rest;… |
-| docs/policies/testing-and-metrics.md | 23 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
+| docs/policies/testing-and-metrics.md | 28 | Fast feedback is a feature. Measure test time, coverage, deploys and tokens; act on the… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving bytes. Adapted from Spotify's `shunt` plugin… |
 | docs/specs/_TEMPLATE.md | 33 | Status: draft \| approved · YYYY-MM-DD · by user in chat \| dropped · Owner:… |
 | docs/specs/agent-eval-harness.md | 104 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |

@@ -21,6 +21,7 @@
 | prd | product-code commits in range (any path outside `docs/`, `issues/`, `tests/acceptance/`, `metrics/`, `.factory/`, `factory.json`, root `*.md` except CLAUDE.md) need `Refs:` to an item or PRD slug with an approved PRD, `Refs: ISS-n` of an issue whose PRD is approved, or a `PRD-Exempt:` trailer; the detail lists active and expired `.factory/prd-exemption` lines | `no-approved-prd` (fail in `required`, warn in `advisory`), `prd-waiver-active` (warn in every verdict while a quoted `waiver` line dated today exists; a fail stays a fail) |
 | review | `Review:` trailers on the non-merge commits in range | `review-missing`, `review-fix-first` |
 | security | added lines of the diff against base (tracked files, committed plus working tree), plus untracked files for path rules | `secret-in-diff`, `env-file-added`, `unpinned-action`, `pipe-to-shell` |
+| size | `git diff --numstat` against base: product files over `budgets.size.file_lines_max` that the range grew, and product-code growth over `code_growth_30d_pct_warn` in 30 days (never fails; docs/policies/testing-and-metrics.md "Size budgets") | `file-over-size` (warn), `size-growth` (warn) |
 
 The `prd` check needs `.claude/hooks/_prd.py` (shared with the write guard); without it the check reports `skip`.
 

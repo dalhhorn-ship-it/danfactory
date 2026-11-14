@@ -38,7 +38,14 @@
     "max_coverage_drop_pct": 2,
     "large_read_lines": 350,
     "session_weighted_tokens_warn": 750000,
-    "context_handoff_tokens": 120000
+    "context_handoff_tokens": 120000,
+    "size": {
+      "file_lines_warn": 400,
+      "file_lines_max": 700,
+      "always_loaded_tokens_max": 2500,
+      "agents_max": 20,
+      "code_growth_30d_pct_warn": 25
+    }
   },
   "gate": {
     "base_branch": "main",

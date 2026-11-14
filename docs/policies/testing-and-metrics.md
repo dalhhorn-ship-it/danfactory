@@ -16,6 +16,11 @@
 ## Dashboard
 Every metrics run and every CI build regenerates `dashboard/` (scripts/dashboard.py) with versions, progress, backlog, tech debt and key metrics, plus a Delivery card from `metrics/ci-runs.json`. That cache is written by `scripts/ci_runs.py` (one read-only GitHub API call; CI runs it in a `continue-on-error` step with job-level `actions: read`); the page builder itself stays offline. CI pass rate counts the last 30 decided runs (success or failure; cancelled and skipped are ignored). See the `dashboard` skill.
 
+## Size budgets (SIZE-1)
+`scripts/obs/size.py` measures size on every dashboard build and gate run (stdlib, offline, about 0.1 s): lines and files per area (product code, tests, docs, hooks, agents, skills, evals), the largest product files, always-loaded context (chars/4 of CLAUDE.md plus the SessionStart output), counts of agents, skills, hooks and scripts, the test-to-code ratio, and growth over 7 and 30 days read from git objects at the commit nearest each date. When history is shorter than the window, growth is measured from the first commit and labelled with its real age; with no usable history it shows "not enough history".
+
+Budgets live in `factory.json` `budgets.size`: `file_lines_warn` 400 and `file_lines_max` 700 (product code, tests excluded), `always_loaded_tokens_max` 2500, `agents_max` 20, `code_growth_30d_pct_warn` 25. Every breach is a flag with one suggested action (split the module, move it to an optional pack, raise the budget with a reason). Flags show as Overview alerts, in the Size block of the Hotspots tab, in the `--print` Size row, and in `data.json` (`hotspots.size`). The gate `size` check warns (`file-over-size`, `size-growth`) and never fails (docs/policies/merge-gate.md). Raise a budget only with a recorded reason.
+
 ## When a budget is breached
 Pick the top 1–3 suggestions from `metrics/REPORT.md` by saving/effort, do them, record the result as a learning. Change a budget only with a recorded reason.
 
