@@ -28,7 +28,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is paid every turn). Details live… |
-| docs/BACKLOG.md | 62 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
+| docs/BACKLOG.md | 63 | Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,… |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the `brainstorm` skill after the user… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.… |
 | docs/TECH-DEBT.md | 31 | Known shortcuts and their cost; the dashboard reads this file plus automated signals… |
@@ -74,6 +74,7 @@
 | docs/specs/dashboard-observability-design.md | 207 | Status: accepted · 2026-11-07 · Owner: software-architect · PRD:… — sections: Module layout:7, Model file:…:34, How each layer is derived:50, SVG diagram (`obs/svg.py`):79, Traceability keys (ADR 0004):88, data.json additions…:105, --print rows (one per tab):110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order (one…:142, Slice 2 as built:165, Slice 3 as built:171, Evals tab (EVAL-2):177, Evals tab views (EVAL-4):182, Evals tab: backlog flow…:187, Carbon look (DASH-3):191, Roadmap views (DASH-4):200 |
 | docs/specs/dashboard-observability-tabs.md | 78 | Status: approved · 2026-11-07 · by user in chat (all three slices; open questions… |
 | docs/specs/dashboard-roadmap-v2.md | 76 | Status: approved · 2026-11-07 · by user in chat · Owner: product-manager · Backlog:… |
+| docs/specs/docs-index-first.md | 16 | Status: approved · 2026-11-14 · by user in chat ("update documentation, split files that… |
 | docs/specs/eval-visualizations.md | 92 | Status: approved · 2026-11-11 · by user in chat · Owner: product-manager · Backlog: M2 →… |
 | docs/specs/fast-checks-and-guard-gaps.md | 29 | Status: approved · 2026-11-14 · by user in chat ("Ok keep doing that, PRD approved",… |
 | docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A: C1 and C2; C3 approved… — sections: Problem:5, Goal and success measure:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user, 2026-11-12):138 |
