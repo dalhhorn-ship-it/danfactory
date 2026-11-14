@@ -577,19 +577,29 @@ class AsyncDelivery(unittest.TestCase):
 
 
 def copy_repo(d):
-    """cp -r of this checkout into d. In a git worktree .git is a FILE pointing at the main repo's gitdir (shared config):
-    a copy that kept it would make `git remote remove`, `git config`, commits in the copy hit the REAL repo (TD-021).
-    There the pointer is replaced by a fresh repo (same origin url, snapshot commit)."""
-    subprocess.run(["cp", "-r", ROOT, d], check=True)
-    if os.path.isfile(os.path.join(d, ".git")):
-        os.remove(os.path.join(d, ".git"))
-        url = subprocess.run(["git", "-C", ROOT, "config", "--get", "remote.origin.url"], capture_output=True, text=True).stdout.strip()
-        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
-        subprocess.run(["git", "init", "-q"], cwd=d, check=True)
-        if url:
-            subprocess.run(["git", "remote", "add", "origin", url], cwd=d, check=True)
-        subprocess.run(["git", "add", "-A"], cwd=d, check=True, capture_output=True)
-        subprocess.run(git + ["commit", "-q", "--allow-empty", "--no-verify", "-m", "snapshot"], cwd=d, check=True, capture_output=True)
+    """A copy of this checkout's git-tracked files (working-tree content) in d, as a fresh git repo with the same origin
+    url and one snapshot commit. Never `cp -r` of the checkout: in a worktree .git is a FILE pointing at the main repo's
+    gitdir, so git commands in the copy hit the REAL repo (TD-021); and copying .git or ignored files races with git and
+    other tests writing them (cp failed mid-copy in a gate run, 2026-11-14)."""
+    os.makedirs(d, exist_ok=True)
+    files = subprocess.run(["git", "-C", ROOT, "ls-files", "-z"], capture_output=True, text=True, check=True).stdout
+    for f in (x for x in files.split("\0") if x):
+        src = os.path.join(ROOT, f)
+        if not os.path.lexists(src):
+            continue  # deleted in the working tree
+        dst = os.path.join(d, f)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if os.path.islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+            shutil.copy2(src, dst)
+    url = subprocess.run(["git", "-C", ROOT, "config", "--get", "remote.origin.url"], capture_output=True, text=True).stdout.strip()
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+    subprocess.run(["git", "init", "-q"], cwd=d, check=True)
+    if url:
+        subprocess.run(["git", "remote", "add", "origin", url], cwd=d, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=d, check=True, capture_output=True)
+    subprocess.run(git + ["commit", "-q", "--allow-empty", "--no-verify", "-m", "snapshot"], cwd=d, check=True, capture_output=True)
     return d
 
 
