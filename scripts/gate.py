@@ -523,6 +523,17 @@ def _prd_rules(root):
 
 
 def c_prd(ctx):
+    """`prd` plus a standing `prd-waiver-active` warning while a user waiver is in force (GRD-2)."""
+    status, codes, detail = _c_prd(ctx)
+    rules = _prd_rules(ctx["root"]) if ctx["gate"].get("prd", "required") != "off" else None
+    waivers = [x for x in rules.exemptions(ctx["root"]) if x["active"] and x["kind"] == "waiver"] if rules else []
+    if not waivers:
+        return status, codes, detail
+    note = " [WAIVER ACTIVE until end of day: %s]" % "; ".join(x["reason"][:80] for x in waivers)
+    return ("fail" if status == "fail" else "warn"), codes + ["prd-waiver-active"], detail + note
+
+
+def _c_prd(ctx):
     """Product-code commits in range need `Refs:` to an item with an approved PRD (or an ISS-n of one), or `PRD-Exempt:`."""
     mode = ctx["gate"].get("prd", "required")
     if mode == "off":
@@ -560,9 +571,55 @@ def c_prd(ctx):
     return "warn", ["no-approved-prd"], msg + " (advisory)"
 
 
+def c_size(ctx):
+    """Warn (never fail): a product file over file_lines_max that the change range grew, or 30-day code growth over budget."""
+    try:
+        from obs import size
+    except ImportError:
+        return "skip", [], "scripts/obs/size.py is missing (copy it from the template to enable this check)"
+    root = ctx["root"]
+    b = size.budgets(ctx["factory"])
+    if not ctx["base"]:
+        return "skip", [], "no base to diff against"
+    added = {}
+    for line in (git(root, "diff", "--numstat", "--no-renames", ctx["base"]) or "").splitlines():
+        parts = line.split("\t", 2)
+        if len(parts) == 3 and parts[0].isdigit():
+            added[parts[2]] = int(parts[0])
+    for st, p in changes(root, ctx["base"]):
+        if st == "?":
+            try:
+                with open(os.path.join(root, p), "rb") as fh:
+                    added[p] = size._lines(fh.read())
+            except OSError:
+                pass
+    codes, notes = [], []
+    for p, n in sorted(added.items()):
+        if n <= 0 or not size.is_product(p):
+            continue
+        try:
+            with open(os.path.join(root, p), "rb") as fh:
+                total = size._lines(fh.read())
+        except OSError:
+            continue
+        if total > b["file_lines_max"]:
+            notes.append("%s +%d lines, now %d (max %d): split it or move it to an optional pack" % (p, n, total, b["file_lines_max"]))
+    if notes:
+        codes.append("file-over-size")
+    if size.has_git(root):
+        now = size._count(size.current_files(root))
+        g = (size.growth(root, now).get("30") or {}).get("areas", {}).get("code")
+        if g and g["pct"] is not None and g["pct"] > b["code_growth_30d_pct_warn"]:
+            codes.append("size-growth")
+            notes.append("product code grew %.0f%% in %d days (warn at %s%% per 30 days)" % (g["pct"], size.growth(root, now)["30"]["days"], b["code_growth_30d_pct_warn"]))
+    if not codes:
+        return "pass", [], "no product file over %d lines grew; code growth within budget" % b["file_lines_max"]
+    return "warn", codes, "; ".join(notes[:6]) + (" ..." if len(notes) > 6 else "")
+
+
 CHECKS = (("structure", c_structure), ("build", c_build), ("lint", c_lint), ("tests", c_tests),
           ("coverage", c_coverage), ("acceptance", c_acceptance), ("protected", c_protected),
-          ("prd", c_prd), ("review", c_review), ("security", c_security))
+          ("prd", c_prd), ("review", c_review), ("security", c_security), ("size", c_size))
 
 
 # ---------------------------------------------------------------- run

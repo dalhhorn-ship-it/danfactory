@@ -148,7 +148,7 @@ def counts(lines):
     return out
 
 
-TEMPLATE_TEST = "python3 -m unittest discover -s .factory/tests"
+TEMPLATE_TEST = "python3 scripts/run_tests.py"  # parallel unittest discover over .factory/tests (same tests)
 
 
 def template_mode():

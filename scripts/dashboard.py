@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
-from obs import (theme, delivery, roadmap_data, roadmap_views, tab_architecture, tab_cost, tab_decisions, tab_autonomy, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
+from obs import (size, theme, delivery, roadmap_data, roadmap_views, tab_architecture, tab_cost, tab_decisions, tab_autonomy, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
                  tab_hotspots, tab_traceability)
 
 OUT = os.path.join(ROOT, "dashboard")
@@ -369,6 +369,7 @@ def collect():
     for key, _label, mod in TABS:  # each module may read earlier tabs' data from d
         if mod:
             d[key] = mod.collect(ROOT, d)
+    d["metrics"]["alerts"] = d["metrics"]["alerts"] + d["hotspots"]["size"]["alerts"]  # size flags show on the Overview
     return d
 
 
@@ -613,6 +614,7 @@ def summary(d):
     for key, label, mod in TABS:
         if mod:
             lines.append("| %s | %s |" % (label, mod.line(d[key])))
+    lines.append("| Size | %s |" % size.line(d["hotspots"]["size"]))
     lines.append("| Acceptance | %s |" % tab_gates.acceptance_line((d.get("gates") or {}).get("acceptance")))
     ci_line = delivery.line(d["delivery"])
     if ci_line:

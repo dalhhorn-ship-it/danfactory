@@ -25,7 +25,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] EVAL-2 Agent eval harness slice 2: Evals dashboard card/tab (docs/specs/agent-eval-harness.md) (M) #feature
 - [x] EVAL-4 Eval visualizations slice A: eval library with proof strength, results heatmap, gate coverage map, eval economics (cost vs pass rate per model) (docs/specs/eval-visualizations.md) (M) #feature
 - [x] EVAL-5 Eval visualizations slice B: cumulative flow of backlog items with covered-by-eval band (docs/specs/eval-visualizations.md) (M) #feature
-- [!] EVAL-3 Agent eval harness slice 3: landing page section and LLM-judge graders (docs/specs/agent-eval-harness.md) (M) (release: v0.2) #feature
+- [ ] EVAL-3 Agent eval harness slice 3: landing page section and LLM-judge graders (docs/specs/agent-eval-harness.md) (M) (release: v0.2) #feature
 
 ## Milestone: M3 — Gated autonomy (target: 2026-11-27)
 > Sequence: PRD docs/specs/gated-autonomy.md, design ADR 0007. Slice A approved 2026-11-12 (AUTO-1, AUTO-2): gate first because every later step leans on it and it helps supervised work today; acceptance suite second, opened by the risk 1 spike on the textkit fixture. AUTO-3 to AUTO-7 are the plan only: each needs the user's approval before build. The user keeps PRD approval, build starts and pushes to main.
@@ -38,8 +38,11 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
 ## Unplanned
-- [~] FAST-1 Template checks within the 120 s budget: parallel or split slow set, CI runs everything (docs/specs/fast-checks-and-guard-gaps.md) (M) #quality
-- [~] GRD-2 PRD guard covers shell-made writes; self-claimed waivers need the user's words (TD-016) (docs/specs/fast-checks-and-guard-gaps.md) (M) #security
+- [~] SIZE-2 Autonomy as an optional pack: bootstrap leaves it out, pack.py adds it from a pinned template commit (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-1) #quality
+- [~] SIZE-3 Split runner.py, acceptance.py, gate.py, dashboard.py, guard_bash_policy.py under the size budget, no behaviour change (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-2) #quality
+- [x] SIZE-1 Size monitoring: budgets in factory.json, Size block + alerts on the dashboard, gate warns on oversize files and growth (docs/specs/size-monitoring.md) (M) #quality
+- [x] FAST-1 Template checks within the 120 s budget: parallel or split slow set, CI runs everything (docs/specs/fast-checks-and-guard-gaps.md) (M) #quality
+- [x] GRD-2 PRD guard covers shell-made writes; self-claimed waivers need the user's words (TD-016) (docs/specs/fast-checks-and-guard-gaps.md) (M) #security
 - [~] AUTO-8 Parallel fixers as processes; re-review after rebase (TD-020) (docs/specs/fast-checks-and-guard-gaps.md) (M) (after: FAST-1) #foundation
 - [x] TD-PILOT Fix pilot 2 debt: TD-017 bootstrap resets template records, TD-018 issue titles, TD-019 runner ratchets the acceptance baseline (S) #debt
 - [x] GRD-1 PRD write guard: hook blocks product-code edits without an in-progress approved item, gate check `prd`, exemption file (docs/specs/prd-write-guard.md) (M) #security

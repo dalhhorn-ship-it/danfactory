@@ -11,16 +11,17 @@
 ## Checks, in order
 | Check | What it runs | Codes |
 |---|---|---|
-| structure | `bash scripts/check.sh` (template structure and its own tests) | `structure-failed` |
+| structure | `bash scripts/check.sh` (template structure and its own tests, run in parallel by `scripts/run_tests.py`; full set, nothing skipped) | `structure-failed` |
 | build | `commands.build` | `build-failed` |
 | lint | `commands.lint` | `lint-failed` |
 | tests | `python3 scripts/metrics.py test`; skipped in template mode (check.sh runs the suite) | `tests-failed`, `tests-over-budget` (warn), `tests-include-acceptance` (warn: `commands.test` would discover tests/acceptance) |
 | coverage | last full-run coverage against `budgets.min_coverage_pct` and `max_coverage_drop_pct` | `coverage-below-min`, `coverage-dropped` |
 | acceptance | `scripts/acceptance.py run --json` once the suite exists (AUTO-2), else skip | `acceptance-regression`, `test-not-admitted`, `acceptance-error` (also: the suite or script is gone while the baseline lists tests, a collection error, a runner error), `open-prd-questions` (warn), `acceptance-unmapped` (warn) |
 | protected | changed paths matching `gate.protected`; baseline ids removed | `protected-path`, `baseline-shrunk` |
-| prd | product-code commits in range (any path outside `docs/`, `issues/`, `tests/acceptance/`, `metrics/`, `.factory/`, `factory.json`, root `*.md` except CLAUDE.md) need `Refs:` to an item or PRD slug with an approved PRD, `Refs: ISS-n` of an issue whose PRD is approved, or a `PRD-Exempt:` trailer; the detail lists active and expired `.factory/prd-exemption` lines | `no-approved-prd` (fail in `required`, warn in `advisory`) |
+| prd | product-code commits in range (any path outside `docs/`, `issues/`, `tests/acceptance/`, `metrics/`, `.factory/`, `factory.json`, root `*.md` except CLAUDE.md) need `Refs:` to an item or PRD slug with an approved PRD, `Refs: ISS-n` of an issue whose PRD is approved, or a `PRD-Exempt:` trailer; the detail lists active and expired `.factory/prd-exemption` lines | `no-approved-prd` (fail in `required`, warn in `advisory`), `prd-waiver-active` (warn in every verdict while a quoted `waiver` line dated today exists; a fail stays a fail) |
 | review | `Review:` trailers on the non-merge commits in range | `review-missing`, `review-fix-first` |
 | security | added lines of the diff against base (tracked files, committed plus working tree), plus untracked files for path rules | `secret-in-diff`, `env-file-added`, `unpinned-action`, `pipe-to-shell` |
+| size | `git diff --numstat` against base: product files over `budgets.size.file_lines_max` that the range grew, and product-code growth over `code_growth_30d_pct_warn` in 30 days (never fails; docs/policies/testing-and-metrics.md "Size budgets") | `file-over-size` (warn), `size-growth` (warn) |
 
 The `prd` check needs `.claude/hooks/_prd.py` (shared with the write guard); without it the check reports `skip`.
 

@@ -33,10 +33,11 @@
    "id": "hook-guard-prd-write",
    "title": "Product-code edits are blocked without an in-progress item linked to an approved PRD (or a same-day exemption)",
    "kind": "hook",
-   "source": ".claude/settings.json (PreToolUse Edit|Write|MultiEdit|NotebookEdit)",
+   "source": ".claude/settings.json (PreToolUse Edit|Write|MultiEdit|NotebookEdit|Bash)",
    "gates": [
     "prd-gate",
-    "prd-gate-forced"
+    "prd-gate-forced",
+    "prd-shell-gate-forced"
    ],
    "hook": "guard_prd_write.py"
   },

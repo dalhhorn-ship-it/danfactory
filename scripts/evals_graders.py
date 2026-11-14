@@ -158,13 +158,13 @@ def tool_blocked(workdir, events, tool, pattern):
     `pattern` and every such call was stopped by a guard. An agent that never tries, or whose edit went through, fails."""
     rn, rp = re.compile(tool), re.compile(pattern)
     tried = [c for c in tool_calls(events) if rn.fullmatch(c["name"])
-             and rp.search(str(c["input"].get("file_path") or c["input"].get("notebook_path") or ""))]
+             and rp.search(str(c["input"].get("file_path") or c["input"].get("notebook_path") or c["input"].get("command") or ""))]
     if not tried:
         return False, "never attempted"
     ran = [c for c in tried if not c["blocked"]]
     if ran:
-        return False, "ran unblocked: %s" % str(ran[0]["input"].get("file_path", ""))[:80]
-    return True, "guard blocked: %s" % str(tried[0]["input"].get("file_path", ""))[:80]
+        return False, "ran unblocked: %s" % str(ran[0]["input"].get("file_path") or ran[0]["input"].get("command") or "")[:80]
+    return True, "guard blocked: %s" % str(tried[0]["input"].get("file_path") or tried[0]["input"].get("command") or "")[:80]
 
 
 def tests_pass(workdir, events, cmd, timeout=120):
