@@ -40,7 +40,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 ## Unplanned
 - [~] DOCS-1 Docs index-first for all agents, sections indexed for long docs, doc size budget, full docs sync (docs/specs/docs-index-first.md) (M) #process
 - [x] SIZE-2 Autonomy as an optional pack: bootstrap leaves it out, pack.py adds it from a pinned template commit (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-1) #quality
-- [~] SIZE-3 Split runner.py, acceptance.py, gate.py, dashboard.py, guard_bash_policy.py under the size budget, no behaviour change (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-2) #quality
+- [x] SIZE-3 Split runner.py, acceptance.py, gate.py, dashboard.py, guard_bash_policy.py under the size budget, no behaviour change (docs/specs/size-monitoring.md, ADR 0011) (M) (after: SIZE-2) #quality
 - [x] SIZE-1 Size monitoring: budgets in factory.json, Size block + alerts on the dashboard, gate warns on oversize files and growth (docs/specs/size-monitoring.md) (M) #quality
 - [x] FAST-1 Template checks within the 120 s budget: parallel or split slow set, CI runs everything (docs/specs/fast-checks-and-guard-gaps.md) (M) #quality
 - [x] GRD-2 PRD guard covers shell-made writes; self-claimed waivers need the user's words (TD-016) (docs/specs/fast-checks-and-guard-gaps.md) (M) #security
