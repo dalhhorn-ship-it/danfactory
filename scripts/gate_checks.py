@@ -204,7 +204,7 @@ def _c_prd(ctx):
         if not any(rules.is_product_path(f) for f in files):
             continue
         product += 1
-        tr = c["trailers"]
+        tr = c["loose"]
         if any(v.strip() for v in tr.get("prd-exempt", [])):
             used += 1
             continue

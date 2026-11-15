@@ -350,7 +350,7 @@ class Review(Base):
         return self.repo({"commands": {}, "gate": {"review": mode}})
 
     def test_modes(self):
-        for mode, want in (("off", ("skip", [])), ("advisory", ("warn", ["review-missing"])),
+        for mode, want in (("off", ("skip", [])), ("advisory", ("pass", [])),
                            ("required", ("fail", ["review-missing"]))):
             r = self.mode(mode)
             r.commit("work")
@@ -378,6 +378,78 @@ class Review(Base):
         r.commit("main work")
         r.g("merge", "-q", "--no-ff", "side", "-m", "merge side", "-m", "Review: ship")
         self.assertEqual(r.check("review")["codes"], ["review-missing"])
+
+    def test_advisory_detail_and_docs_only_commits_need_no_review(self):  # GATE-2 criteria 3, 4
+        r = self.mode("advisory")
+        r.write("src/a.py", "x = 1\n")
+        r.commit("code")
+        r.write("docs/a.md", "x")
+        r.write("metrics/h.jsonl", "{}")
+        r.write("README.md", "x")
+        r.write(".factory/HANDOFF.md", "x")
+        r.commit("notes")
+        c = r.check("review")
+        self.assertEqual((c["status"], c["codes"], c["detail"]), ("pass", [], "advisory: no review on 1 product commit(s)"))
+        req = self.mode("required")
+        req.write("docs/a.md", "x")
+        req.commit("docs only")
+        self.assertEqual(req.check("review")["status"], "pass")
+        req.write("src/a.py", "x")
+        req.commit("code")
+        self.assertEqual(req.check("review")["codes"], ["review-missing"])
+
+
+class LooseTrailers(Base):
+    def test_refs_and_exempt_anywhere_but_review_strict(self):  # GATE-2 criterion 1
+        r = self.repo()
+        r.write("src/a.py", "x")
+        r.g("add", "-A")
+        r.g("commit", "-q", "-m", "work", "-m", "Refs: demo", "-m", "Co-Authored-By: A <a@b.c>")
+        self.assertEqual(r.check("prd")["status"], "pass")
+        r.write("src/b.py", "x")
+        r.g("add", "-A")
+        r.g("commit", "-q", "-m", "more", "-m", "PRD-Exempt: chore", "-m", "text after")
+        self.assertEqual(r.check("prd")["status"], "pass")
+        r.write("src/c.py", "x")
+        r.g("add", "-A")
+        r.g("commit", "-q", "-m", "refs: demo")  # case-sensitive, not a Refs line
+        self.assertEqual(r.check("prd")["codes"], ["no-approved-prd"])
+        r2 = self.repo({"commands": {}, "gate": {"review": "required"}})
+        r2.g("commit", "-q", "--allow-empty", "-m", "x", "-m", "Review: ship", "-m", "Co-Authored-By: A <a@b.c>")
+        self.assertEqual(r2.check("review")["codes"], ["review-missing"])
+
+
+class PrepareCommitMsg(Base):
+    def setUp(self):
+        self.r = Repo()
+        self.addCleanup(self.r.cleanup)
+
+    def run_hook(self, backlog, msg="work\n"):
+        r = self.r
+        r.write("docs/BACKLOG.md", backlog)
+        path = os.path.join(r.root, "MSG")
+        with open(path, "w") as fh:
+            fh.write(msg)
+        script = os.path.join(os.path.dirname(gate.__file__), "prepare_commit_msg.py")
+        env = dict(os.environ, GIT_CEILING_DIRECTORIES=os.path.dirname(r.root))
+        p = subprocess.run([sys.executable, script, path, r.root], cwd=r.root, capture_output=True, text=True, env=env)
+        return open(path).read(), p.stderr
+
+    def test_one_item_adds_refs(self):  # GATE-2 criterion 2
+        out, _ = self.run_hook("- [~] ABC-1 thing\n- [ ] ABC-2 other\n- [x] ABC-3 done\n")
+        self.assertIn("Refs: ABC-1", out)
+
+    def test_existing_refs_untouched(self):
+        out, _ = self.run_hook("- [~] ABC-1 thing\n", "work\n\nRefs: X-9\n")
+        self.assertEqual(out, "work\n\nRefs: X-9\n")
+
+    def test_zero_or_many_add_nothing_and_list(self):
+        out, err = self.run_hook("- [ ] ABC-2 other\n")
+        self.assertEqual(out, "work\n")
+        self.assertIn("none", err)
+        out, err = self.run_hook("- [~] ABC-1 a\n- [~] ABC-2 b\n")
+        self.assertEqual(out, "work\n")
+        self.assertIn("ABC-1, ABC-2", err)
 
 
 class Security(Base):

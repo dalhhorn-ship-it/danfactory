@@ -118,6 +118,29 @@ def trailers(message):
     return out
 
 
+LOOSE_RE = re.compile(r"^(Refs|PRD-Exempt):[ \t]*(\S.*?)\s*$", re.M)
+
+
+def loose_trailers(message):
+    """{refs|prd-exempt: [values]} from `Refs:`/`PRD-Exempt:` lines anywhere in a message (case-sensitive, anchored).
+    Review: and Acceptance-Change: are not read this way; they stay last-trailer-block only."""
+    out = {}
+    for m in LOOSE_RE.finditer(message):
+        out.setdefault(m.group(1).lower(), []).append(m.group(2))
+    return out
+
+
+def review_free_path(path):
+    """Paths whose commits need no review: docs, metrics, root markdown, the handoff note."""
+    return path.startswith(("docs/", "metrics/")) or path == ".factory/HANDOFF.md" or ("/" not in path and path.endswith(".md"))
+
+
+def needs_review(root, sha):
+    """True unless the commit touches files and every one is review-free (an empty commit counts as product)."""
+    files = [f for f in (git(root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "-z", sha) or "").split("\0") if f]
+    return not files or not all(review_free_path(f) for f in files)
+
+
 def commits(root, base, *paths):
     """Non-merge commits in base..HEAD (newest first) as [{sha, trailers}], optionally touching paths."""
     args = ["log", "--no-merges", "--format=%H%x00%B%x01", "%s..HEAD" % base]
@@ -129,7 +152,7 @@ def commits(root, base, *paths):
         rec = rec.strip("\n")
         if "\x00" in rec:
             sha, msg = rec.split("\x00", 1)
-            res.append({"sha": sha.strip(), "trailers": trailers(msg)})
+            res.append({"sha": sha.strip(), "trailers": trailers(msg), "loose": loose_trailers(msg)})
     return res
 
 
@@ -376,9 +399,12 @@ def c_review(ctx):
         return "fail", ["review-fix-first"], "latest review trailer says fix-first"
     if verdict == "ship":
         return "pass", [], "Review: ship"
+    n = sum(1 for c in cs if needs_review(ctx["root"], c["sha"]))
+    if n == 0:
+        return "pass", [], "no product commits in range need review"
     if mode == "required":
         return "fail", ["review-missing"], "no Review: ship trailer in range"
-    return "warn", ["review-missing"], "no Review trailer in range (advisory)"
+    return "pass", [], "advisory: no review on %d product commit(s)" % n
 
 
 from gate_checks import added_lines, c_prd, c_security, c_size, scan  # noqa: E402,F401  (after the helpers: gate_checks reads them lazily)

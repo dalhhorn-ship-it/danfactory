@@ -1,0 +1,7 @@
+#!/bin/sh
+# Adds `Refs: <ID>` when the message has none and exactly one `[~]` backlog item has an ID (GATE-2).
+# Never fails the commit. Skips merge, squash and amend (commit source "commit" with -c/-C/--amend).
+case "$2" in merge|squash|commit) exit 0 ;; esac
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+python3 "$ROOT/scripts/prepare_commit_msg.py" "$1" 2>&1 >/dev/null | cat >&2
+exit 0
