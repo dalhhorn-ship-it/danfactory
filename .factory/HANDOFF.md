@@ -1,12 +1,12 @@
-# Handoff — 2026-11-15 — template ready (main 134063d); waiting on user's GitHub steps
+# Handoff — 2026-11-15 — v0.2.0 released (7428d46); template ready
 
 ## Task
 User (PM, not technical on infra: plain words, one recommendation) runs danfactory as a template for agentic engineering. User approves every PRD, decides which builds start; standing permission to fast-forward main after a gate PASS on that exact sha.
 
 ## State
-- danfactory main = 134063d: gated autonomy (AUTO-1..8), PRD write guard (GRD-1/2), size monitoring + autonomy pack + file splits (SIZE-1..3), index-first docs (DOCS-1), fast/reliable checks (FAST-1/2), new-project readiness (NEW-1..3). Open debt: TD-023 only.
+- danfactory main = 7428d46 = tag v0.2.0 (user created the release 2026-11-15). Includes GATE-2 (gate warnings that mean something): gated autonomy (AUTO-1..8), PRD write guard (GRD-1/2), size monitoring + autonomy pack + file splits (SIZE-1..3), index-first docs (DOCS-1), fast/reliable checks (FAST-1/2), new-project readiness (NEW-1..3). Open debt: TD-023 only.
 - lpdan main = 666f7e7 (template update + gated autonomy + worked example sections), CI green, deploy succeeded.
-- User steps pending: GitHub "Template repository" setting; release tag v0.2.0 on 134063d (session proxy refuses tag pushes).
+- User step: GitHub "Template repository" setting (asked; v0.2.0 tag done). Session proxy refuses tag pushes: tags are the user's.
 
 ## Next steps
 1. Wait for the user. Remaining friction list was given 2026-11-15 (see chat); nothing approved beyond it.
