@@ -38,6 +38,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
 ## Unplanned
+- [~] GATE-2 Gate warnings that mean something: Refs anywhere, auto-Refs hook, no review needed for docs/merges, advisory review is info (docs/specs/gate-warning-noise.md) (S) #quality
 - [x] NEW-1 Template ref recorded so the autonomy pack installs in new projects (TD-022) (docs/specs/new-project-readiness.md) (S) #quality
 - [x] NEW-2 Template-owned files and setup items are not project noise (docs/specs/new-project-readiness.md) (S) #quality
 - [x] NEW-3 New-project smoke test in the template's CI (docs/specs/new-project-readiness.md) (S) #quality
