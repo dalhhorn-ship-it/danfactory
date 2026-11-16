@@ -263,6 +263,14 @@
    "gates": [
     "fixer-reuse-library"
    ]
+  },
+  {
+   "id": "hook-mission-stop",
+   "title": "Stop hook continues an active mission until done or a cap",
+   "kind": "hook",
+   "source": ".claude/settings.json (Stop)",
+   "gates": [],
+   "hook": "mission_stop.py"
   }
  ]
 }

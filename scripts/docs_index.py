@@ -160,7 +160,10 @@ def render(docs, curated):
     ]
     limit = sections_threshold()
     for d in docs:
-        summary = cell(d["summary"] or d["title"], 60)  # DOCS-1: the index must stay under the doc budget as docs grow
+        text = d["summary"] or d["title"]
+        if text.startswith("Status:") and d["title"]:  # spec/ADR status lines say little; the title says what it is
+            text = d["title"]
+        summary = cell(text, 48)  # DOCS-1: the index must stay under the doc budget as docs grow
         if d["tokens"] > limit:
             secs = ", ".join("%s:%d" % (cell(t, 22), n) for n, lvl, t in d["headings"] if lvl == 2)
             summary += " — sections: " + secs
