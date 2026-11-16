@@ -6,7 +6,7 @@
 
 Honest limits (comments, not promises): this reads command text only. git run by a script or a generated
 program, shell aliases, `gh api`, `git -c alias.x=...`, refspecs built from variables and the GitHub web UI
-are not seen. The real protection is GitHub branch protection plus credential scoping (ADR 0003,
+are not seen. `git symbolic-ref`/`update-ref` naming a protected branch are blocked by name only. The real protection is GitHub branch protection plus credential scoping (ADR 0003,
 docs/policies/security.md). Errors here fail open (the guard must never wedge a session).
 """
 import json
@@ -71,6 +71,8 @@ def split_git(args):
 
 
 def positionals(rest, value_flags=()):
+    """Non-flag args. `--opt=value` and `-o=value` are one token (never positional); a flag in `value_flags`
+    given without `=` swallows the next arg."""
     out, skip = [], False
     for a in rest:
         if skip:
@@ -82,6 +84,16 @@ def positionals(rest, value_flags=()):
         elif not a.startswith("-"):
             out.append(a)
     return out
+
+
+def has_flag(rest, *names):
+    """True when any of `names` appears as `--flag` or `--flag=value` before a bare `--`."""
+    for a in rest:
+        if a == "--":
+            break
+        if a in names or a.split("=", 1)[0] in names:
+            return True
+    return False
 
 
 def check(prog, args, cwd, root=None):
@@ -108,7 +120,7 @@ def _check(prog, args, cwd, root):
         if "--all" in rest or "--mirror" in rest:
             return why + "`git push --all/--mirror` would push protected branches."
         pos = positionals(rest, PUSH_VALUE_FLAGS)
-        specs = pos[1:]
+        specs = pos if has_flag(rest, "--repo") else pos[1:]  # `--repo X` names the remote: every positional is a refspec
         if not specs:
             return why + "bare `git push` from a protected branch." if cur() in prot else ""
         for s in specs:
@@ -117,6 +129,18 @@ def _check(prog, args, cwd, root):
                 dst = cur()
             if dst in prot:
                 return why + "`git push` to `%s` is blocked; push the mission branch instead." % dst
+        return ""
+    if sub == "fetch":
+        pos = positionals(rest, PUSH_VALUE_FLAGS | {"--depth", "--deepen", "--shallow-since", "--upload-pack", "-j", "--jobs"})
+        for s in (pos if has_flag(rest, "--repo") else pos[1:]):
+            dst = norm(s.split(":", 1)[1]) if ":" in s else ""
+            if dst in prot:
+                return why + "`git fetch ... %s` would overwrite `%s`." % (s, dst)
+        return ""
+    if sub == "symbolic-ref":
+        for p in positionals(rest):
+            if norm(p) in prot:
+                return why + "`git symbolic-ref` pointing at `%s` is blocked." % p
         return ""
     if sub in ("checkout", "switch"):
         for i, a in enumerate(rest):

@@ -117,6 +117,73 @@ class Base(unittest.TestCase):
         self.assertEqual((r.returncode, r.stdout, r.stderr), (0, "", ""))
 
 
+class Validity(Base):
+    def edit_header(self, p, old, new, commit=False):
+        path = os.path.join(p.root, "docs", "missions", "demo.md")
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        self.assertIn(old, text)
+        p.write("docs/missions/demo.md", text.replace(old, new))
+        if commit:
+            p.g("add", "-A")
+            p.g("commit", "-q", "-m", "edit")
+
+    def assertStoppedInvalid(self, p, why=""):
+        r = p.stop()
+        out = self.blocked(r)
+        self.assertNotIn("decision", out)
+        self.assertIn("not valid", out["systemMessage"])
+        self.assertIn(why, out["systemMessage"])
+        self.assertIsNone(p.state())
+
+    def test_raised_caps_after_first_commit_are_invalid_not_honoured(self):
+        p = self.proj(conts=1)
+        self.edit_header(p, "continuations=1", "continuations=999", commit=True)
+        self.assertStoppedInvalid(p, "caps")
+        self.edit_header(p, "continuations=999", "continuations=1")  # restored: valid again
+        self.assertEqual(self.blocked(p.stop())["decision"], "block")
+        self.assertEqual(self.blocked(p.stop())["systemMessage"].split()[0], "Mission")  # cap 1 reached, ends
+
+    def test_uncommitted_mission_is_invalid(self):
+        p = self.proj(mission=False)
+        p.write("docs/missions/demo.md", MISSION.format(status="active", usd=15, hours=10, conts=40,
+                                                        started=NOW.strftime("%Y-%m-%dT%H:%M:%SZ"), date=NOW.strftime("%Y-%m-%d")))
+        self.assertStoppedInvalid(p, "not committed")
+
+    def test_fake_go_is_invalid(self):
+        p = self.proj()
+        self.edit_header(p, 'go: "go, build the demo"', 'go: looks good', commit=True)
+        self.assertStoppedInvalid(p, "go")
+
+    def test_missing_started_at_is_invalid_and_cap_hit_does_not_skip_wall_clock(self):
+        p = self.proj()
+        self.edit_header(p, "started_at: ", "started_at_x: ", commit=True)
+        self.assertStoppedInvalid(p, "started_at")
+        import sys as _s
+        _s.path.insert(0, HOOKS)
+        import _mission as M
+        m = M.load(p.root, "demo")
+        self.assertEqual(M.cap_hit(m, {"continuations": 0, "sessions": {}}), "invalid")
+
+
+class MonotonicState(Base):
+    def test_resetting_counters_in_the_working_copy_does_not_reset_the_caps(self):
+        p = self.proj(conts=3)
+        p.write(".factory/mission-state.json", json.dumps(
+            {"slug": "demo", "continuations": 2, "sessions": {"s1": 4.0}, "ended": None}))
+        p.g("add", "-A")
+        p.g("commit", "-q", "-m", "state")
+        p.write(".factory/mission-state.json", json.dumps(
+            {"slug": "demo", "continuations": 0, "sessions": {"s1": 0.0}, "ended": None}))
+        out = self.blocked(p.stop())
+        self.assertIn("(3/3", out["reason"])  # 2 committed + this one, not 1
+        self.assertAlmostEqual(p.state()["sessions"]["s1"], 4.0, places=2)
+        self.assertEqual(p.state()["continuations"], 3)
+        self.assertIn("continuations", self.blocked(p.stop())["systemMessage"])  # now at the cap
+
+
+
+
 class NoOps(Base):
     def test_no_mission_is_silent_and_writes_nothing(self):
         p = self.proj(mission=False)

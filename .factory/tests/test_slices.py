@@ -25,6 +25,9 @@ MAP = """# Design
 """
 
 
+os.environ["SLICES_TEST_GATE"] = "1"
+
+
 class Repo:
     def __init__(self):
         self.root = tempfile.mkdtemp()
@@ -54,7 +57,9 @@ class Repo:
         self.g("commit", "-qm", name)
         self.g("checkout", "-q", "main")
 
-    def run(self, *args):
+    def run(self, *args, protected_ok=True):
+        if protected_ok and args[:1] == ("land",):
+            args = args + ("--allow-protected",)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             rc = slices.main(list(args), root=self.root)
@@ -196,6 +201,39 @@ class T(unittest.TestCase):
                         "python3 scripts/docs_index.py --check")
         self.assertEqual(rc, 0, out)
         self.assertIn("docs/INDEX.md", r.g("show", "--stat", "--format=", "main"))
+
+    def test_protected_into_needs_allow_protected_and_is_refused_during_a_mission(self):
+        r = self.repo()
+        r.branch("sb", {"src/b/x.py": "1"})
+        before = self.tip(r)
+        args = ("land", "sb", "--map", "design.md", "--slice", "B", "--into", "main", "--gate-cmd", "true")
+        rc, out = r.run(*args, protected_ok=False)
+        self.assertEqual(rc, 1)
+        self.assertIn("--allow-protected", out)
+        self.assertEqual(self.tip(r), before)
+        # a mission that is active refuses even with --allow-protected
+        r.g("checkout", "-q", "-b", "mission/demo")
+        r.write("docs/missions/demo.md", "# Mission: d\n\n<!-- mission:start -->\nslug: demo\nstatus: active\n"
+                "go: \"go\"\ndate: 2026-01-01\nstarted_at: 2026-01-01T00:00:00Z\nbranch: mission/demo\n"
+                "milestone: M5\nscope_in: a\nscope_out: b\n<!-- mission:end -->\n")
+        r.g("add", "-A")
+        r.g("commit", "-qm", "mission")
+        r.g("checkout", "-q", "main")
+        r.g("merge", "-q", "--ff-only", "mission/demo")
+        rc, out = r.run(*args)
+        self.assertEqual(rc, 1)
+        self.assertIn("mission is active", out)
+
+    def test_gate_cmd_is_refused_without_the_test_env_var(self):
+        r = self.repo()
+        r.branch("sb", {"src/b/x.py": "1"})
+        old = os.environ.pop("SLICES_TEST_GATE")
+        try:
+            rc, out = r.run("land", "sb", "--map", "design.md", "--slice", "B", "--into", "main", "--gate-cmd", "true")
+        finally:
+            os.environ["SLICES_TEST_GATE"] = old
+        self.assertEqual(rc, 1)
+        self.assertIn("tests only", out)
 
 
 if __name__ == "__main__":

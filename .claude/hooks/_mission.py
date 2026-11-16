@@ -170,10 +170,10 @@ def validate(root, m):
     return ""
 
 
-def load_state(root, slug):
+def _parse_state(text, slug):
     fresh = {"slug": slug, "continuations": 0, "sessions": {}, "ended": None}
     try:
-        st = json.loads(_read(os.path.join(root, STATE_FILE)))
+        st = json.loads(text)
     except ValueError:
         return fresh
     if not isinstance(st, dict) or st.get("slug") != slug:
@@ -182,6 +182,20 @@ def load_state(root, slug):
     if not isinstance(out["sessions"], dict):
         out["sessions"] = {}
     out["continuations"] = _num(out["continuations"], 0, int)
+    return out
+
+
+def load_state(root, slug):
+    """The working-copy state, with counters made monotonic against the committed copy (HEAD): lowering
+    `continuations` or a session's spend in the file does not help while the higher value is committed.
+    Honest limit: values never committed, or a committed reset, are not seen (docs/policies/mission.md)."""
+    out = _parse_state(_read(os.path.join(root, STATE_FILE)), slug)
+    old = _git(root, "show", "HEAD:" + STATE_FILE)
+    if old:
+        com = _parse_state(old, slug)
+        out["continuations"] = max(out["continuations"], com["continuations"])
+        for sid, usd in com["sessions"].items():
+            out["sessions"][sid] = max(_num(out["sessions"].get(sid), 0.0), _num(usd, 0.0))
     return out
 
 
@@ -199,7 +213,9 @@ def cap_hit(m, state, now=None):
     now = now or _now()
     if m["status"] != "active":
         return "stopped"
-    if m["started_at"] is not None and now >= expires_at(m):
+    if m["started_at"] is None:
+        return "invalid"  # no start time: the wall-clock cap can't be judged, so never run on
+    if now >= expires_at(m):
         return "wall-clock"
     if spent(state) >= m["caps"]["usd"]:
         return "budget"

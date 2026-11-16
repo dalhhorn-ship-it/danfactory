@@ -140,8 +140,25 @@ def check(root, branch, slice_, into):
     return not bad, bad
 
 
-def land(root, branch, slice_, into, gate_cmd=None, say=print):
-    """Land one slice. Returns (ok, reason). Never leaves a worktree behind."""
+def protected_branches(root):
+    """main/master/production/base branch: the same list the mission branch guard uses."""
+    sys.path.insert(0, os.path.join(HERE, "..", ".claude", "hooks"))
+    import _gitmission
+    return _gitmission.protected(root)
+
+
+def land(root, branch, slice_, into, gate_cmd=None, say=print, allow_protected=False):
+    """Land one slice. Returns (ok, reason). Never leaves a worktree behind. Landing into a protected branch
+    (main, master, production, base) needs `allow_protected` and is refused while a mission is active."""
+    if gate_cmd and os.environ.get("SLICES_TEST_GATE") != "1":
+        return False, "--gate-cmd is for tests only (set SLICES_TEST_GATE=1); the gate always runs scripts/gate.py"
+    if into.lstrip("+").replace("refs/heads/", "", 1) in protected_branches(root):
+        sys.path.insert(0, os.path.join(HERE, "..", ".claude", "hooks"))
+        import _mission
+        if _mission.active(root):
+            return False, "a mission is active: landing into protected branch %s is the user's alone (ADR 0012)" % into
+        if not allow_protected:
+            return False, "%s is a protected branch: pass --allow-protected to land into it on purpose" % into
     rc, head = git(root, "rev-parse", "--abbrev-ref", "HEAD")
     if rc != 0 or head != into:
         return False, "not on %s: run land from the checkout that has the integration branch checked out (HEAD is %s)" % (into, head)
@@ -195,7 +212,8 @@ def main(argv=None, root=None):
     ap.add_argument("--map", required=True, help="design doc holding the slice table")
     ap.add_argument("--slice")
     ap.add_argument("--into")
-    ap.add_argument("--gate-cmd", help="override the gate command (default: python3 scripts/gate.py --base <into>)")
+    ap.add_argument("--gate-cmd", help="tests only (needs SLICES_TEST_GATE=1): override the gate command")
+    ap.add_argument("--allow-protected", action="store_true", help="allow --into main/master/production (refused during a mission)")
     ap.add_argument("--root", default=None)
     a = ap.parse_args(argv)
     root = os.path.abspath(a.root or root or os.getcwd())
@@ -229,7 +247,7 @@ def main(argv=None, root=None):
             return 0
         print(("cross-slice requests (outside Owns of %s): %s" % (sl["id"], ", ".join(bad))) if isinstance(bad, list) else bad)
         return 1
-    ok, why = land(root, a.branch, sl, a.into, a.gate_cmd)
+    ok, why = land(root, a.branch, sl, a.into, a.gate_cmd, allow_protected=a.allow_protected)
     print(("landed: " if ok else "NOT merged: ") + why)
     return 0 if ok else 1
 

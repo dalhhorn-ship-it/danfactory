@@ -80,6 +80,11 @@ def run():
     m = mm.active(root)
     if not m or head_branch(root) != m.get("branch"):
         return
+    bad = mm.validate(root, m)
+    if bad:  # caps and go come from the first commit; an invalid mission is treated as stopped
+        print(json.dumps({"systemMessage": "Mission %s is not valid (%s): treated as stopped, not continuing."
+                          % (m["slug"] or "?", bad)}))
+        return
     state = mm.load_state(root, m["slug"])
     if state.get("ended"):
         return

@@ -122,6 +122,14 @@ class ReportTests(unittest.TestCase):
         self.assertIn("no-approved-prd", text)
         self.assertNotIn("oldoldold", text)
 
+    def test_go_words_are_printed_near_the_top(self):
+        p = self.proj()
+        text = self.report(p, "done")
+        head = "\n".join(text.splitlines()[:6])
+        self.assertIn('Go words recorded', head)
+        self.assertIn('"go"', head)
+        self.assertIn("check them against the chat", head)
+
     def test_verdict_variants(self):
         p = self.proj(backlog=BACKLOG.replace("[!] DEMO-3 Billing export parked: out of scope (docs/specs/demo-billing.md)",
                                               "[x] DEMO-3 Billing (docs/specs/demo-billing.md)"))

@@ -110,8 +110,9 @@ def build(root, m, reason, now=None):
     caps = m["caps"]
 
     L = ["# Mission report: %s" % m["slug"], "", verdict(reason, parked_n), "",
-         "Mission: %s (milestone %s, branch `%s`). Go: %s" % (m.get("title") or m["slug"], m.get("milestone") or "?",
-                                                              m.get("branch") or "?", m.get("go") or "?"), ""]
+         "Go words recorded in the mission file (check them against the chat; the agent wrote them): %s" % (m.get("go") or "?"),
+         "", "Mission: %s (milestone %s, branch `%s`)." % (m.get("title") or m["slug"], m.get("milestone") or "?",
+                                                         m.get("branch") or "?"), ""]
 
     L += ["## Shipped", ""]
     done = [i for i in its if i["state"] in "xX"]

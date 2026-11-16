@@ -75,6 +75,8 @@ class Proj:
                               env=env)
 
 
+
+
 class Base(unittest.TestCase):
     def proj(self, **kw):
         p = Proj(**kw)
@@ -108,6 +110,22 @@ class PushAndMerge(Base):
         p = self.proj(production="release")
         self.assertBlocked(p, "git push origin release")
         self.assertBlocked(p, "git push origin main")
+
+    def test_repo_flag_and_option_forms_cannot_hide_a_protected_refspec(self):
+        p = self.proj()
+        for cmd in ("git push --repo origin HEAD:main", "git push --repo=origin HEAD:main", "git push --repo=origin main",
+                    "git push -o=ci.skip origin main", "git push --push-option=x origin HEAD:main",
+                    "git push -o x --repo origin main", "git push --receive-pack=x origin main",
+                    "git fetch origin main:main", "git fetch origin +refs/heads/x:refs/heads/master",
+                    "git fetch --repo=origin x:main", "git symbolic-ref HEAD refs/heads/main",
+                    "git update-ref refs/heads/main HEAD"):
+            with self.subTest(cmd=cmd):
+                self.assertBlocked(p, cmd)
+        for cmd in ("git push --repo=origin mission/demo", "git push --repo origin HEAD:mission/demo",
+                    "git push -o=x origin mission/demo", "git fetch origin main", "git fetch origin main:refs/remotes/origin/main",
+                    "git fetch origin x:mission/x", "git fetch", "git symbolic-ref --short HEAD"):
+            with self.subTest(cmd=cmd):
+                self.assertAllowed(p, cmd)
 
     def test_pushing_the_mission_branch_is_allowed(self):
         p = self.proj()

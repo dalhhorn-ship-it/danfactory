@@ -183,6 +183,13 @@ def c_prd(ctx):
     return ("fail" if status == "fail" else "warn"), codes + ["prd-waiver-active"], detail + note
 
 
+def _commit_time(root, sha):
+    """Commit time of one sha, read directly (the range listing can miss it, e.g. shallow clone or rebased range).
+    Never None: unreadable means the epoch, which is outside every mission window (fail closed, never a live check)."""
+    ct = (git(root, "show", "-s", "--format=%ct", sha) or "").strip()
+    return datetime.datetime.fromtimestamp(int(ct) if ct.isdigit() else 0, datetime.timezone.utc)
+
+
 def _c_prd(ctx):
     """Product-code commits in range need `Refs:` to an item with an approved PRD (or an ISS-n of one), or `PRD-Exempt:`."""
     mode = ctx["gate"].get("prd", "required")
@@ -215,7 +222,7 @@ def _c_prd(ctx):
             used += 1
             continue
         refs = [r for v in tr.get("refs", []) for r in re.split(r"[,\s]+", v) if r]
-        at = times.get(c["sha"])
+        at = times.get(c["sha"]) or _commit_time(root, c["sha"])
         ok = next((s for s in (rules.approving_slug(root, r, at) for r in refs) if s), "")
         if not ok:
             bad.append(c["sha"][:7])

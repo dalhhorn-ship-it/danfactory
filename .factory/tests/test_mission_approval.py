@@ -156,6 +156,24 @@ class Approval(Base):
         self.assertEqual(c["status"], "fail")
         self.assertIn("1 product-code commit(s) without", c["detail"])  # only the late one
 
+    def test_done_mission_still_approves_commits_made_while_active(self):
+        p = self.proj(status="done", started=NOW - datetime.timedelta(hours=6))
+        base = p.g("rev-parse", "HEAD").strip()
+        p.write("src/a.py", "x = 1\n")
+        p.commit("in window", when=NOW - datetime.timedelta(hours=3), trailer="Refs: NIGHT-1")
+        c = {x["id"]: x for x in gate.run_gate(p.root, base, {"prd"})["checks"]}["prd"]
+        self.assertEqual(c["status"], "pass", c["detail"])
+        import gate_checks
+        at = gate_checks._commit_time(p.root, p.g("rev-parse", "HEAD").strip())  # direct %ct, never None
+        self.assertEqual(M.approval(p.root, "night", "night-one", at), (True, ""))
+        self.assertEqual(gate_checks._commit_time(p.root, "0" * 40).year, 1970)  # unreadable: outside every window
+        self.assertFalse(M.approval(p.root, "night", "night-one")[0])  # a live check on a done mission says no
+
+    def test_missing_started_at_cap_hit_is_invalid(self):
+        m = dict(M.load(self.proj().root, "night"), started_at=None)
+        self.assertEqual(M.cap_hit(m, {"continuations": 0, "sessions": {}}), "invalid")
+
+
     def test_invalid_missions(self):
         bads = {"go without a clear yes": dict(go='"looks good"'), "unquoted go": dict(go="go"),
                 "future start": dict(started=NOW + datetime.timedelta(hours=2)),
