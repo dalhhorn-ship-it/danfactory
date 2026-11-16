@@ -1,15 +1,16 @@
-# Handoff — 2026-11-15 — template ready (main 134063d); waiting on user's GitHub steps
+# Handoff — 2026-11-16 — MISSION-1..5 approved, build starting (branch claude/friendly-mccarthy-41do0k)
 
 ## Task
 User (PM, not technical on infra: plain words, one recommendation) runs danfactory as a template for agentic engineering. User approves every PRD, decides which builds start; standing permission to fast-forward main after a gate PASS on that exact sha.
+Now: build mission autopilot (one approved mission brief → PRDs approved by mission → Stop hook keeps going under caps → morning report; no push to main) + parallel build for all modes. PRD docs/specs/mission-autopilot.md (approved 2026-11-16, "Ok"); backlog M4 MISSION-1..5 `[~]`, MISSION-6 later.
 
 ## State
-- danfactory main = 134063d: gated autonomy (AUTO-1..8), PRD write guard (GRD-1/2), size monitoring + autonomy pack + file splits (SIZE-1..3), index-first docs (DOCS-1), fast/reliable checks (FAST-1/2), new-project readiness (NEW-1..3). Open debt: TD-023 only.
-- lpdan main = 666f7e7 (template update + gated autonomy + worked example sections), CI green, deploy succeeded.
-- User steps pending: GitHub "Template repository" setting; release tag v0.2.0 on 134063d (session proxy refuses tag pushes).
+- main = 134063d. Branch claude/friendly-mccarthy-41do0k has GATE-2 + MISSION PRD (approved).
+- Plan: software-architect writes ADR 0012 with slice/file-ownership map, then developers in parallel worktrees, serial merges with gate, reviewer, docs-sync.
+- Defaults decided: 15 USD, 10 h, 40 continuations; feature cap 5.
 
 ## Next steps
-1. Wait for the user. Remaining friction list was given 2026-11-15 (see chat); nothing approved beyond it.
+1. ADR 0012 design (architect) → parallel developer slices → merge one at a time → `python3 scripts/metrics.py test`, `bash scripts/check.sh`, gate → tick backlog, docs-sync, push.
 
 ## Watch out
 - Only move main after a gate PASS on that sha. Tests must copy repos via tracked files into a fresh repo (never cp -r).
@@ -17,4 +18,4 @@ User (PM, not technical on infra: plain words, one recommendation) runs danfacto
 - Keep this note short: it counts toward the always-loaded budget (2,500 tokens).
 
 ## Pointers
-- docs/specs/new-project-readiness.md, docs/specs/size-monitoring.md, docs/decisions/0007..0011, evals/spikes/pilot-semverlite/README.md
+- docs/specs/mission-autopilot.md, docs/policies/prd-approval.md, docs/policies/runner.md, docs/decisions/0007..0011

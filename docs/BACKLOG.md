@@ -37,6 +37,15 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] AUTO-6 Parallel fixers (2 to 4, worktrees, merges serialised) and scheduled runs only with the user's standing go (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-5) #foundation
 - [x] AUTO-7 Learning from gate rejections: reason-code trends, candidate rules, fixer-loop eval tasks, Autonomy view (docs/specs/gated-autonomy.md, ADR 0010) (M) (after: AUTO-4) #foundation
 
+## Milestone: M4 — Mission autopilot (target: 2026-11-20)
+> Sequence: PRD docs/specs/mission-autopilot.md, approved 2026-11-16 (MISSION-1..5 together; MISSION-6 after a real overnight run).
+- [~] MISSION-1 Mission file, brief template, recorded "go", mission approval of in-scope PRDs in guard and gate, ADR (docs/specs/mission-autopilot.md) (M) #foundation
+- [~] MISSION-2 Stop hook keeps the mission going, with budget, wall-clock and continuation caps (docs/specs/mission-autopilot.md) (M) (after: MISSION-1) #foundation
+- [~] MISSION-3 Branch safety: no push or merge to main/production during a mission (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #security
+- [~] MISSION-4 Morning report and dashboard link (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #feature
+- [~] MISSION-5 Parallel build in all modes: slices with file ownership, waves, worktrees, serial gated merges (docs/specs/mission-autopilot.md) (M) #process
+- [ ] MISSION-6 Optional watchdog resume (opt-in schedule) (docs/specs/mission-autopilot.md) (S) (after: MISSION-2) #foundation
+
 ## Unplanned
 - [x] GATE-2 Gate warnings that mean something: Refs anywhere, auto-Refs hook, no review needed for docs/merges, advisory review is info (docs/specs/gate-warning-noise.md) (S) #quality
 - [x] NEW-1 Template ref recorded so the autonomy pack installs in new projects (TD-022) (docs/specs/new-project-readiness.md) (S) #quality

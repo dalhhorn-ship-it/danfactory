@@ -28,7 +28,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 40 | Always-loaded instructions. Keep short and stable (it is… |
-| docs/BACKLOG.md | 68 | Milestones and work items; the dashboard reads this file.… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Unplanned:40 |
+| docs/BACKLOG.md | 77 | Milestones and work items; the dashboard reads this file.… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:49 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by the… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s), rigor, agents,… |
 | docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard reads this… — sections: Open:7, Resolved:10 |
@@ -83,7 +83,7 @@
 | docs/specs/fast-checks-and-guard-gaps.md | 29 | Status: approved · 2026-11-14 · by user in chat ("Ok keep… |
 | docs/specs/gate-warning-noise.md | 18 | Status: approved · 2026-11-15 · by user in chat ("maybe… |
 | docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A:… — sections: Problem:5, Goal and success…:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user,…:138 |
-| docs/specs/mission-autopilot.md | 76 | Status: draft · Owner: product-manager · Backlog: M3 —… — sections: Problem:5, Goal and success…:8, Users and user stories:13, Scope:19, Non-goals:29, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:55, Effort and sequencing:63, Open questions:73 |
+| docs/specs/mission-autopilot.md | 81 | Status: approved · 2026-11-16 · by user in chat ("Ok" to:… — sections: Problem:5, Goal and success…:8, Users and user stories:13, Scope:19, Non-goals:29, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:55, Effort and sequencing:63, Open questions:73, Decisions (user,…:78 |
 | docs/specs/new-project-readiness.md | 30 | Status: approved · 2026-11-14 · by user in chat ("identify… |
 | docs/specs/prd-write-guard.md | 39 | Status: approved · 2026-11-13 · by user in chat ("Ok build… |
 | docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat ·… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |

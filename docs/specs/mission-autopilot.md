@@ -1,6 +1,6 @@
 # PRD: Mission autopilot (one approval, then build until done) and parallel build
 
-> Status: draft · Owner: product-manager · Backlog: M3 — Gated autonomy / MISSION-1..6
+> Status: approved · 2026-11-16 · by user in chat ("Ok" to: approve MISSION-1 to 5 with the three recommended answers, MISSION-6 later) · Owner: product-manager · Backlog: M4 — Mission autopilot / MISSION-1..6
 
 ## Problem
 Today the user must approve every PRD in chat, so a long build stops many times and cannot run overnight. Build mode also does one slice at a time: "parallel slices" in docs/operating-model/AGENT-ROUTING.md is only a phrase, with no rule for who owns which files or in what order work merges.
@@ -74,3 +74,8 @@ First usable slice: MISSION-1 + 2 + 3 together.
 1. **Default caps?** Recommend 15 USD, 10 hours and 40 continuations, all set in the brief and never raised by the agent.
 2. **Watchdog in v1?** Recommend no. Ship MISSION-6 after the first real overnight run shows whether sessions die.
 3. **Must the brief name each feature?** Recommend it may say "PM decides features" but must list a scope boundary and a maximum number of features (default 5). The PM's chosen feature list is shown in the report.
+
+## Decisions (user, 2026-11-16)
+1. Scope: MISSION-1 to MISSION-5 approved and built together; MISSION-6 (watchdog resume) stays planned, built after a first real overnight run.
+2. Default caps: 15 USD, 10 hours, 40 continuations per mission; set in the brief, never raised by the agent.
+3. The brief may say "PM decides features" but must give a scope boundary and a feature cap (default 5); the chosen list is in the report.
