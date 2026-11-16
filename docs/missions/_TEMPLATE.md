@@ -5,7 +5,7 @@
 <!-- mission:start -->
 slug: <slug>
 status: active
-go: "<the user's own words, containing the word go>"
+go: "<the user's own words: a clear yes to the brief (go, ok, yes, approve)>"
 date: YYYY-MM-DD
 started_at: YYYY-MM-DDTHH:MM:SSZ
 branch: mission/<slug>

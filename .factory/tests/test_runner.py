@@ -4,6 +4,7 @@ prints stream-json (with a cost) according to a plan file. Temp git projects; no
 import contextlib
 import io
 import json
+import re
 import os
 import shutil
 import stat
@@ -818,7 +819,10 @@ class Reviewer(unittest.TestCase):
     def test_hooks_run_without_writing_bytecode(self):
         cfg = json.load(open(os.path.join(ROOT, ".claude", "settings.json")))
         cmds = [h["command"] for groups in cfg["hooks"].values() for g in groups for h in g["hooks"]]
-        self.assertTrue(cmds and all(c.startswith("python3 -B ") for c in cmds), cmds)
+        # every python3 call in a hook uses -B; the Stop hook wraps its call in an existence check (ADR 0012)
+        calls = [m for c in cmds for m in re.findall(r"python3(?: -B)?(?= )", c)]
+        self.assertTrue(cmds and all(re.search(r"python3 -B ", c) for c in cmds), cmds)
+        self.assertTrue(calls and all(m == "python3 -B" for m in calls), cmds)
 
 
     def test_empty_sandbox_mount_points_in_the_review_tree_are_tolerated(self):  # found in the hardened smoke run

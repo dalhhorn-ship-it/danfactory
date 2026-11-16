@@ -36,7 +36,7 @@ def cmd_start(a, root):
         return "docs/missions/%s.md already exists" % a.slug
     go = _quote(a.go)
     if not M.go_valid(go):
-        return 'the go must quote the user\'s words and contain the word "go" (the brief ends "Reply go to start.")'
+        return 'the go must quote the user\'s words and give a clear yes (go, ok, yes, approve, build it)'
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     lines = ["slug: " + a.slug, "status: active", "go: " + go, "date: " + now.date().isoformat(),
              "started_at: " + now.isoformat().replace("+00:00", "Z"), "branch: mission/" + a.slug,

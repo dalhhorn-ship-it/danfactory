@@ -23,7 +23,7 @@ The slug matches `[a-z0-9][a-z0-9-]*` and doesn't end in `-report`. `_TEMPLATE.m
 - `python3 scripts/mission.py start <slug> --go "<words>" --title T --scope-in S --scope-out S --milestone M5 [--features --usd --hours --continuations]` writes the file and adds `## Milestone: M5 — T (mission: <slug>)` to docs/BACKLOG.md. It refuses while another mission is active.
 - `status [<slug>]` prints validity, caps used, the next item and parked items. `stop <slug>` and `report <slug>` complete the CLI.
 
-**Valid** (`validate`): the header is complete; `go` is quoted and contains the word "go" (the brief ends "Reply go to start", so "ok" alone is not a go); `date` is the date of `started_at`, not in the future; the file is committed and every key except `status` equals its first commit (`git log --diff-filter=A`), so a scope or cap change needs a new mission and a new go.
+**Valid** (`validate`): the header is complete; `go` is quoted and gives a clear yes to the brief (go, ok, yes, approve, build it; vague words like "looks good" are not); `date` is the date of `started_at`, not in the future; the file is committed and every key except `status` equals its first commit (`git log --diff-filter=A`), so a scope or cap change needs a new mission and a new go.
 
 **Live** (write guard): valid, `status: active`, now < started_at + hours, and no cap hit. **Historical** (gate, with `at` = the commit time): valid, any status, and started_at ≤ at ≤ started_at + hours.
 

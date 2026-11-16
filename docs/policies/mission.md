@@ -14,7 +14,7 @@ The main agent posts it in chat, then stops and waits. Plain words, short:
 5. **Caps**: budget in USD, hours, continuations (defaults 15, 10, 40). The agent never raises them.
 6. Last line: `Reply go to start.`
 
-Only a clear "go" starts it ("ok" alone does not). Then run `python3 scripts/mission.py start <slug> --go "<user words>" ...` and commit the file.
+Only a clear yes to the brief starts it ("go", "ok", "yes", "approve", "build it"; not "looks good"). Then run `python3 scripts/mission.py start <slug> --go "<user words>" ...` and commit the file.
 
 ## Rules
 - The mission file `docs/missions/<slug>.md` records the go, date, scope, caps and milestone. Its header is frozen from the first commit, except `status`. To change scope or caps, start a new mission with a new go.

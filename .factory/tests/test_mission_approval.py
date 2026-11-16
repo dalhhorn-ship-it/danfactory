@@ -157,7 +157,7 @@ class Approval(Base):
         self.assertIn("1 product-code commit(s) without", c["detail"])  # only the late one
 
     def test_invalid_missions(self):
-        bads = {"go without the word go": dict(go='"ok"'), "unquoted go": dict(go="go"),
+        bads = {"go without a clear yes": dict(go='"looks good"'), "unquoted go": dict(go="go"),
                 "future start": dict(started=NOW + datetime.timedelta(hours=2)),
                 "empty scope": dict(milestone="")}
         for name, kw in bads.items():
@@ -186,7 +186,9 @@ class Approval(Base):
     def test_go_valid_and_curly_quotes(self):
         self.assertTrue(M.go_valid('"go"'))
         self.assertTrue(M.go_valid("“ok, go for it”"))
-        for bad in ('"ok"', "go", '"going nowhere"', "", '"go'):
+        for good in ('"Ok"', '"yes"', '"approved"', '"build it"'):
+            self.assertTrue(M.go_valid(good), good)
+        for bad in ('"looks good"', "go", '"going nowhere"', "", '"go', '"interesting"'):
             self.assertFalse(M.go_valid(bad), bad)
 
     def test_api_basics(self):
@@ -265,7 +267,7 @@ class Cli(Base):
 
     def test_start_refuses_weak_go(self):
         p = self.proj(mission=False)
-        argv = ["start", "run1", "--go", "ok", "--title", "T", "--scope-in", "a", "--scope-out", "b", "--milestone", "M7"]
+        argv = ["start", "run1", "--go", "looks good", "--title", "T", "--scope-in", "a", "--scope-out", "b", "--milestone", "M7"]
         self.assertEqual(cli.main(argv, root=p.root), 1)
         self.assertIsNone(M.load(p.root, "run1"))
 

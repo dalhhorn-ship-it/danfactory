@@ -115,9 +115,10 @@ def active(root):
 
 
 def go_valid(quote):
-    """True when the go is quoted (straight or curly quotes) and the quoted words contain the word "go"."""
+    """True when the go is quoted (straight or curly quotes) and the quoted words give a clear yes to the
+    brief: go, ok/okay, yes, approve(d), start, build it. Vague words ("looks good", "interesting") are not."""
     m = re.fullmatch(r'\s*["“](.+?)["”]\s*', quote or "", re.S)
-    return bool(m) and bool(re.search(r"\bgo\b", m.group(1), re.I))
+    return bool(m) and bool(re.search(r"\b(go|ok|okay|yes|approved?|start|build it)\b", m.group(1), re.I))
 
 
 def expires_at(m):
@@ -151,7 +152,7 @@ def validate(root, m):
     if m["status"] not in STATUSES:
         return "status must be one of " + "|".join(STATUSES)
     if not go_valid(m["go"]):
-        return 'go must quote the user\'s words and contain the word "go"'
+        return 'go must quote the user\'s words and give a clear yes (go, ok, yes, approve, build it)'
     if m["started_at"] is None:
         return "started_at is not a UTC ISO time"
     if m["started_at"] > _now():
