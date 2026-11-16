@@ -5,12 +5,11 @@ User (PM, not technical on infra: plain words, one recommendation) runs danfacto
 Now: build mission autopilot (one approved mission brief → PRDs approved by mission → Stop hook keeps going under caps → morning report; no push to main) + parallel build for all modes. PRD docs/specs/mission-autopilot.md (approved 2026-11-16, "Ok"); backlog M4 MISSION-1..5 `[~]`, MISSION-6 later.
 
 ## State
-- main = 134063d. Branch claude/friendly-mccarthy-41do0k has GATE-2 + MISSION PRD (approved).
-- Plan: software-architect writes ADR 0012 with slice/file-ownership map, then developers in parallel worktrees, serial merges with gate, reviewer, docs-sync.
-- Defaults decided: 15 USD, 10 h, 40 continuations; feature cap 5.
+- main = 134063d. Branch claude/friendly-mccarthy-41do0k @ 3a8782f: PRD approved, ADR 0012, slices A (1d93007), B (8587c3e), C (e67e78c) landed + integration fixes (docs index budget, -B test, ok/yes go) + docs (CLAUDE.md line, routing, TD-024/025). Full suite green before review except fixed -B test.
+- Reviewer: fix-first. Fixes in progress (developer): Stop hook must validate() mission (caps from frozen header); git push --repo bypass in _gitmission.py; slices.py land refuses protected --into during mission and --gate-cmd outside tests; gate _c_prd missing commit time -> not live check; honest limits (state file editable, go quote/commit dates forgeable) in policy+ADR.
 
 ## Next steps
-1. ADR 0012 design (architect) → parallel developer slices → merge one at a time → `python3 scripts/metrics.py test`, `bash scripts/check.sh`, gate → tick backlog, docs-sync, push.
+1. After fixes: full `metrics.py test` + check.sh (test-runner), re-review, tick MISSION-1..5 [x], docs-sync, push, report to user (incl. TD-024/025, spikes S1/S2 need a real overnight run).
 
 ## Watch out
 - Only move main after a gate PASS on that sha. Tests must copy repos via tracked files into a fresh repo (never cp -r).
