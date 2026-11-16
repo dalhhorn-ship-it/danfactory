@@ -1,12 +1,12 @@
-# Handoff — 2026-11-16 10:06 — mission autopilot shipped to main; waiting on a first real mission
+# Handoff — 2026-11-16 — autonomous-mode review fixed on branch; hardening PRD awaits the user
 
 ## Task
 User (PM, not technical on infra: plain words, one recommendation) runs danfactory as a template for agentic engineering. Asked: "only the initial request summary requires approval … keeps building until done over night. Also optimise build mode for multiple agents at the same time." Built as MISSION-1..5.
 
 ## State
-- Done: MISSION-1..5 (PRD docs/specs/mission-autopilot.md, ADR 0012, policy docs/policies/mission.md). Gate PASS on a071ccf; main fast-forwarded to a071ccf with the user's yes (2026-11-16). 644 tests, check.sh ok.
-- In progress: nothing.
-- Branch: claude/friendly-mccarthy-41do0k (one handoff commit ahead of main), uncommitted: none.
+- Done: MISSION-1..5 on main a071ccf. Architect review (safety + friction) of autonomous mode; bugfix batch on branch claude/friendly-mccarthy-41do0k (6e4061c docs/slices/bootstrap, X safety fixes, 4e5034c mission protection keyed on active mission on HEAD). 669 tests, check.sh ok. NOT on main yet (ask the user).
+- In progress: PRD draft docs/specs/mission-hardening.md (MISSION-7..) for new behaviour: enforce acceptance admission before build in a mission; sandbox for mission developers; one budget incl. runner/second reading; Stop hook skips `[~]` items held by background developers; branch safety after mission end + staging; mission defaults in factory.json and feature count ignoring parked items. Needs user approval before any code.
+- Branch: claude/friendly-mccarthy-41do0k, uncommitted: none.
 
 ## Decisions (and why)
 - One mission "go" approves in-scope PRDs (`by mission <slug>`); defaults 15 USD / 10 h / 40 continuations, feature cap 5 — user approved PRD 2026-11-16 (ADR 0012).
@@ -15,8 +15,8 @@ User (PM, not technical on infra: plain words, one recommendation) runs danfacto
 - docs/INDEX.md rows show titles, not Status lines, and summaries are cut at 48 chars to stay under the DOCS-1 budget.
 
 ## Next steps
-1. Wait for the user. Recommended: a first small real mission (2 features, 5 USD, 3 h) in a downstream project (e.g. lpdan) to close TD-024 (price-table budget estimate) and TD-025 (Stop hook next to the environment's own Stop hook).
-2. Then decide on MISSION-6 (watchdog resume, opt-in schedule).
+1. Present the hardening PRD; wait for approve/change/drop. Ask before promoting the fix batch to main (gate PASS on the exact sha first).
+2. First small real mission downstream (TD-024/025), then MISSION-6.
 
 ## Watch out
 - Only move main after a gate PASS on that exact sha, and ask the user before pushing to main (session rules).

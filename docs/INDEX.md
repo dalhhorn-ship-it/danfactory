@@ -32,7 +32,7 @@
 | docs/BACKLOG.md | 77 | Milestones and work items; the dashboard reads… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:49 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s),… |
-| docs/TECH-DEBT.md | 34 | Known shortcuts and their cost; the dashboard… — sections: Open:7, Resolved:12 |
+| docs/TECH-DEBT.md | 35 | Known shortcuts and their cost; the dashboard… — sections: Open:7, Resolved:13 |
 | docs/decisions/0000-template.md | 15 | NNNN — Title |
 | docs/decisions/0001-use-danfactory-template.md | 12 | 0001 — Start from the danfactory template |
 | docs/decisions/0002-prd-approval-gate.md | 18 | 0002 — PRD approval gate before any build |
