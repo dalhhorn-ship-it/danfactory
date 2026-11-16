@@ -29,8 +29,9 @@ Preconditions: `factory.json` phase is `build` and the tree is clean. First add 
 
 ## Flow per feature
 1. PM writes PRD `<slug>-<feature>`, `Status: approved · <date> · by mission <slug>`, runs `approve`. At L2+ the item stays `[ ]` until its tests are admitted (`tests/acceptance/**` is writable meanwhile), then goes `[~]`.
-2. At L2+, before any build: test-writer, second reading, `acceptance.py admit` (below).
-3. Architect designs, with a slice table; developers build in parallel, `slices.py land` gates each merge; coordinator runs `reviewer`; at the end karen and jenny at L2+, then the report (docs/operating-model/AGENT-ROUTING.md, Parallel build).
+2. Unfamiliar feature (AGENT-ROUTING, Scout open source): `oss-scout` first, its pick logged in the Decision log as an assumption; scouts for independent features run in parallel.
+3. At L2+, before any build: test-writer, second reading, `acceptance.py admit` (below).
+4. Architect designs, with a slice table; developers build in parallel, `slices.py land` gates each merge; coordinator runs `reviewer`; at the end karen and jenny at L2+, then the report (docs/operating-model/AGENT-ROUTING.md, Parallel build).
 
 ## Tests before code (L2+)
 - Rigor is factory.json `rigor` (choose-path writes it), else the first `L<n>` in the OPERATING-MODEL "Path and rigor" section; unknown counts as L2 in a mission, and `start` refuses an unknown rigor. Only an explicit L0/L1 turns tests-before-code off. At L2+ product writes are refused while ANY in-progress by-mission PRD has no admitted tests. During a mission only by-mission PRDs listed by `approve` open product writes. The acceptance manifest is protected: only `acceptance.py admit` writes it.

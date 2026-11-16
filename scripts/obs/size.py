@@ -14,7 +14,7 @@ import tplfiles  # noqa: E402
 
 SRC_EXT = (".py", ".ts", ".tsx", ".js", ".mjs")
 DEFAULTS = {"file_lines_warn": 400, "file_lines_max": 700, "always_loaded_tokens_max": 2500,
-            "agents_max": 20, "code_growth_30d_pct_warn": 25,
+            "agents_max": 21, "code_growth_30d_pct_warn": 25,
             "doc_tokens_sections": 1500, "doc_tokens_warn": 3000}
 AREAS = ("code", "tests", "docs", "hooks", "agents", "skills", "evals")
 LABELS = {"code": "Product code (incl. hooks)", "tests": "Tests", "docs": "Docs (*.md)", "hooks": "Hooks (also in code)",

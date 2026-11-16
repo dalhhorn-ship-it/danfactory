@@ -70,6 +70,9 @@ rw("docs/operating-model/LEARNINGS.md", lambda t: t.split("## Entries")[0] + "##
 for f in glob.glob("docs/specs/*.md"):
     if os.path.basename(f) != "_TEMPLATE.md":
         os.remove(f)
+for f in glob.glob("docs/research/*.md"):
+    if os.path.basename(f) != "_TEMPLATE-scout.md":
+        os.remove(f)
 for f in glob.glob("docs/decisions/00*.md"):
     if os.path.basename(f) not in ("0000-template.md", "0001-use-danfactory-template.md"):
         os.remove(f)

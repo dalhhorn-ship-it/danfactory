@@ -20,7 +20,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] OBS-3 Slice 3: Flow, Cost, Hotspots tabs (L) #feature
 
 ## Milestone: M2 — Agent evals (target: 2026-12-04)
-> Sequence: dates (proposed 2026-11-11, S=1/M=3/L=8 working days, WIP=1): EVAL-3 is estimated 2026-11-26..30 after DASH-3 and DASH-4, target 2026-12-04 includes 4 days of buffer for the push-access block. spike first to test the riskiest assumption (headless runs load hooks and are stable enough), then the CLI-usable core, then the dashboard, then the landing page and LLM-judge. Visualizations next (docs/specs/eval-visualizations.md): EVAL-4 first (library, heatmap, coverage map; highest value per effort, and the runner evidence field it adds tells strong proofs from weak ones), EVAL-5 after (flow diagram; weakest case on danfactory itself, droppable). EVAL-3 stays last, blocked on push access to lpdan. Update 2026-11-11: the landing page part shipped in lpdan (main 37f8f25, "Proven by evals" + public Evals tab); LLM-judge graders remain.
+> Sequence: spike first (headless runs load hooks and are stable), then the CLI-usable core, then the dashboard and landing page. EVAL-4 before EVAL-5 (library and heatmap first; flow diagram droppable). EVAL-3 last, blocked on push access to lpdan; the landing page shipped in lpdan 2026-11-11, LLM-judge graders remain (dates and buffer: git history).
 - [x] EVAL-1 Agent eval harness slice 1: spike, ~10-task suite, deterministic graders, runner, jsonl, baseline, budget cap (docs/specs/agent-eval-harness.md) (L) #foundation
 - [x] EVAL-2 Agent eval harness slice 2: Evals dashboard card/tab (docs/specs/agent-eval-harness.md) (M) #feature
 - [x] EVAL-4 Eval visualizations slice A: eval library with proof strength, results heatmap, gate coverage map, eval economics (cost vs pass rate per model) (docs/specs/eval-visualizations.md) (M) #feature
@@ -53,8 +53,8 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] MISSION-12 One budget: no fixer runner during a mission; second-reading cost counts toward the mission cap (docs/specs/mission-hardening.md) (M) #foundation
 
 ## Unplanned
-- [~] SCOUT-1 Open-source scout: `oss-scout` agent, routing moment before design for unfamiliar features, scout note template, read-it-first rule for architect and developer (docs/specs/open-source-scout.md) (M) #process
-- [~] SCOUT-2 scout_check.py: a reuse recommendation without a licence line fails (docs/specs/open-source-scout.md) (S) (after: SCOUT-1) #security
+- [x] SCOUT-1 Open-source scout: `oss-scout` agent, routing moment, note template, read-it-first rule (docs/specs/open-source-scout.md) (M) #process
+- [x] SCOUT-2 scout_check.py: a reuse recommendation without a licence line fails (docs/specs/open-source-scout.md) (S) (after: SCOUT-1) #security
 - [x] GATE-2 Gate warnings that mean something: Refs anywhere, auto-Refs hook, no review needed for docs/merges, advisory review is info (docs/specs/gate-warning-noise.md) (S) #quality
 - [x] NEW-1 Template ref recorded so the autonomy pack installs in new projects (TD-022) (docs/specs/new-project-readiness.md) (S) #quality
 - [x] NEW-2 Template-owned files and setup items are not project noise (docs/specs/new-project-readiness.md) (S) #quality

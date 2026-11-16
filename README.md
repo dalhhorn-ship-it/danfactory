@@ -51,16 +51,16 @@ Lovable specifics are in docs/operating-model/paths/adopt-existing.md. Without p
 
 ### Agents (docs/operating-model/AGENT-ROUTING.md)
 
-The 20 agents are routed by moment and rigor (none to five checkers per task, L0 to L3).
+The 21 agents are routed by moment and rigor (none to five checkers per task, L0 to L3).
 
 | Role | Agents |
 |---|---|
-| Plan & design | product-manager, software-architect (Opus), spreadsheet-architect |
+| Plan & design | product-manager, oss-scout, software-architect (Opus), spreadsheet-architect |
 | Build | developer, code-writer, data-builder, test-writer |
 | Cheap helpers (Haiku) | bulk-reader, test-runner, doc-keeper, deploy-watcher, claude-md-compliance-checker |
 | Verify | reviewer, task-completion-validator, code-quality-pragmatist, karen, jenny, ui-comprehensive-tester |
-| Autonomy | finder (files failing acceptance tests as issues, sonnet; software-product and library-cli) |
-| Debug | ultrathink-debugger (Opus, only after a failed first attempt) |
+| Autonomy | finder (files failing acceptance tests as issues; software-product, library-cli) |
+| Debug | ultrathink-debugger (Opus, after a failed first try) |
 
 ### Paths (docs/operating-model/paths/)
 
