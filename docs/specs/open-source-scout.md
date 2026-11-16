@@ -1,6 +1,6 @@
 # PRD: Open-Source Scout (look at what others built before building something unfamiliar)
 
-> Status: draft · Owner: product-manager · Backlog: Unplanned, proposed SCOUT-1 (M), SCOUT-2 (S)
+> Status: approved · 2026-11-16 · by user in chat ("Yes agree": SCOUT-1 and SCOUT-2, recommendations on open questions accepted) · Owner: product-manager · Backlog: Unplanned, proposed SCOUT-1 (M), SCOUT-2 (S)
 
 ## Problem
 When a feature is new to this repo (say sign-in, file parsing, sync, payments), the agent designs and writes it from scratch. Open-source projects have often solved the same problem, and their trade-offs (and pitfalls) are free to learn from. Today nothing in the workflow prompts that search. The only reuse rule we have is for fixers (eval `policy-runner-reuse`); it covers the standard library, not the wider ecosystem.

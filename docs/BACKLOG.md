@@ -53,6 +53,8 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] MISSION-12 One budget: no fixer runner during a mission; second-reading cost counts toward the mission cap (docs/specs/mission-hardening.md) (M) #foundation
 
 ## Unplanned
+- [~] SCOUT-1 Open-source scout: `oss-scout` agent, routing moment before design for unfamiliar features, scout note template, read-it-first rule for architect and developer (docs/specs/open-source-scout.md) (M) #process
+- [~] SCOUT-2 scout_check.py: a reuse recommendation without a licence line fails (docs/specs/open-source-scout.md) (S) (after: SCOUT-1) #security
 - [x] GATE-2 Gate warnings that mean something: Refs anywhere, auto-Refs hook, no review needed for docs/merges, advisory review is info (docs/specs/gate-warning-noise.md) (S) #quality
 - [x] NEW-1 Template ref recorded so the autonomy pack installs in new projects (TD-022) (docs/specs/new-project-readiness.md) (S) #quality
 - [x] NEW-2 Template-owned files and setup items are not project noise (docs/specs/new-project-readiness.md) (S) #quality
