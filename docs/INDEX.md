@@ -29,7 +29,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 42 | Always-loaded instructions. Keep short and… |
-| docs/BACKLOG.md | 77 | Milestones and work items; the dashboard reads… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:49 |
+| docs/BACKLOG.md | 83 | Milestones and work items; the dashboard reads… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:55 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s),… |
 | docs/TECH-DEBT.md | 35 | Known shortcuts and their cost; the dashboard… — sections: Open:7, Resolved:13 |

@@ -1,6 +1,6 @@
 # PRD: Mission hardening (enforce the safety nets of overnight missions)
 
-> Status: draft · Owner: product-manager · Backlog: M4 — Mission autopilot / MISSION-7..12
+> Status: approved · 2026-11-16 · by user in chat ("Ok approved": all six, order 7, 9, 8, 10, 11, 12; recommendations on open questions accepted) · Owner: product-manager · Backlog: M4 — Mission autopilot / MISSION-7..12
 
 ## Problem
 Mission autopilot (docs/specs/mission-autopilot.md) builds overnight from one approved brief, and nobody reviews the PRDs it approves. An architect review fixed the bugs, but six safety nets are still only written rules or have gaps: tests-before-build is not enforced, the hook nags about work already in progress, branch safety ends too early, the feature cap can be gamed, caps are not bounded, and spend is counted in two places.

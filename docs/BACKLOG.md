@@ -45,6 +45,12 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [x] MISSION-4 Morning report and dashboard link (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #feature
 - [x] MISSION-5 Parallel build in all modes: slices with file ownership, waves, worktrees, serial gated merges (docs/specs/mission-autopilot.md) (M) #process
 - [ ] MISSION-6 Optional watchdog resume (opt-in schedule) (docs/specs/mission-autopilot.md) (S) (after: MISSION-2) #foundation
+- [~] MISSION-7 Acceptance tests admitted before build are enforced for by-mission PRDs at L2+ (docs/specs/mission-hardening.md) (M) #security
+- [~] MISSION-9 Branch safety lasts for the mission's time window after done/stopped; staging branch protected (docs/specs/mission-hardening.md) (S) #security
+- [~] MISSION-8 Stop hook says "wait or land" when all open items are held by background developers (docs/specs/mission-hardening.md) (S) #process
+- [~] MISSION-10 Feature cap counts live items only; approved PRD list frozen in the Decision log (docs/specs/mission-hardening.md) (S) #foundation
+- [~] MISSION-11 Mission defaults and ceilings in factory.json; start refuses caps above the ceiling (docs/specs/mission-hardening.md) (S) #foundation
+- [~] MISSION-12 One budget: no fixer runner during a mission; second-reading cost counts toward the mission cap (docs/specs/mission-hardening.md) (M) #foundation
 
 ## Unplanned
 - [x] GATE-2 Gate warnings that mean something: Refs anywhere, auto-Refs hook, no review needed for docs/merges, advisory review is info (docs/specs/gate-warning-noise.md) (S) #quality
