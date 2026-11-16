@@ -29,6 +29,7 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 42 | Always-loaded instructions. Keep short and… |
+| docs/AUTO-MODE.md | 47 | Plain-words explainer for the landing page and… |
 | docs/BACKLOG.md | 85 | Milestones and work items; the dashboard reads… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:55 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s),… |

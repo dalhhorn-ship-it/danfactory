@@ -1,6 +1,7 @@
 {"generated_by": "scripts/docs_index.py", "code_graph": "codegraph (docs/CODEMAP.md)",
  "nodes": [
   {"id": "CLAUDE.md", "title": "CLAUDE.md", "lines": 42, "summary": "Always-loaded instructions. Keep short and stable (it is paid every turn). Details live\u2026"},
+  {"id": "docs/AUTO-MODE.md", "title": "Auto mode, and how the dev modes compare", "lines": 47, "summary": "Plain-words explainer for the landing page and for new users. Rules live in\u2026"},
   {"id": "docs/BACKLOG.md", "title": "Backlog", "lines": 85, "summary": "Milestones and work items; the dashboard reads this file. Seeded by `choose-path`,\u2026"},
   {"id": "docs/GOAL.md", "title": "Goal", "lines": 30, "summary": "The agreed goal for this project. Written by the `brainstorm` skill after the user\u2026"},
   {"id": "docs/OPERATING-MODEL.md", "title": "Operating model", "lines": 35, "summary": "How this project is built: chosen path(s), rigor, agents, practices, gates, budgets.\u2026"},
@@ -84,6 +85,9 @@
   {"from": "CLAUDE.md", "to": "docs/policies/prd-approval.md"},
   {"from": "CLAUDE.md", "to": "docs/policies/security.md"},
   {"from": "CLAUDE.md", "to": "docs/policies/token-economy.md"},
+  {"from": "docs/AUTO-MODE.md", "to": "docs/policies/mission.md"},
+  {"from": "docs/AUTO-MODE.md", "to": "docs/policies/prd-approval.md"},
+  {"from": "docs/AUTO-MODE.md", "to": "docs/policies/runner.md"},
   {"from": "docs/BACKLOG.md", "to": "docs/GOAL.md"},
   {"from": "docs/BACKLOG.md", "to": "docs/OPERATING-MODEL.md"},
   {"from": "docs/BACKLOG.md", "to": "docs/operating-model/LEARNINGS.md"},
