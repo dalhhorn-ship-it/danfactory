@@ -1,1 +1,2 @@
 2026-11-14 bugfix: docs_index counted git-ignored generated files as link targets, so the index differed between local and CI (lpdan main CI failure)
+2026-11-16 bugfix: architect review of autonomous mode found gaps against approved PRD mission-autopilot/ADR 0012 (fake by-mission PRD opens acceptance lock, mission can edit its own safety files, start/branch/phase journey fails, report and bootstrap bugs, doc contradictions); user asked "identify any friction points inconsistency in the setup. If so, fix these"
