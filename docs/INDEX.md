@@ -65,7 +65,7 @@
 | docs/policies/evals.md | 38 | Behavioural evals for the factory: a fixed… — sections: Why:5, How to run:8, Rules:27 |
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become… |
 | docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes,… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:47, Security scan notes:56, Issue ledger:61, Honest limits:64 |
-| docs/policies/mission.md | 36 | One approved brief lets the agent build… |
+| docs/policies/mission.md | 37 | One approved brief lets the agent build… |
 | docs/policies/prd-approval.md | 31 | No feature work starts until the… — sections: When it applies:5, Flow:14, Enforcement:22 |
 | docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How you… |
 | docs/policies/runner-safety.md | 19 | Part of the autonomy pack (ADR 0011). The… |

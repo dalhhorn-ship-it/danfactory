@@ -70,6 +70,15 @@ def split_git(args):
     return cdir, base, []
 
 
+def _is(a, names):
+    """`a` names one of `names`: exact, `--flag=value`, or an abbreviated long option (git accepts unique
+    prefixes such as `--rep` for `--repo`; any prefix of 4+ chars counts, which errs toward blocking)."""
+    n = a.split("=", 1)[0]
+    if n in names:
+        return True
+    return n.startswith("--") and len(n) >= 4 and any(x.startswith("--") and x.startswith(n) for x in names)
+
+
 def positionals(rest, value_flags=()):
     """Non-flag args. `--opt=value` and `-o=value` are one token (never positional); a flag in `value_flags`
     given without `=` swallows the next arg."""
@@ -79,7 +88,7 @@ def positionals(rest, value_flags=()):
             skip = False
         elif a == "--":
             break
-        elif a in value_flags:
+        elif "=" not in a and _is(a, value_flags):
             skip = True
         elif not a.startswith("-"):
             out.append(a)
@@ -91,7 +100,7 @@ def has_flag(rest, *names):
     for a in rest:
         if a == "--":
             break
-        if a in names or a.split("=", 1)[0] in names:
+        if _is(a, names):
             return True
     return False
 

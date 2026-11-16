@@ -39,11 +39,11 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 
 ## Milestone: M4 — Mission autopilot (target: 2026-11-20)
 > Sequence: PRD docs/specs/mission-autopilot.md, approved 2026-11-16 (MISSION-1..5 together; MISSION-6 after a real overnight run).
-- [~] MISSION-1 Mission file, brief template, recorded "go", mission approval of in-scope PRDs in guard and gate, ADR (docs/specs/mission-autopilot.md) (M) #foundation
-- [~] MISSION-2 Stop hook keeps the mission going, with budget, wall-clock and continuation caps (docs/specs/mission-autopilot.md) (M) (after: MISSION-1) #foundation
-- [~] MISSION-3 Branch safety: no push or merge to main/production during a mission (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #security
-- [~] MISSION-4 Morning report and dashboard link (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #feature
-- [~] MISSION-5 Parallel build in all modes: slices with file ownership, waves, worktrees, serial gated merges (docs/specs/mission-autopilot.md) (M) #process
+- [x] MISSION-1 Mission file, brief template, recorded "go", mission approval of in-scope PRDs in guard and gate, ADR (docs/specs/mission-autopilot.md) (M) #foundation
+- [x] MISSION-2 Stop hook keeps the mission going, with budget, wall-clock and continuation caps (docs/specs/mission-autopilot.md) (M) (after: MISSION-1) #foundation
+- [x] MISSION-3 Branch safety: no push or merge to main/production during a mission (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #security
+- [x] MISSION-4 Morning report and dashboard link (docs/specs/mission-autopilot.md) (S) (after: MISSION-1) #feature
+- [x] MISSION-5 Parallel build in all modes: slices with file ownership, waves, worktrees, serial gated merges (docs/specs/mission-autopilot.md) (M) #process
 - [ ] MISSION-6 Optional watchdog resume (opt-in schedule) (docs/specs/mission-autopilot.md) (S) (after: MISSION-2) #foundation
 
 ## Unplanned

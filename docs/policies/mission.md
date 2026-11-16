@@ -30,6 +30,7 @@ Only a clear yes to the brief starts it ("go", "ok", "yes", "approve", "build it
 An invalid mission (header changed since the first commit, no real go, no `started_at`, not committed) is treated as stopped: the Stop hook lets the agent stop and says why. Caps always come from the first-commit header. `slices.py land` refuses protected `--into` branches (main, master, production, base) while a mission is active, and always without `--allow-protected`; `--gate-cmd` only works with `SLICES_TEST_GATE=1`.
 
 ## Honest limits
+- `slices.py land --gate-cmd` needs `SLICES_TEST_GATE=1`, which an agent can set itself: a speed bump, not a lock. The real gate still runs on the promotion PR in CI.
 - The go quote is written and committed by the agent. Validation proves the header is frozen after the first commit, not that the user said it. Check the go words in the morning report against the chat.
 - Commit times can be set by the committer, so the gate's historical window check makes misuse visible, not impossible.
 - `.factory/mission-state.json` is tracked and editable. The counters are monotonic only against the committed copy (HEAD): lowering a value in the working copy does not help, but a committed reset, or values never committed, are not seen.

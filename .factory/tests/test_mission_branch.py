@@ -113,7 +113,7 @@ class PushAndMerge(Base):
 
     def test_repo_flag_and_option_forms_cannot_hide_a_protected_refspec(self):
         p = self.proj()
-        for cmd in ("git push --repo origin HEAD:main", "git push --repo=origin HEAD:main", "git push --repo=origin main",
+        for cmd in ("git push --repo origin HEAD:main", "git push --rep origin HEAD:main", "git push --rep=origin main", "git push --repo=origin HEAD:main", "git push --repo=origin main",
                     "git push -o=ci.skip origin main", "git push --push-option=x origin HEAD:main",
                     "git push -o x --repo origin main", "git push --receive-pack=x origin main",
                     "git fetch origin main:main", "git fetch origin +refs/heads/x:refs/heads/master",

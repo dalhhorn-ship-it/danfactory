@@ -152,7 +152,7 @@ def land(root, branch, slice_, into, gate_cmd=None, say=print, allow_protected=F
     (main, master, production, base) needs `allow_protected` and is refused while a mission is active."""
     if gate_cmd and os.environ.get("SLICES_TEST_GATE") != "1":
         return False, "--gate-cmd is for tests only (set SLICES_TEST_GATE=1); the gate always runs scripts/gate.py"
-    if into.lstrip("+").replace("refs/heads/", "", 1) in protected_branches(root):
+    if re.sub(r"^(refs/)?heads/", "", into.lstrip("+")) in protected_branches(root):
         sys.path.insert(0, os.path.join(HERE, "..", ".claude", "hooks"))
         import _mission
         if _mission.active(root):
