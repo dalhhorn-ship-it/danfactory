@@ -46,7 +46,7 @@
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 44 | 0011 — Autonomy as an optional pack; split… |
 | docs/decisions/0012-mission-autopilot.md | 94 | 0012 — Mission autopilot: one approved… — sections: Context:5, Options:8, Decision:16, Consequences:87 |
 | docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with `python3… |
-| docs/operating-model/AGENT-ROUTING.md | 89 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:44, Tie-breakers…:55, Path rosters…:68, Changelog:84 |
+| docs/operating-model/AGENT-ROUTING.md | 98 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:44, Tie-breakers…:55, Path rosters…:68, Parallel build:84, Changelog:92 |
 | docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version… |
 | docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry… — sections: Entries:14 |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0,… |
