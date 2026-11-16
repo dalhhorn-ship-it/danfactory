@@ -49,6 +49,7 @@ CODE_FLAGS = {"-c", "-e", "-E", "-p", "--eval", "--print"}
 SCAN_LIMIT = 512 * 1024
 
 CTX = []  # package.json script names being followed, for messages
+CWD = [None]  # the event's cwd, for the mission branch check
 
 
 def package_scripts():
@@ -184,8 +185,25 @@ def inspect(tokens, depth, seen, secrets, envs, top):
         return wrangler(args[1:])
     if WRANGLER.match(prog):
         return wrangler(args)
+    if prog in ("git", "gh"):
+        mission_branch(prog, args)
     if prog == "git":
         return git(args, envs)
+
+
+def mission_branch(prog, args):
+    """While a mission is active, no push/merge to main/master/production (ADR 0012, _gitmission.py).
+    No mission, or `_mission`/`_gitmission` missing or failing: no change in behaviour."""
+    reason = ""
+    try:
+        import _mission
+        if _mission.active(ROOT):
+            import _gitmission
+            reason = _gitmission.check(prog, args, CWD[0] or ROOT, ROOT)
+    except Exception:  # noqa: BLE001 - fail open
+        return
+    if reason:
+        block(reason)
 
 
 def has_deploy_text(text):
@@ -388,6 +406,7 @@ def main():
         return
     cmd = (ev.get("tool_input") or {}).get("command", "")
     DOTGLOB[0] = "dotglob" in cmd
+    CWD[0] = ev.get("cwd") or None
     try:
         analyze(cmd)
     except ValueError:  # unparseable: fail closed for deploy-like text, open otherwise

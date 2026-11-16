@@ -115,6 +115,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/mission_stop.py\"; [ -f \"$f\" ] && python3 -B \"$f\" || true"
+          }
+        ]
+      }
     ]
   }
 }
