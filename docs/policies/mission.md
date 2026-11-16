@@ -28,12 +28,12 @@ Preconditions: `factory.json` phase is `build` and the tree is clean. First add 
 - A PRD not listed is out of scope. `mission.py status` lists it as parked with the reason (not approved yet, or over the feature cap).
 
 ## Flow per feature
-1. PM writes PRD `<slug>-<feature>`, `Status: approved · <date> · by mission <slug>`, runs `approve`; the item goes `[~]`.
+1. PM writes PRD `<slug>-<feature>`, `Status: approved · <date> · by mission <slug>`, runs `approve`. At L2+ the item stays `[ ]` until its tests are admitted (`tests/acceptance/**` is writable meanwhile), then goes `[~]`.
 2. At L2+, before any build: test-writer, second reading, `acceptance.py admit` (below).
 3. Architect designs, with a slice table; developers build in parallel, `slices.py land` gates each merge; coordinator runs `reviewer`; at the end karen and jenny at L2+, then the report (docs/operating-model/AGENT-ROUTING.md, Parallel build).
 
 ## Tests before code (L2+)
-- Rigor is factory.json `rigor`, else the first `L<n>` in the OPERATING-MODEL "Path and rigor" section. At L2+ product writes for a by-mission PRD are refused until `acceptance.py admit` has admitted tests for its slug. The write guard refuses while every in-progress PRD is this mission's and none has admitted tests.
+- Rigor is factory.json `rigor` (choose-path writes it), else the first `L<n>` in the OPERATING-MODEL "Path and rigor" section; unknown counts as L2 in a mission, and `start` refuses an unknown rigor. Only an explicit L0/L1 turns tests-before-code off. At L2+ product writes are refused while ANY in-progress by-mission PRD has no admitted tests. During a mission only by-mission PRDs listed by `approve` open product writes. The acceptance manifest is protected: only `acceptance.py admit` writes it.
 - The gate fails the commit with `mission-tests-not-admitted` when `gate.prd` is `required`. This template sets `advisory`, so there it warns.
 - If no admissible tests can be written, park the item `[!]` with `parked: <why>`; the report lists it.
 
@@ -42,7 +42,7 @@ Preconditions: `factory.json` phase is `build` and the tree is clean. First add 
 - Remove finished worktrees after landing, or they count as work in hand. A `[ ]` item present means plain work.
 
 ## Window, budget and runner
-- Branch safety applies while the mission is active and until its window ends (started_at + hours cap), even if it is done or stopped. Then push, merge and checkout of main, master, production, the base and staging branches are refused. The user can push from their own terminal.
+- Branch safety applies while the mission is active and until its window ends (started_at + hours cap, read from the mission file's first commit, so editing or deleting the file does not shorten it), even if it is done or stopped. Until then push, merge and checkout of main, master, production, the base and staging branches are refused. The user can push from their own terminal.
 - Budget: second-reading spend since the mission start counts toward the mission USD cap. `runner.py run` refuses (exit 2) while a mission is active.
 
 ## Rules
@@ -61,7 +61,7 @@ Preconditions: `factory.json` phase is `build` and the tree is clean. First add 
 - `.factory/mission-state.json` is tracked: counters are monotonic only against HEAD; a committed reset is not seen.
 - An exemption line dated before the mission started still opens writes that day, and skips the admission refusal. The agent cannot add one during a mission.
 - The write guard lets writes through when any in-progress PRD has admitted tests, even if another does not.
-- The admission check uses the current rigor, not the rigor at the time of the commit.
+- The admission check uses the current rigor, not the rigor at the time of the commit. `rigor` and the ceilings can be changed before a mission starts (the report prints rigor-relevant caps and ceilings: check them against the brief). The manifest records no content hash; the acceptance-test lock (gate `protected`) covers later edits.
 - Any leftover worktree counts as "held", finished or not.
 - Branch safety reads command text only: `symbolic-ref`/`update-ref` are checked by name, and scripts, aliases, `gh api` and the GitHub web UI are not seen. `gh pr create --base main` is allowed (opening a PR is not merging). Real protection: GitHub branch protection and scoped credentials.
 - Mission developers run in the session's own environment, not the runner's sandbox: run missions in an ephemeral cloud session with scoped credentials (docs/policies/security.md).

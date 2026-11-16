@@ -20,7 +20,7 @@ Procedure:
 6. A test rejected as `fails-on-reference` means your test or the PRD is wrong: fix the test if it over-specifies, otherwise add a question. `passes-without-behaviour` and `broken-test`: fix the test.
 7. Commit the tests and the manifest with the trailer `Acceptance-Change: <slug>` and `Refs: <ITEM-ID>`. Don't push. Never edit the implementation, the baseline, or tests of other PRDs.
 
-In an active mission at L2+, admit your tests before a developer starts; if none can be admitted, tell the coordinator to park the item `[!]` with `parked: <why>` (docs/policies/mission.md, Tests before code).
+In an active mission at L2+, admit your tests before a developer starts (the item stays `[ ]` until then, and goes `[~]` after admission); if none can be admitted, tell the coordinator to park the item `[!]` with `parked: <why>` (docs/policies/mission.md, Tests before code).
 In an active mission (docs/policies/mission.md) do not send ambiguities or `fails-on-reference` to the user: list them for the coordinator, who writes the assumption in the PRD revision and the Decision log, or parks the item `[!]`.
 
 Reply in under ~200 words: tests written per criterion, admitted vs rejected (with codes), open questions the user must answer, whether the second reading ran.
