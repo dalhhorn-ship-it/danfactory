@@ -5,11 +5,11 @@ User (PM, not technical on infra: plain words, one recommendation) runs danfacto
 Now: build mission autopilot (one approved mission brief → PRDs approved by mission → Stop hook keeps going under caps → morning report; no push to main) + parallel build for all modes. PRD docs/specs/mission-autopilot.md (approved 2026-11-16, "Ok"); backlog M4 MISSION-1..5 `[~]`, MISSION-6 later.
 
 ## State
-- main = 134063d. Branch claude/friendly-mccarthy-41do0k: MISSION-1..5 done (PRD docs/specs/mission-autopilot.md, ADR 0012, policy docs/policies/mission.md); review ship after fixes 61e5fa5 + final nits; check.sh ok, 644 tests.
+- main = a071ccf (MISSION-1..5 promoted 2026-11-16, user yes). MISSION-1..5 done (PRD docs/specs/mission-autopilot.md, ADR 0012, policy docs/policies/mission.md); review ship after fixes 61e5fa5 + final nits; check.sh ok, 644 tests.
 - Open: TD-024 (budget cap is a price-table estimate), TD-025 (Stop hook not yet run in a real overnight cloud session). MISSION-6 (watchdog) waits for a first real mission.
 
 ## Next steps
-1. Wait for the user: promote branch to main (needs their go), and a first small real mission to close spikes S1/S2.
+1. Wait for the user: a first small real mission (2 features, 5 USD, 3 h) in a downstream project to close spikes S1/S2.
 
 ## Watch out
 - Only move main after a gate PASS on that sha. Tests must copy repos via tracked files into a fresh repo (never cp -r).
