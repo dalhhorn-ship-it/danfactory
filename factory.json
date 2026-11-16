@@ -53,6 +53,9 @@
       "doc_tokens_warn": 3000
     }
   },
+  "build": {
+    "max_parallel": 3
+  },
   "gate": {
     "base_branch": "main",
     "protected": ["tests/acceptance/**"],

@@ -30,7 +30,7 @@ import metrics  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 from _common import template_mode  # noqa: E402
 from obs import (size, theme, delivery, roadmap_data, roadmap_views, tab_architecture, tab_cost, tab_decisions, tab_docs, tab_evals, tab_flow, tab_gates,  # noqa: E402
-                 tab_hotspots, tab_traceability)
+                 tab_hotspots, tab_missions, tab_traceability)
 if os.path.isfile(os.path.join(ROOT, "scripts", "obs", "tab_autonomy.py")):  # a pack file (ADR 0011)
     from obs import tab_autonomy  # noqa: E402
 else:
@@ -47,7 +47,8 @@ TABS = (("overview", "Overview", None), ("roadmap", "Roadmap", None),
         ("architecture", "Architecture", tab_architecture), ("traceability", "Traceability", tab_traceability),
         ("decisions", "Decisions", tab_decisions), ("gates", "Gates", tab_gates), ("docs", "Docs health", tab_docs),
         ("flow", "Flow", tab_flow), ("cost", "Cost", tab_cost), ("hotspots", "Hotspots", tab_hotspots),
-        ("evals", "Evals", tab_evals), ("autonomy", "Autonomy", tab_autonomy))
+        ("evals", "Evals", tab_evals), ("autonomy", "Autonomy", tab_autonomy),
+        ("missions", "Missions", tab_missions))
 
 
 def collect():

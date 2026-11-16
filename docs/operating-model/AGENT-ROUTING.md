@@ -81,7 +81,16 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 
 `bulk-reader`, `test-runner` and `ultrathink-debugger` are available on every path when their trigger fires.
 
+## Parallel build
+Works in every build mode, and for missions (docs/decisions/0012-mission-autopilot.md). Use it when a design has independent slices.
+1. **Slice table.** For multi-slice work the `software-architect` ends the design with `| Slice | Owns | Wave | Depends on |` (Owns: backticked paths or globs; extra columns are ignored).
+2. **Run.** The coordinator starts up to `build.max_parallel` developers per wave (factory.json, default 3, hard cap 4), each with Agent `isolation: "worktree"`, one branch and one slice. `python3 scripts/slices.py plan --map <design.md>` prints the batches.
+3. **Own your files.** A developer edits only its Owns paths and replies `PARTIAL — cross-slice request: <path>: <change>` for anything else. Slices never commit docs/INDEX.md or docs/knowledge-graph.json.
+4. **Land one at a time.** `python3 scripts/slices.py land <branch> --map <design.md> --slice <id> --into <integration>`: ownership check, rebase if the base moved, regenerate the index, gate, `merge --ff-only`. A failure means not merged; fix the slice or hand the cross-slice request to its owner.
+5. PRDs and acceptance tests for independent features parallelise the same way.
+
 ## Changelog
+- 1.4.0 — Parallel build section and `build.max_parallel` (MISSION-5).
 - 1.3.1 — every agent file carries the `Finding things` index-first line (DOCS-1).
 - 1.3.0 — 20 agents: `finder` (issue ledger, ADR 0008) for software-product and library-cli (AUTO-3).
 - 1.2.0 — 19 agents: `test-writer` and the Acceptance tests moment (AUTO-2).

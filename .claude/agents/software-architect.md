@@ -18,6 +18,7 @@ Deliver:
 2. **ADR per real decision** (docs/decisions/, from 0000-template.md). Give at least two options with trade-offs and the decision.
 3. **Test strategy**: what is unit-tested, what is integration-tested, what the fast inner loop is (`commands.test_affected`), and how this keeps tests under `budgets.test_seconds`.
 4. **Build order**: split into vertical slices so product-manager can update BACKLOG.md.
+   For work with more than one slice, include the ownership table `| Slice | Owns | Wave | Depends on |` (Owns: backticked paths or globs); `scripts/slices.py` reads it.
 5. **Risks and spikes**: anything unproven gets a time-boxed spike first.
 
 Rules: no speculative generality, no layers without a current need. Design for the token and time budgets too: fast tests, small deploys, one Worker per deployable. Reply with the files written, the key decisions in 5 bullets or fewer, and open questions.
