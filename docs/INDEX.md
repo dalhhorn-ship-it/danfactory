@@ -90,6 +90,7 @@
 | docs/specs/mission-autopilot.md | 81 | PRD: Mission autopilot (one approval, then… — sections: Problem:5, Goal and success…:8, Users and user stories:13, Scope:19, Non-goals:29, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:55, Effort and sequencing:63, Open questions:73, Decisions (user,…:78 |
 | docs/specs/mission-hardening.md | 56 | PRD: Mission hardening (enforce the safety… |
 | docs/specs/new-project-readiness.md | 30 | PRD: New-project readiness |
+| docs/specs/open-source-scout.md | 54 | PRD: Open-Source Scout (look at what others… |
 | docs/specs/prd-write-guard.md | 39 | PRD: PRD write guard (enforce "no approved… |
 | docs/specs/roadmap-view-options.md | 90 | PRD: Roadmap view options (6-month timeline,… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
 | docs/specs/security-hardening-audit-1.md | 82 | PRD: Security hardening after audit run-1 — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:30, Acceptance criteria:37, UX / behaviour notes:53, Risks and assumptions:58, Effort and sequencing:65, Decisions at…:68, Open questions:76 |
