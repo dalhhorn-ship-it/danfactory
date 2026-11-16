@@ -2,6 +2,7 @@
 Pure functions, stdlib only. Policy: docs/policies/prd-approval.md (Enforcement)."""
 import datetime
 import os
+import subprocess
 import re
 
 EXEMPTION_FILE = ".factory/prd-exemption"
@@ -27,7 +28,8 @@ MISSION_PROTECTED = ("factory.json", ".claude/**", ".github/**", "scripts/gate*.
                      "scripts/acceptance*.py", "scripts/runner*.py", "scripts/sandbox.py", "scripts/check.sh",
                      ".factory/prd-exemption", ".factory/mission-state.json")
 MISSION_BLOCK = ("mission work cannot change the factory's own controls (%s): park the item and tell the user "
-                 "(docs/policies/mission.md)")
+                 "(docs/policies/mission.md). Protection ends when the user stops the mission: "
+                 "`python3 scripts/mission.py stop <slug>`, or sets `status: stopped` in docs/missions/<slug>.md, which stays editable")
 
 
 def mission_protected(rel):
@@ -189,13 +191,21 @@ def item_approved(root, ref, at=None):
     return bool(approving_slug(root, ref, at))
 
 
+def _mission_on_branch(root):
+    """True when a mission with status active (valid or not) has its branch checked out. Internal errors raise (hook fails open)."""
+    mod = _mission_mod()
+    m = mod.active(root) if mod else None
+    if not m:
+        return False
+    p = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, capture_output=True, text=True, timeout=20)
+    return p.returncode == 0 and p.stdout.strip() == m["branch"]
+
+
 def decide(root, rel, phase, template, today=None):
     """(allowed, reason, via): via is 'free', 'prd:<slug>' or 'exemption:<kind>'; reason says what is missing when blocked."""
+    if mission_protected(rel) and _mission_on_branch(root):  # before backlog and exemptions: neither can open the controls
+        return False, MISSION_BLOCK % rel, "mission-protected"
     ex = active_exemptions(root, today)
-    if mission_protected(rel) and not ex:
-        slugs = in_progress_approved(root)
-        if slugs and all(prd_mission(root, s) for s in slugs):  # only a mission's approval would open this write
-            return False, MISSION_BLOCK % rel, "mission-protected"
     if not is_product_path(rel):
         return True, "", "free"
     spike = next((x for x in ex if x["kind"] == "spike"), None)

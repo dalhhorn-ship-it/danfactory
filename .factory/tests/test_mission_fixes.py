@@ -66,6 +66,7 @@ class ProtectedControls(Base):  # X3
 
     def test_mission_cannot_edit_its_controls(self):
         p = self.proj()
+        p.g("switch", "-q", "-c", "mission/night")
         for rel in self.PROTECTED:
             r = p.edit(rel)
             self.assertEqual(r.returncode, 2, rel)
@@ -78,6 +79,7 @@ class ProtectedControls(Base):  # X3
 
     def test_bash_write_to_controls_blocked(self):
         p = self.proj()
+        p.g("switch", "-q", "-c", "mission/night")
         ev = {"tool_name": "Bash", "tool_input": {"command": "echo {} > factory.json"}, "cwd": p.root}
         r = subprocess.run([sys.executable, TA.HOOK], input=json.dumps(ev), capture_output=True, text=True,
                            env=dict(os.environ, CLAUDE_PROJECT_DIR=p.root))
@@ -88,6 +90,58 @@ class ProtectedControls(Base):  # X3
         p.write("docs/specs/night-one.md", TA.PRD % "approved · 2026-11-16")
         for rel in ("factory.json", ".claude/hooks/x.py", "scripts/gate.py", "src/app.py"):
             self.assertEqual(p.edit(rel).returncode, 0, rel)
+
+
+class ProtectionIgnoresBacklogAndExemptions(Base):
+    def bash(self, p, cmd):
+        ev = {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": p.root}
+        return subprocess.run([sys.executable, TA.HOOK], input=json.dumps(ev), capture_output=True, text=True,
+                              env=dict(os.environ, CLAUDE_PROJECT_DIR=p.root))
+
+    def blocked(self, p):
+        for rel in (".claude/x", "factory.json"):
+            self.assertEqual(p.edit(rel).returncode, 2, rel)
+            self.assertEqual(self.bash(p, "echo x > " + rel).returncode, 2, rel)
+
+    def on_mission_branch(self, p):
+        p.g("switch", "-q", "-c", "mission/night")
+
+    def test_a_user_approved_item_added(self):
+        p = self.proj()
+        self.on_mission_branch(p)
+        p.write("docs/specs/mine.md", TA.PRD % "approved · 2026-11-16")
+        p.write("docs/BACKLOG.md", "- [~] MINE-1 x (docs/specs/mine.md)\n")
+        self.blocked(p)
+
+    def test_b_no_in_progress_items(self):
+        p = self.proj(backlog="# Backlog\n- [ ] NIGHT-1 One (docs/specs/night-one.md)\n")
+        self.on_mission_branch(p)
+        self.blocked(p)
+
+    def test_c_exemption_today(self):
+        p = self.proj()
+        self.on_mission_branch(p)
+        p.write(".factory/prd-exemption", "%s bugfix: x\n" % TA.datetime.date.today().isoformat())
+        self.blocked(p)
+
+    def test_d_stopped_mission_normal_rules(self):
+        p = self.proj(status="stopped")
+        self.on_mission_branch(p)
+        p.write("docs/specs/night-one.md", TA.PRD % "approved · 2026-11-16")  # user-approved, so normal rules allow
+        for rel in ("factory.json", ".claude/x"):
+            self.assertEqual(p.edit(rel).returncode, 0, rel)
+
+    def test_e_other_branch_normal_rules(self):
+        p = self.proj()
+        p.g("switch", "-q", "-c", "other")
+        for rel in ("factory.json", ".claude/x"):
+            self.assertEqual(p.edit(rel).returncode, 0, rel)
+
+    def test_f_product_path_allowed(self):
+        p = self.proj()
+        self.on_mission_branch(p)
+        self.assertEqual(p.edit("src/app.py").returncode, 0)
+        self.assertEqual(self.bash(p, "echo x > src/app.py").returncode, 0)
 
 
 class StartJourney(Base):  # X4, X5
