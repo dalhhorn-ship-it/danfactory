@@ -1,12 +1,12 @@
-# Handoff — 2026-11-16 — mission hardening (MISSION-7..12) built on branch; main promotion awaits the user
+# Handoff — 2026-11-16 — PR #1 open (review fixes, MISSION-7..12, scout, AUTO-MODE.md); waiting for the user to merge
 
 ## Task
 User (PM, not technical on infra: plain words, one recommendation) runs danfactory as a template for agentic engineering. Asked: "only the initial request summary requires approval … keeps building until done over night. Also optimise build mode for multiple agents at the same time." Built as MISSION-1..5.
 
 ## State
-- Done: MISSION-1..5 on main a071ccf. On branch claude/friendly-mccarthy-41do0k (NOT on main): architect-review bugfix batch, then MISSION-7..12 (PRD docs/specs/mission-hardening.md, approved "Ok approved" 2026-11-16): tests admitted before build at L2+ (unknown rigor = L2; factory.json `rigor`), `mission.py approve` + frozen Decision-log list, defaults/ceilings in factory.json `mission`, wait-or-land Stop hook, branch safety for the whole window (from first-commit header) incl. staging, runner refused + second-reading in mission budget. Two review rounds; 704 tests, check.sh ok.
+- main = a071ccf (MISSION-1..5). PR dalhhorn-ship-it/danfactory#1 (branch claude/friendly-mccarthy-41do0k → main) holds: architect-review fixes, MISSION-7..12 (docs/specs/mission-hardening.md), SCOUT-1/2 (docs/specs/open-source-scout.md: `oss-scout` agent, docs/research/_TEMPLATE-scout.md, scripts/scout_check.py with a permissive-licence allow-list), docs/AUTO-MODE.md (explainer + dev mode comparison table for the landing page; the user wanted an MD file, not a PRD). Gate PASS on the branch; reviews done and findings fixed.
 - In progress: nothing. Open: MISSION-6, TD-024/025/026.
-- Branch: claude/friendly-mccarthy-41do0k, uncommitted: none.
+- Direct push to main was denied by the session's permission check, so the user merges the PR. lpdan is readable (clone at /home/user/dalhhorn-ship-it/lpdan) but push access was denied.
 
 ## Decisions (and why)
 - One mission "go" approves in-scope PRDs (`by mission <slug>`); defaults 15 USD / 10 h / 40 continuations, feature cap 5 — user approved PRD 2026-11-16 (ADR 0012).
@@ -15,8 +15,9 @@ User (PM, not technical on infra: plain words, one recommendation) runs danfacto
 - docs/INDEX.md rows show titles, not Status lines, and summaries are cut at 48 chars to stay under the DOCS-1 budget.
 
 ## Next steps
-1. Ask the user to promote the branch to main (gate PASS on the exact sha first; "Ok approved" covered the PRD, not the push).
-2. First small real mission downstream (TD-024/025), then MISSION-6; TD-026 test time 130 s vs 120 s.
+1. Wait for the user: merge PR #1 (do not merge it yourself); offer to watch the PR.
+2. Landing page (lpdan) can use docs/AUTO-MODE.md; needs an lpdan session with write access.
+3. First small real mission downstream (TD-024/025), then MISSION-6; TD-026 test time.
 
 ## Watch out
 - Guards keyed on agent-editable state (backlog lines, working-copy mission file, exemptions) were the recurring review finding: key on the active mission on HEAD and on first-commit data.

@@ -116,5 +116,24 @@ class Checker(unittest.TestCase):
                     self.assertIn("licence", r.stderr)
 
 
+class ReviewFollowUps(unittest.TestCase):
+    def test_only_permissive_spdx_ids_pass_without_the_user(self):
+        for lic in ("n/a", "Commercial license", "BUSL-1.1", "custom", "MIT (none required)", "yes | no"):
+            self.assertTrue(scout_check.problems(note(lic=lic)), lic)
+            self.assertEqual(scout_check.problems(note(lic=lic, needs="yes")), [], lic)
+        for lic in ("MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "MPL-2.0"):
+            self.assertEqual(scout_check.problems(note(lic=lic)), [], lic)
+
+    def test_unfilled_needs_user_line_is_not_a_yes(self):
+        self.assertTrue(scout_check.problems(note(lic="GPL-3.0", needs="yes | no")))
+
+    def test_reuse_needs_three_candidates_compared(self):
+        self.assertTrue(any("at least" in p for p in scout_check.problems(note(cands=2))))
+        self.assertEqual(scout_check.problems(note("build", lic=None, cands=0)), [])
+
+    def test_a_later_recommendation_word_does_not_hide_the_licence(self):
+        self.assertEqual(scout_check.problems(note(extra="Why: our recommendation: keep it small\n")), [])
+
+
 if __name__ == "__main__":
     unittest.main()

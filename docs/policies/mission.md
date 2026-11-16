@@ -29,7 +29,7 @@ Preconditions: `factory.json` phase is `build` and the tree is clean. First add 
 
 ## Flow per feature
 1. PM writes PRD `<slug>-<feature>`, `Status: approved · <date> · by mission <slug>`, runs `approve`. At L2+ the item stays `[ ]` until its tests are admitted (`tests/acceptance/**` is writable meanwhile), then goes `[~]`.
-2. Unfamiliar feature (AGENT-ROUTING, Scout open source): `oss-scout` first, its pick logged in the Decision log as an assumption; scouts for independent features run in parallel.
+2. Unfamiliar feature (AGENT-ROUTING, Scout open source): `oss-scout` first, its pick logged in the Decision log as an assumption; scouts for independent features run in parallel. A pick marked `Needs user: yes` is not used: build instead, or park the item `[!]`.
 3. At L2+, before any build: test-writer, second reading, `acceptance.py admit` (below).
 4. Architect designs, with a slice table; developers build in parallel, `slices.py land` gates each merge; coordinator runs `reviewer`; at the end karen and jenny at L2+, then the report (docs/operating-model/AGENT-ROUTING.md, Parallel build).
 

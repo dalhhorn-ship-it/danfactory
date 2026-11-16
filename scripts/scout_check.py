@@ -9,7 +9,10 @@ import re
 import sys
 
 MAX_LINES, MAX_CANDIDATES = 60, 5
-DENY = re.compile(r"gpl|sspl|unknown|none|unlicensed|proprietary|paid", re.I)  # copyleft, unknown or paid: ask the user
+MIN_CANDIDATES = 3
+# Allow-list: permissive licences the pick may carry without asking. Anything else (copyleft, source-available such as
+# BUSL or SSPL, commercial, unknown, n/a) needs `Needs user: yes`.
+ALLOW = re.compile(r"^(MIT|MIT-0|Apache-2\.0|BSD-[23]-Clause|0BSD|ISC|MPL-2\.0|Unlicense|CC0-1\.0|Zlib|PSF-2\.0|Python-2\.0|BSL-1\.0)$", re.I)
 
 
 def problems(text):
@@ -31,14 +34,17 @@ def problems(text):
     scouted = re.search(r"(?mi)^\s*Scouted:\s*(.*?)\s*$", text)
     if scouted and scouted.group(1).lower().startswith("no"):
         out.append("`Scouted: no` cannot recommend %s; recommend build" % rec)
-    tail = text[text.lower().rfind("recommendation:"):]
+    if n < MIN_CANDIDATES:
+        out.append("%d candidates: %s needs at least %d compared" % (n, rec, MIN_CANDIDATES))
+    tail = text[re.search(r"(?mi)^\s*Recommendation:", text).start():]
     lic = re.search(r"(?mi)^\s*Licen[cs]e:\s*(.*?)\s*$", tail)
     if not lic or not lic.group(1) or lic.group(1).startswith("<"):
         out.append("recommendation %s has no licence line for the pick (`Licence: <SPDX id>`)" % rec)
-    elif DENY.search(lic.group(1)):
-        nu = re.search(r"(?mi)^\s*Needs user:\s*(\w+)", tail)
+    elif not ALLOW.match(lic.group(1).strip()):
+        nu = re.search(r"(?mi)^\s*Needs user:\s*(.*?)\s*$", tail)
         if not nu or nu.group(1).lower() != "yes":
-            out.append("licence '%s' is copyleft, unknown or paid: set `Needs user: yes`" % lic.group(1))
+            out.append("licence '%s' is not on the permissive list (copyleft, source-available, commercial, unknown "
+                       "or not an SPDX id): set `Needs user: yes`" % lic.group(1))
     return out
 
 
