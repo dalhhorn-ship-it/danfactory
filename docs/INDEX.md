@@ -83,6 +83,7 @@
 | docs/specs/fast-checks-and-guard-gaps.md | 29 | Status: approved · 2026-11-14 · by user in chat ("Ok keep… |
 | docs/specs/gate-warning-noise.md | 18 | Status: approved · 2026-11-15 · by user in chat ("maybe… |
 | docs/specs/gated-autonomy.md | 145 | Status: approved · 2026-11-12 · by user in chat (slice A:… — sections: Problem:5, Goal and success…:39, Users and user stories:44, Scope:51, Non-goals:70, Acceptance criteria:78, UX / behaviour notes:99, Risks and assumptions:105, Effort and sequencing:113, Decisions (user,…:138 |
+| docs/specs/mission-autopilot.md | 76 | Status: draft · Owner: product-manager · Backlog: M3 —… — sections: Problem:5, Goal and success…:8, Users and user stories:13, Scope:19, Non-goals:29, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:55, Effort and sequencing:63, Open questions:73 |
 | docs/specs/new-project-readiness.md | 30 | Status: approved · 2026-11-14 · by user in chat ("identify… |
 | docs/specs/prd-write-guard.md | 39 | Status: approved · 2026-11-13 · by user in chat ("Ok build… |
 | docs/specs/roadmap-view-options.md | 90 | Status: approved · 2026-11-11 · by user in chat ·… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
