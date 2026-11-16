@@ -72,7 +72,7 @@ def main():
         return
     if not ok:
         record(rel, why, ev.get("agent_id"))
-        if via == "mission-protected":
+        if via in ("mission-protected", "mission-tests"):
             block("BLOCKED: " + why)
         block(MSG.format(path=rel, why=why, today=datetime.date.today().isoformat()))
 

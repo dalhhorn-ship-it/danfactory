@@ -11,6 +11,9 @@ import tempfile
 MISSIONS_DIR = "docs/missions"
 STATE_FILE = ".factory/mission-state.json"
 DEFAULTS = {"features": 5, "usd": 15.0, "hours": 10.0, "continuations": 40}
+CEILINGS = {"features": 8, "usd": 30.0, "hours": 12.0, "continuations": 60}
+PROTECTED_BRANCHES = ("main", "master", "production")
+APPROVED_RE = re.compile(r"^\s*[-*]\s+\d{4}-\d{2}-\d{2}\s+Approved PRD:\s*([\w.-]+)\s*$", re.M)
 SLUG_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 START, END = "<!-- mission:start -->", "<!-- mission:end -->"
 REQUIRED = ("slug", "status", "go", "date", "started_at", "branch", "milestone", "scope_in", "scope_out")
@@ -59,6 +62,75 @@ def _num(text, default, kind=float):
         return kind(text)
     except (TypeError, ValueError):
         return default
+
+
+def settings(root):
+    """factory.json `mission` block as {defaults, ceilings, protected_branches}; every missing or bad value falls back to
+    the hard-coded one (DEFAULTS, CEILINGS, PROTECTED_BRANCHES), so a project without the block behaves as before."""
+    try:
+        with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
+            blk = (json.load(fh) or {}).get("mission")
+    except (OSError, ValueError, AttributeError):
+        blk = None
+    blk = blk if isinstance(blk, dict) else {}
+    out = {}
+    for name, base in (("defaults", DEFAULTS), ("ceilings", CEILINGS)):
+        got = blk.get(name) if isinstance(blk.get(name), dict) else {}
+        out[name] = {k: (_num(got.get(k), v, int if isinstance(v, int) else float)
+                         if isinstance(got.get(k), (int, float)) and not isinstance(got.get(k), bool) and got.get(k) > 0 else v)
+                     for k, v in base.items()}
+    pb = blk.get("protected_branches")
+    out["protected_branches"] = [b for b in pb if isinstance(b, str) and b] if isinstance(pb, list) and pb else list(PROTECTED_BRANCHES)
+    return out
+
+
+def over_ceilings(root, m):
+    """'' or the first cap/feature count of the mission above its ceiling in factory.json, naming the ceiling."""
+    ceil = settings(root)["ceilings"]
+    have = dict(m["caps"], features=m["features"])
+    for k in ("usd", "hours", "continuations", "features"):
+        if have[k] > ceil[k]:
+            return "%s %g is above the ceiling %g (factory.json mission.ceilings.%s)" % (k, have[k], ceil[k], k)
+    return ""
+
+
+def rigor_level(root):
+    """Rigor level 0-3 of the project, or -1 when unknown. factory.json `rigor` ("L2" or 2) wins; else the first `L<n>` in the
+    docs/OPERATING-MODEL.md section `## Path and rigor` (italic placeholder lines starting with `_` are ignored)."""
+    try:
+        with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
+            v = (json.load(fh) or {}).get("rigor")
+    except (OSError, ValueError, AttributeError):
+        v = None
+    mm = re.fullmatch(r"\s*L?([0-3])\+?\s*", str(v)) if v not in (None, "") else None
+    if mm:
+        return int(mm.group(1))
+    body, inside = [], False
+    for ln in _read(os.path.join(root, "docs", "OPERATING-MODEL.md")).splitlines():
+        if ln.startswith("## "):
+            inside = ln[3:].strip().lower().startswith("path and rigor")
+        elif inside and not ln.lstrip().startswith("_"):
+            body.append(ln)
+    text = "\n".join(body)
+    mm = re.search(r"(?i)rigor[^\n]{0,40}?\bL([0-3])\b", text) or re.search(r"\bL([0-3])\b", text)
+    return int(mm.group(1)) if mm else -1
+
+
+def admitted(root, spec, sha=None):
+    """True when the acceptance manifest (tests/acceptance/manifest.json, dir from factory.json `acceptance.dir`) lists an
+    admitted test for PRD `spec`; with `sha`, the manifest as committed in that commit. Read directly (hooks stay standalone)."""
+    try:
+        with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
+            d = ((json.load(fh) or {}).get("acceptance") or {}).get("dir") or "tests/acceptance"
+    except (OSError, ValueError, AttributeError):
+        d = "tests/acceptance"
+    rel = str(d).strip("/") + "/manifest.json"
+    text = (_git(root, "show", "%s:%s" % (sha, rel)) or "") if sha else _read(os.path.join(root, rel))
+    try:
+        adm = json.loads(text).get("admitted")
+    except (ValueError, AttributeError):
+        return False
+    return isinstance(adm, dict) and any(isinstance(v, dict) and v.get("prd") == spec for v in adm.values())
 
 
 def parse_header(text):
@@ -159,6 +231,9 @@ def validate(root, m):
         return "started_at is in the future"
     if m["date"] != m["started_at"].astimezone(datetime.timezone.utc).date().isoformat():
         return "date is not the date of started_at"
+    over = over_ceilings(root, m)
+    if over:
+        return "caps exceed the ceilings: " + over
     rel = "%s/%s.md" % (MISSIONS_DIR, m["slug"])
     if (_git(root, "rev-parse", "--is-shallow-repository") or "").strip() == "true":
         return "shallow clone: the frozen header cannot be proven without history (fetch full history: git fetch --unshallow)"
@@ -262,19 +337,41 @@ def next_item(root, m):
     return None
 
 
-def _scoped_slugs(root, m):
+def _scoped_slugs(root, m, live_only=False):
+    """Mission-prefixed spec slugs linked from the milestone's items, in file order. `live_only` counts only the slugs linked
+    from a live item (`[ ]`, `[~]`, `[x]`); parked `[!]` and dropped `[-]` items free their place under the feature cap."""
     seen = []
     for it in items(root, m):
+        if live_only and it["state"] in "!-":
+            continue
         for s in it["slugs"]:
             if s.startswith(m["slug"] + "-") and s not in seen:
                 seen.append(s)
     return seen
 
 
+def approved_specs(root, m):
+    """Spec slugs listed as `- YYYY-MM-DD Approved PRD: <slug>` in the mission's Decision log (written by
+    `mission.py approve`), in order, without repeats, at most the ceiling for features. The log is outside the frozen header."""
+    text = _read(m["path"])
+    log = text.split("## Decision log", 1)[1] if "## Decision log" in text else ""
+    seen = []
+    for s in APPROVED_RE.findall(log):
+        if s not in seen:
+            seen.append(s)
+    return seen[:settings(root)["ceilings"]["features"]]
+
+
+def live_approved(root, m):
+    """Approved specs still linked from a live item: what counts against the feature cap."""
+    live = _scoped_slugs(root, m, live_only=True)
+    return [s for s in approved_specs(root, m) if s in live]
+
+
 def in_scope(root, m, spec):
-    """Mechanical scope: slug prefixed `<mission>-`, linked from an item under the milestone, among the first
-    `features` such slugs in file order."""
-    return spec in _scoped_slugs(root, m)[:m["features"]]
+    """Mechanical scope: slug prefixed `<mission>-`, listed as approved in the Decision log (so a later backlog edit cannot
+    change a verdict). Link to the milestone and the feature cap are checked once, when `mission.py approve` lists it."""
+    return spec.startswith(m["slug"] + "-") and spec in approved_specs(root, m)
 
 
 def mission_of(status_line):
@@ -300,8 +397,10 @@ def parked(root, m):
         slug = n[:-3]
         sm = re.search(r"(?m)^>\s*Status:.*$", _read(os.path.join(root, "docs", "specs", n)))
         if sm and mission_of(sm.group(0)) == m["slug"] and not in_scope(root, m, slug):
-            if slug in scoped:
+            if slug in scoped and len(live_approved(root, m)) >= m["features"]:
                 why = "over the feature cap"
+            elif slug in scoped:
+                why = "not approved yet: run `python3 scripts/mission.py approve %s %s`" % (m["slug"], slug)
             elif slug.startswith(m["slug"] + "-"):
                 why = "not linked from milestone %s" % m["milestone"]
             else:

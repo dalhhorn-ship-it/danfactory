@@ -43,7 +43,7 @@ def header(slug="night", status="active", started=None, go='"go"', hours="10", f
 class Proj:
     """Temp project with a committed mission `night` and a backlog milestone M5 holding items linked to specs."""
 
-    def __init__(self, mission=True, backlog=None, **hk):
+    def __init__(self, mission=True, backlog=None, approved=("night-one", "night-two"), **hk):
         self.root = tempfile.mkdtemp()
         self.write("factory.json", json.dumps({"phase": "build", "gate": {}}))
         self.write("docs/BACKLOG.md", backlog if backlog is not None else (
@@ -53,7 +53,8 @@ class Proj:
         for s in ("night-one", "night-two", "stray", "night-else", "night-unlinked"):
             self.write("docs/specs/%s.md" % s, PRD % (BY % "night"))
         if mission:
-            self.write("docs/missions/night.md", "# Mission: Night\n\n" + header(**hk) + "\n## Brief\nx\n")
+            self.write("docs/missions/night.md", "# Mission: Night\n\n" + header(**hk) + "\n## Brief\nx\n\n## Decision log\n"
+                       + "".join("- 2026-11-16 Approved PRD: %s\n" % a for a in approved))
         self.g("init", "-q")
         self.commit("start")
 
@@ -119,7 +120,8 @@ class Approval(Base):
         p = self.proj(backlog="# Backlog\n\n## Milestone: M5 — Night\n- [~] NIGHT-1 One (docs/specs/night-one.md)\n"
                               "- [ ] NIGHT-2 Two (docs/specs/night-two.md)\n- [ ] OTHER-1 Stray (docs/specs/stray.md)\n"
                               "- [!] NIGHT-3 Three, parked: out of scope (docs/specs/night-three.md)\n"
-                              "\n## Milestone: M6 — Elsewhere\n- [~] ELSE-1 (docs/specs/night-else.md)\n", features="1")
+                              "\n## Milestone: M6 — Elsewhere\n- [~] ELSE-1 (docs/specs/night-else.md)\n", features="1",
+                   approved=("night-one",))
         m = M.load(p.root, "night")
         self.assertEqual(_prd.prd_status(p.root, "night-one"), "approved")
         for spec, why in (("night-two", "feature cap"), ("stray", "prefix"), ("night-else", "milestone"), ("night-unlinked", "milestone")):

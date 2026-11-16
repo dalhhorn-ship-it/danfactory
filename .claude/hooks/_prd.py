@@ -201,6 +201,26 @@ def _mission_on_branch(root):
     return p.returncode == 0 and p.stdout.strip() == m["branch"]
 
 
+MISSION_TESTS_BLOCK = ("tests not admitted for %s: mission work at rigor L2+ may not write product code until the acceptance tests "
+                       "for its PRD are admitted. Run the test-writer, then `python3 scripts/acceptance.py admit %s ...`; "
+                       "if admissible tests cannot be written, park the item `[!]` with a reason (`parked: <why>`) and take the next one")
+
+
+def _unadmitted_mission_spec(root, slugs):
+    """Slug of a by-mission PRD blocking the write because no tests are admitted for it (MISSION-7), else ''. Applies only
+    while a mission is active on its branch at rigor L2+, and only when every in-progress PRD is that mission's."""
+    mod = _mission_mod()
+    m = mod.active(root) if mod else None
+    if not m or mod.rigor_level(root) < 2 or not _mission_on_branch(root):
+        return ""
+    blocked = ""
+    for s in slugs:
+        if prd_mission(root, s) != m["slug"] or mod.admitted(root, s):
+            return ""
+        blocked = blocked or s
+    return blocked
+
+
 def decide(root, rel, phase, template, today=None):
     """(allowed, reason, via): via is 'free', 'prd:<slug>' or 'exemption:<kind>'; reason says what is missing when blocked."""
     if mission_protected(rel) and _mission_on_branch(root):  # before backlog and exemptions: neither can open the controls
@@ -216,6 +236,9 @@ def decide(root, rel, phase, template, today=None):
                        "steps, or claim a `spike` exemption if the user asked for a throwaway prototype)" % phase), ""
     slugs = in_progress_approved(root)
     if slugs:
+        miss = "" if ex else _unadmitted_mission_spec(root, slugs)
+        if miss:
+            return False, MISSION_TESTS_BLOCK % (miss, miss), "mission-tests"
         return True, "", "prd:" + slugs[0]
     if ex:
         return True, "", "exemption:" + ex[0]["kind"]

@@ -68,6 +68,11 @@
     "command": "",
     "reference_command": ""
   },
+  "mission": {
+    "defaults": {"usd": 15, "hours": 10, "continuations": 40, "features": 5},
+    "ceilings": {"usd": 30, "hours": 12, "continuations": 60, "features": 8},
+    "protected_branches": ["main", "master", "production"]
+  },
   "evals": {
     "n": 3,
     "model": "sonnet",

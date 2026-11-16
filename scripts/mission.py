@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Mission CLI (ADR 0012, docs/policies/mission.md): start | status | stop | report.
+"""Mission CLI (ADR 0012, docs/policies/mission.md): start | approve | status | stop | report.
 
   mission.py start <slug> --go "<user words>" --title T --scope-in S --scope-out S --milestone M5
                      [--brief TEXT|FILE] [--branch NAME] [--features N --usd X --hours H --continuations N]
                  needs phase build and a clean tree; creates and switches to branch mission/<slug>, writes the file (commit it next)
+  mission.py approve <slug> <spec-slug>   lists a by-mission PRD in the Decision log (`- DATE Approved PRD: <spec-slug>`): needs the
+                 slug prefix, a live backlog item under the milestone linking it, and room under the feature cap (live items only)
   mission.py status [<slug>]     validity, caps used, next item, parked items
   mission.py stop <slug>         sets status: stopped and writes the report (the hook then lets the agent finish)
   mission.py report <slug>       (re)writes docs/missions/<slug>-report.md; never changes the status
@@ -84,6 +86,9 @@ def cmd_start(a, root):
     path = os.path.join(root, M.MISSIONS_DIR, a.slug + ".md")
     if os.path.exists(path):
         return "docs/missions/%s.md already exists" % a.slug
+    over = M.over_ceilings(root, {"caps": {"usd": a.usd, "hours": a.hours, "continuations": a.continuations}, "features": a.features})
+    if over:
+        return "refusing to start: " + over
     go = _quote(a.go)
     if not M.go_valid(go):
         return 'the go must quote the user\'s words and give a clear yes (go, ok, yes, approve, build it)'
@@ -108,6 +113,40 @@ def cmd_start(a, root):
         M._write_atomic(backlog, cur + "\n" + heading + "\n")
     print("mission %s written to docs/missions/%s.md; commit it now (the header is frozen from its first commit) and "
           "work on branch %s (you are on it now)." % (a.slug, a.slug, branch))
+    return ""
+
+
+def cmd_approve(a, root):
+    """List a PRD as approved by the mission (MISSION-10). Refuses what in_scope would later refuse, plus the live feature cap."""
+    m = M.load(root, a.slug)
+    if not m:
+        return "no mission " + a.slug
+    bad = M.validate(root, m)
+    if bad:
+        return "mission %s is not valid: %s" % (a.slug, bad)
+    hit = M.cap_hit(m, M.load_state(root, m["slug"]))
+    if hit:
+        return "mission %s is not live (%s)" % (a.slug, hit)
+    spec = a.spec
+    if not re.fullmatch(r"[\w.-]+", spec) or not spec.startswith(m["slug"] + "-"):
+        return "%s must be prefixed %s-" % (spec, m["slug"])
+    if not os.path.isfile(os.path.join(root, "docs", "specs", spec + ".md")):
+        return "no PRD at docs/specs/%s.md" % spec
+    if spec not in M._scoped_slugs(root, m, live_only=True):
+        return "%s is not linked from a live item ([ ], [~], [x]) under milestone %s in docs/BACKLOG.md" % (spec, m["milestone"])
+    if spec in M.approved_specs(root, m):
+        print("%s is already listed for mission %s" % (spec, a.slug))
+        return ""
+    live = M.live_approved(root, m)
+    if len(live) >= m["features"]:
+        return "feature cap reached: %d live approved PRD(s) (%s), cap %d; park or drop an item first" % (len(live), ", ".join(live), m["features"])
+    text = M._read(m["path"])
+    if "## Decision log" not in text:
+        text = text.rstrip("\n") + "\n\n## Decision log\n"
+    elif not text.endswith("\n"):
+        text += "\n"
+    M._write_atomic(m["path"], text + "- %s Approved PRD: %s\n" % (datetime.date.today().isoformat(), spec))
+    print("mission %s: listed %s as approved (%d/%d live)" % (a.slug, spec, len(live) + 1, m["features"]))
     return ""
 
 
@@ -171,14 +210,18 @@ def main(argv=None, root=ROOT):
     s.add_argument("--scope-out", required=True)
     s.add_argument("--milestone", required=True, help="the BACKLOG.md milestone the mission works through, e.g. M5; "
                    "its items (## Milestone: M5 ...) are the mission's work list and scope")
-    s.add_argument("--features", type=int, default=M.DEFAULTS["features"])
-    s.add_argument("--usd", type=float, default=M.DEFAULTS["usd"])
-    s.add_argument("--hours", type=float, default=M.DEFAULTS["hours"])
-    s.add_argument("--continuations", type=int, default=M.DEFAULTS["continuations"])
+    d = M.settings(root)["defaults"]  # factory.json `mission.defaults`; start refuses anything above `mission.ceilings`
+    s.add_argument("--features", type=int, default=d["features"])
+    s.add_argument("--usd", type=float, default=d["usd"])
+    s.add_argument("--hours", type=float, default=d["hours"])
+    s.add_argument("--continuations", type=int, default=d["continuations"])
     s.add_argument("--brief", default="", help="the brief as posted in chat: the text itself, or a path to a file holding it "
                    "(default: a placeholder line to fill in)")
     s.add_argument("--branch", default="", help="use this branch (created if missing, or the current one) instead of "
                    "creating mission/<slug>; recorded in the header")
+    s = sub.add_parser("approve")
+    s.add_argument("slug")
+    s.add_argument("spec")
     s = sub.add_parser("status")
     s.add_argument("slug", nargs="?")
     sub.add_parser("stop").add_argument("slug")
@@ -186,7 +229,7 @@ def main(argv=None, root=ROOT):
     s.add_argument("slug")
     s.add_argument("--reason", default="", help="why it ended (done|stopped|wall-clock|budget|continuations); default: inferred")
     a = ap.parse_args(argv)
-    err = {"start": cmd_start, "status": cmd_status, "stop": cmd_stop, "report": cmd_report}[a.cmd](a, root)
+    err = {"start": cmd_start, "approve": cmd_approve, "status": cmd_status, "stop": cmd_stop, "report": cmd_report}[a.cmd](a, root)
     if err:
         print("mission: " + err, file=sys.stderr)
         return 1

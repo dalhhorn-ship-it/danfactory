@@ -206,7 +206,9 @@ def _c_prd(ctx):
             len(act), " (" + ", ".join(act) + ")" if act else "", len(ex) - len(act))
     if not ctx["base"]:
         return "skip", [], "no base to diff against" + note
-    bad, used, product, by_mission = [], 0, 0, {}
+    bad, used, product, by_mission, untested = [], 0, 0, {}, []
+    mmod = rules._mission_mod()
+    l2 = bool(mmod) and mmod.rigor_level(root) >= 2
     times = {}  # commit time per sha, so a mission approval is judged at the time of the commit (ADR 0012)
     for ln in (git(root, "log", "--no-merges", "--format=%H %ct", "%s..HEAD" % ctx["base"]) or "").splitlines():
         sha, _, ct = ln.partition(" ")
@@ -228,9 +230,16 @@ def _c_prd(ctx):
             bad.append(c["sha"][:7])
         elif rules.prd_mission(root, ok):
             by_mission[rules.prd_mission(root, ok)] = ok
+            if l2 and not mmod.admitted(root, ok, c["sha"]):  # MISSION-7: the manifest as committed in that commit
+                untested.append("%s (%s)" % (c["sha"][:7], ok))
     for ms in sorted(by_mission):
         mm = rules._mission_mod().load(root, ms)
         note += " [covered by mission %s (go: %s)]" % (ms, (mm or {}).get("go", "")[:80])
+    if untested and not bad:
+        msg = ("%d by-mission commit(s) without admitted acceptance tests for their PRD at commit time: %s%s"
+               % (len(untested), ", ".join(untested[:6]), note))
+        return ("fail", ["mission-tests-not-admitted"], msg) if mode == "required" else (
+            "warn", ["mission-tests-not-admitted"], msg + " (advisory)")
     if not bad:
         return "pass", [], "%d product-code commit(s) in range, all covered (%d by PRD-Exempt)%s" % (product, used, note)
     msg = "%d product-code commit(s) without Refs to an approved PRD or PRD-Exempt: %s%s" % (
