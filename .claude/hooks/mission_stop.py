@@ -100,10 +100,39 @@ def run():
             state.setdefault("sessions", {})[sid] = round(session_usd(tp), 4)
         except Exception:  # noqa: BLE001 - spend unknown: the continuation cap still binds
             pass
+    sr, ml = 0.0, None
+    try:  # MISSION-12: second-reading spend inside the mission counts toward the one budget
+        import _missionloop as ml
+        sr = ml.second_reading_usd(root, m["started_at"])
+        if sr:
+            state.setdefault("sessions", {})["second-reading"] = round(sr, 4)
+    except Exception:  # noqa: BLE001
+        pass
     reason = mm.cap_hit(m, state)
     if reason:
         return finish(mm, root, m, state, reason)
-    item = mm.next_item(root, m)
+    held, waits, fresh = [], 0, None
+    try:  # MISSION-8: every open item is [~] and slices are out: wait or land, don't restart the item
+        its = mm.items(root, m)
+        out = ml.slices_out(root, m.get("branch"))
+        held = ml.held_items(its, out)
+        waits = ml.read_waits(root) if held else 0
+        if out:  # slices are out: a `[ ]` item beats a `[~]` one (that one is in a developer's hands)
+            fresh = next((i for i in its if i["state"] == " "), None)
+    except Exception:  # noqa: BLE001
+        held = []
+    if held and waits < ml.MAX_WAITS:
+        state["waits"] = waits + 1
+        mm.save_state(root, state)
+        print(json.dumps({"decision": "block", "reason": (
+            "Mission %s ($%.2f/%g, %.1f/%gh). Developers are still working on: %s. Wait for them or land finished "
+            "slices (`python3 scripts/slices.py land ...`); do not start these items again." % (
+                m["slug"], sum(state["sessions"].values()), m["caps"]["usd"], hours_used(m), m["caps"]["hours"],
+                ", ".join(i["id"] for i in held)))}))
+        return
+    if held:
+        state["waits"] = 0  # waited long enough: back to plain work
+    item = held[0] if held else fresh or mm.next_item(root, m)
     if item is None:
         return finish(mm, root, m, state, "done")
     state["continuations"] = int(state.get("continuations") or 0) + 1
@@ -111,9 +140,10 @@ def run():
     caps = m["caps"]
     print(json.dumps({"decision": "block", "reason": (
         "Mission %s (%d/%d, $%.2f/%g, %.1f/%gh). Next: %s %s. Don't ask the user: write assumptions in the PRD "
-        "and the Decision log, park blocked items [!] with a note, commit after each item." % (
+        "and the Decision log, park blocked items [!] with a note, commit after each item.%s" % (
             m["slug"], state["continuations"], caps["continuations"], sum(state["sessions"].values()),
-            caps["usd"], hours_used(m), caps["hours"], item["id"], item.get("title", "")))}))
+            caps["usd"], hours_used(m), caps["hours"], item["id"], item.get("title", ""),
+            " Spend includes $%.2f of second readings." % sr if sr else ""))}))
 
 
 def main():

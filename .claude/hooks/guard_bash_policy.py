@@ -196,10 +196,11 @@ def mission_branch(prog, args):
     No mission, or `_mission`/`_gitmission` missing or failing: no change in behaviour."""
     reason = ""
     try:
-        import _mission
-        if _mission.active(ROOT):
+        import _missionloop
+        w = _missionloop.window(ROOT)  # active mission, or done/stopped inside its time window
+        if w:
             import _gitmission
-            reason = _gitmission.check(prog, args, CWD[0] or ROOT, ROOT)
+            reason = _gitmission.check(prog, args, CWD[0] or ROOT, ROOT, w[1])
     except Exception:  # noqa: BLE001 - fail open
         return
     if reason:

@@ -202,8 +202,11 @@ class NoMissionBehaviourIsUnchanged(Base):
             with self.subTest(cmd=cmd):
                 self.assertAllowed(p, cmd)
 
-    def test_stopped_mission_nothing_extra_is_blocked(self):
+    def test_stopped_mission_after_its_window_nothing_extra_is_blocked(self):
+        # MISSION-9: inside the window a stopped mission still blocks (test_mission_loop.py); after it, as today
         p = self.proj(status="stopped")
+        started = (NOW - datetime.timedelta(hours=11)).strftime("%Y-%m-%dT%H:%M:%SZ")  # 10h cap
+        p.write("docs/missions/demo.md", MISSION.format(status="stopped", date=started[:10], started=started))
         self.assertAllowed(p, "git push origin main")
         self.assertAllowed(p, "gh pr merge 1")
 
