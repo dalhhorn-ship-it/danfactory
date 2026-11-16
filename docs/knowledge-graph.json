@@ -37,7 +37,7 @@
   {"id": "docs/policies/evals.md", "title": "Policy: agent evals", "lines": 38, "summary": "Behavioural evals for the factory: a fixed task suite run by headless `claude -p` in\u2026"},
   {"id": "docs/policies/issue-ledger.md", "title": "Policy: issue ledger", "lines": 24, "summary": "Failing admitted acceptance tests become files; fixed ones move. Design:\u2026"},
   {"id": "docs/policies/merge-gate.md", "title": "Policy: merge gate", "lines": 68, "summary": "One command, one verdict with reason codes, the same locally and in CI. Design:\u2026"},
-  {"id": "docs/policies/mission.md", "title": "Policy: Mission autopilot", "lines": 47, "summary": "One approved brief lets the agent build several features without asking again, inside a\u2026"},
+  {"id": "docs/policies/mission.md", "title": "Policy: Mission autopilot", "lines": 48, "summary": "One approved brief lets the agent build several features without asking again, inside a\u2026"},
   {"id": "docs/policies/prd-approval.md", "title": "Policy: PRD before build", "lines": 31, "summary": "No feature work starts until the product-manager has written a PRD and the user has\u2026"},
   {"id": "docs/policies/runner-release.md", "title": "Policy: fixer runner, release and learning", "lines": 20, "summary": "Part of the autonomy pack (ADR 0011). How you promote what the runner merged to staging,\u2026"},
   {"id": "docs/policies/runner-safety.md", "title": "Policy: fixer runner, safety and limits", "lines": 19, "summary": "Part of the autonomy pack (ADR 0011). The second reading of acceptance tests and the\u2026"},

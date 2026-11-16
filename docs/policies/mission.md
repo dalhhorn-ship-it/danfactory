@@ -31,7 +31,8 @@ Preconditions: `factory.json` phase is `build` and the tree is clean. First add 
 - The mission file `docs/missions/<slug>.md` records go, date, scope, caps, milestone. Its header is frozen from the first commit, except `status`. To change scope or caps, start a new mission with a new go.
 - Work list = the milestone. Only the first N PRDs (feature cap) count. A PRD outside scope is not approved: mark its item `[!] ... parked: out of scope`.
 - Never stop to ask. Assumptions go in the PRD revision and the mission's Decision log, or park the item `[!]`. This includes test-writer ambiguities and `fails-on-reference`: they are not sent to the user.
-- Mission work cannot change the factory's own controls (`factory.json`, `.claude/**`, gate, mission, runner and acceptance scripts): park such items.
+- Mission work cannot change the factory's own controls (`factory.json`, `.claude/**`, gate, mission, runner and acceptance scripts): park such items. The write guard enforces it (`MISSION_PROTECTED` in `.claude/hooks/_prd.py`, also `.github/**`, `scripts/slices.py`, `scripts/check.sh`, `.factory/prd-exemption`).
+- `mission.py report <slug>` regenerates the report and never changes the status; `mission.py stop <slug>` stops the mission and writes the report. Off the mission branch the Stop hook does not continue and says so.
 - A mission does not start `scripts/runner.py`. Runner budgets (`autonomy.*`) and `schedule_ok` do not apply to missions; known limit: second-reading cost books against `autonomy.daily_budget_usd`, not the mission cap.
 - The user ends a mission by setting `status: stopped`. It also ends at a cap or when every item is `[x]`, `[!]` or `[-]`.
 
