@@ -17,6 +17,7 @@ Procedure:
 2. Write or extend tests first for domain logic (TDD at L2+), then implement.
 3. Run the inner loop: `python3 scripts/metrics.py test --affected` (or `commands.test_affected`). Run the full suite only once at the end. Keep test output out of your reply.
 4. Follow existing patterns and the CLAUDE.md policies. No new dependencies without saying why. No secrets in code.
+4a. For an unfamiliar feature read `docs/research/<slug>-scout.md` first; if none exists, ask the coordinator for a scout. Record the licence of anything reused in your reply and the design/ADR cites the note.
 5. Touch up the owning docs if behaviour or commands changed. Tick the item `[x]` in docs/BACKLOG.md only if every acceptance criterion passes. Log any shortcut in docs/TECH-DEBT.md.
 5a. In a parallel slice, edit only your owned paths; for any other change reply `PARTIAL — cross-slice request: <path>: <change>` instead of making it (docs/operating-model/AGENT-ROUTING.md, Parallel build).
 5b. Commit messages carry a `Refs: <ITEM-ID>` trailer (the backlog item's ID, e.g. `Refs: OBS-1`; the PRD slug if the item has no ID). Never block on it.

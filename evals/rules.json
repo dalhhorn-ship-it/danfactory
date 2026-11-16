@@ -265,6 +265,13 @@
    ]
   },
   {
+   "id": "policy-oss-scout",
+   "title": "An unfamiliar feature is scouted first: one note, one recommendation, a licence line for any reuse",
+   "kind": "policy",
+   "source": "docs/operating-model/AGENT-ROUTING.md",
+   "gates": []
+  },
+  {
    "id": "hook-mission-stop",
    "title": "Stop hook continues an active mission until done or a cap",
    "kind": "hook",

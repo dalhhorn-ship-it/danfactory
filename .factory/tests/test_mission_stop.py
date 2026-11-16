@@ -190,14 +190,19 @@ class NoOps(Base):
         self.silent(p.stop())
         self.assertIsNone(p.state())
 
-    def test_head_not_mission_branch_is_silent(self):
+    def says_off_branch(self, r, head):
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(json.loads(r.stdout), {"systemMessage": "mission demo is active on mission/demo, you are on %s: "
+                                                                 "not continuing" % head})
+
+    def test_head_not_mission_branch_says_so_and_allows_stop(self):
         p = self.proj(branch="main")
-        self.silent(p.stop())
+        self.says_off_branch(p.stop(), "main")
         self.assertIsNone(p.state())
 
-    def test_other_branch_is_silent(self):
+    def test_other_branch_says_so_and_allows_stop(self):
         p = self.proj(branch="feature/x")
-        self.silent(p.stop())
+        self.says_off_branch(p.stop(), "feature/x")
         self.assertIsNone(p.state())
 
     def test_stopped_by_user_is_silent(self):

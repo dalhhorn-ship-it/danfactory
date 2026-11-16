@@ -27,6 +27,12 @@ def protected(root):
         f = _load(root)
         names.add(((f.get("integrations") or {}).get("deploy") or {}).get("production_branch") or "main")
         names.add((f.get("gate") or {}).get("base_branch") or "main")
+        names.add(((f.get("autonomy") or {}).get("staging_branch")) or "staging")
+    except Exception:  # noqa: BLE001
+        names.add("staging")
+    try:  # slice P: the mission block's protected_branches, when _mission.settings exists
+        import _mission
+        names.update((getattr(_mission, "settings")(root or ROOT) or {}).get("protected_branches") or [])
     except Exception:  # noqa: BLE001
         pass
     return {n for n in names if n}
@@ -105,16 +111,20 @@ def has_flag(rest, *names):
     return False
 
 
-def check(prog, args, cwd, root=None):
+def check(prog, args, cwd, root=None, window_end=None):
     try:
-        return _check(prog, list(args), cwd or os.getcwd(), root)
+        return _check(prog, list(args), cwd or os.getcwd(), root, window_end)
     except Exception:  # noqa: BLE001 - fail open
         return ""
 
 
-def _check(prog, args, cwd, root):
+def _check(prog, args, cwd, root, window_end=None):
     prot = protected(root)
     why = "a mission is active: main, master and the production branch are the user's alone (ADR 0012). "
+    if window_end is not None:  # MISSION-9: also after done/stopped, until the time window ends
+        why = ("a mission is active or still inside its time window: main, master, the staging and production "
+               "branches are the user's alone (ADR 0012); the mission window ends at %s; you (the user) can push "
+               "from your own terminal. " % window_end.strftime("%Y-%m-%d %H:%M UTC"))
     if prog == "gh":
         pos = positionals(args, {"-R", "--repo"})
         if pos[:2] == ["pr", "merge"]:

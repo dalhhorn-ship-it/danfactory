@@ -41,10 +41,10 @@ Build the demo. Reply go to start.
 
 
 class Proj:
-    def __init__(self, status="active", mission=True, head="mission/demo", production="main"):
+    def __init__(self, status="active", mission=True, head="mission/demo", production="main", hours_ago=1):
         self.root = tempfile.mkdtemp()
-        started = (NOW - datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        self.write("factory.json", json.dumps({"phase": "build", "gate": {"base_branch": "main"},
+        started = (NOW - datetime.timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.write("factory.json", json.dumps({"phase": "build", "gate": {"base_branch": "main"}, "rigor": "L1",
                                                "integrations": {"deploy": {"production_branch": production}}}))
         self.write("docs/BACKLOG.md", "# Backlog\n\n## Milestone: M5 — Demo (mission: demo)\n- [~] DEMO-1 x\n")
         if mission:
@@ -202,8 +202,9 @@ class NoMissionBehaviourIsUnchanged(Base):
             with self.subTest(cmd=cmd):
                 self.assertAllowed(p, cmd)
 
-    def test_stopped_mission_nothing_extra_is_blocked(self):
-        p = self.proj(status="stopped")
+    def test_stopped_mission_after_its_window_nothing_extra_is_blocked(self):
+        # MISSION-9: inside the window a stopped mission still blocks (test_mission_loop.py); after it, as today
+        p = self.proj(status="stopped", hours_ago=11)  # 10h cap; the window reads the first commit
         self.assertAllowed(p, "git push origin main")
         self.assertAllowed(p, "gh pr merge 1")
 

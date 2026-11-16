@@ -52,6 +52,9 @@ class DeployBypasses(GuardBase):
         )
 
     def test_controls_allowed(self):
+        # isolate from a real active mission in the repo under test (it blocks pushes to main)
+        self.project = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.project, True)
         self.allowed(
             "wrangler deploy --dry-run", "npx wrangler deploy --dry-run --outdir /tmp/x", "wrangler --help",
             "npm run build", "git push", "git push -u origin HEAD", "git push -n origin main", 'echo "%s"' % W,

@@ -16,9 +16,10 @@
 | Adopt an existing build | in the other repo: `/danfactory:adopt` | bulk-reader (scan questions), karen (does it run?), product-manager (as-built backlog), software-architect (L2+) | mixed |
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
 | Plan | after choose-path; milestone start; backlog messy; after every slice (re-propose the build sequence before the dashboard refresh) | `product-manager` | sonnet |
-| Mission (one approval for a whole build) | the user wants a large ask built unattended / overnight: post the mission brief, wait for a clear yes, `python3 scripts/mission.py start`, then PRDs by mission, design, parallel build, morning report (docs/policies/mission.md) | main agent coordinates; `product-manager`, `software-architect`, `test-writer`, `developer` ×N, `reviewer` | mixed |
+| Mission (one approval for a whole build) | the user wants a large ask built unattended / overnight: post the mission brief, wait for a clear yes, `python3 scripts/mission.py start`, then PRDs by mission (the PM runs `mission.py approve <slug> <spec>` after each), design, parallel build, `reviewer` per feature, morning report (docs/policies/mission.md); `mission.py start <slug> --go "<words>" --title T --scope-in S --scope-out S --milestone M<n>` | main agent coordinates; `product-manager`, `oss-scout`, `software-architect`, `test-writer`, `developer` ×N, `reviewer`, `karen` and `jenny` at the end (L2+) | mixed |
 | PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
 | Acceptance tests | after PRD approval at L2+ and in autonomy mode, before build: the test-writer writes and maps the tests, a separate fresh agent writes a throwaway implementation from the PRD alone into a scratch dir (the second reading), the coordinator runs `acceptance.py admit <slug> --reference-dir DIR`; ambiguities go back to the user as PRD questions | `test-writer`, then a fresh `developer` (scratch dir) or general-purpose agent | sonnet |
+| Scout open source | after PRD approval, before design, when the coordinator judges the feature unfamiliar: no similar module in this repo (grep/codegraph finds none) AND a known problem class others have solved, or the PRD or architect flags it. Not for changes under ~50 lines, bug fixes, boilerplate with a reference file, L0 spikes. Writes `docs/research/<slug>-scout.md`; `python3 scripts/scout_check.py <note>` | `oss-scout` | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
 | Design (spreadsheet/data) | data-spreadsheet path; restructuring a model | `spreadsheet-architect` | sonnet |
 | Build: small change (< ~50 lines, one area) | – | main agent | – |
@@ -70,27 +71,32 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 
 | Path | Roster |
 |---|---|
-| software-product | product-manager, software-architect, test-writer, developer, code-writer, test-runner, finder, reviewer, task-completion-validator, ui-comprehensive-tester, karen, deploy-watcher, doc-keeper |
-| library-cli | product-manager, software-architect, test-writer, developer, code-writer, test-runner, finder, reviewer, code-quality-pragmatist, doc-keeper |
+| software-product | product-manager, oss-scout, software-architect, test-writer, developer, code-writer, test-runner, finder, reviewer, task-completion-validator, ui-comprehensive-tester, karen, deploy-watcher, doc-keeper |
+| library-cli | product-manager, oss-scout, software-architect, test-writer, developer, code-writer, test-runner, finder, reviewer, code-quality-pragmatist, doc-keeper |
 | data-spreadsheet | product-manager, spreadsheet-architect, data-builder, test-runner, reviewer, karen, doc-keeper |
 | documents-content | product-manager, reviewer, jenny, doc-keeper |
 | research-analysis | product-manager, bulk-reader, reviewer, jenny |
-| automation-script | developer, code-writer, test-runner, code-quality-pragmatist, deploy-watcher |
+| automation-script | developer, oss-scout, code-writer, test-runner, code-quality-pragmatist, deploy-watcher |
 | infra-ops | software-architect, developer, reviewer, claude-md-compliance-checker, deploy-watcher |
 | prototype-spike | developer, bulk-reader |
 | adopt-existing | bulk-reader, karen, product-manager, software-architect, developer, ui-comprehensive-tester, doc-keeper |
 
 `bulk-reader`, `test-runner` and `ultrathink-debugger` are available on every path when their trigger fires.
 
+**Terms.** *Autonomy mode* = the fixer runner working issues (optional autonomy pack). *Mission* = one approval for a multi-feature build (base, always installed).
+
 ## Parallel build
-Works in every build mode, and for missions (docs/decisions/0012-mission-autopilot.md). Use it when a design has independent slices.
+Works in every build mode, and for missions (docs/policies/mission.md; design: ADR 0012 in the danfactory template). Use it when a design has independent slices.
 1. **Slice table.** For multi-slice work the `software-architect` ends the design with `| Slice | Owns | Wave | Depends on |` (Owns: backticked paths or globs; extra columns are ignored).
-2. **Run.** The coordinator starts up to `build.max_parallel` developers per wave (factory.json, default 3, hard cap 4), each with Agent `isolation: "worktree"`, one branch and one slice. Agent worktrees start from the default branch, so the brief tells each developer to `git reset --hard <integration branch>` first. `python3 scripts/slices.py plan --map <design.md>` prints the batches.
+2. **Run.** The coordinator starts up to `build.max_parallel` developers per wave (factory.json, default 3, hard cap 4; not `autonomy.max_parallel`, which is how many issues the fixer runner works at once), each with Agent `isolation: "worktree"`, one branch and one slice. Agent worktrees start from the default branch, so the brief tells each developer to `git reset --hard <integration branch>` first. `python3 scripts/slices.py plan --map <design.md>` prints the batches.
 3. **Own your files.** A developer edits only its Owns paths and replies `PARTIAL — cross-slice request: <path>: <change>` for anything else. Slices never commit docs/INDEX.md or docs/knowledge-graph.json.
 4. **Land one at a time.** `python3 scripts/slices.py land <branch> --map <design.md> --slice <id> --into <integration>`: ownership check, rebase if the base moved, regenerate the index, gate, `merge --ff-only`. A failure means not merged; fix the slice or hand the cross-slice request to its owner.
 5. PRDs and acceptance tests for independent features parallelise the same way.
+6. **Missions.** At L2+ `test-writer` admits a by-mission PRD's tests before any developer starts; if none can be admitted the item is parked `[!]`. Slices out in worktrees make the Stop hook wait: land finished slices and remove their worktrees, or the wait continues (docs/policies/mission.md, Stop hook and waits).
 
 ## Changelog
+- 1.6.0 — 21 agents: `oss-scout` and the Scout open source moment, `scout_check.py` (SCOUT-1, SCOUT-2).
+- 1.5.0 — Missions: `mission.py approve` after each mission PRD, tests admitted before build at L2+, wait-or-land for slices (MISSION-7..12).
 - 1.4.0 — Parallel build section and `build.max_parallel` (MISSION-5).
 - 1.3.1 — every agent file carries the `Finding things` index-first line (DOCS-1).
 - 1.3.0 — 20 agents: `finder` (issue ledger, ADR 0008) for software-product and library-cli (AUTO-3).

@@ -2,6 +2,7 @@
 Pure functions, stdlib only. Policy: docs/policies/prd-approval.md (Enforcement)."""
 import datetime
 import os
+import subprocess
 import re
 
 EXEMPTION_FILE = ".factory/prd-exemption"
@@ -17,6 +18,35 @@ PRE_BUILD_PHASES = ("brainstorm", "operating-model")
 # settings, CLAUDE.md and all code) is product or config and needs approved work.
 FREE_PREFIXES = ("docs/", "issues/", "tests/acceptance/", "metrics/", ".factory/")
 FREE_FILES = ("factory.json",)  # written by choose-path / phase changes before any PRD can exist
+
+
+# While a mission's approval is what opens writes, the factory's own controls stay closed: a mission cannot change the
+# gate, the runner, the hooks or its own caps. Mirrors scripts/runner_core.py RUNNER_PROTECTED (which cannot be imported
+# cheaply from a hook) plus the mission machinery; docs/missions/<slug>.md needs no entry here, _mission.validate freezes
+# its header from the first commit (only `status` may change, which `mission.py stop` does).
+MISSION_PROTECTED = ("factory.json", ".claude/**", ".github/**", "scripts/gate*.py", "scripts/mission*.py", "scripts/slices.py",
+                     "scripts/acceptance*.py", "scripts/runner*.py", "scripts/sandbox.py", "scripts/check.sh",
+                     ".factory/prd-exemption", ".factory/mission-state.json", "docs/OPERATING-MODEL.md")
+MISSION_BLOCK = ("mission work cannot change the factory's own controls (%s): park the item and tell the user "
+                 "(docs/policies/mission.md). Protection ends when the user stops the mission: "
+                 "`python3 scripts/mission.py stop <slug>`, or sets `status: stopped` in docs/missions/<slug>.md, which stays editable")
+
+
+def mission_protected(rel, root=None):
+    """True for a path the factory's controls live in; with `root`, also the acceptance manifest (written only by
+    `acceptance.py admit`, never by hand while a mission runs)."""
+    import fnmatch
+    if root is not None:
+        mod = _mission_mod()
+        if mod and rel == mod.acceptance_dir(root) + "/manifest.json":
+            return True
+    for pat in MISSION_PROTECTED:
+        if pat.endswith("/**"):
+            if rel == pat[:-3] or rel.startswith(pat[:-2]):
+                return True
+        elif fnmatch.fnmatchcase(rel, pat):
+            return True
+    return False
 
 
 def rel_path(path, root, cwd=None):
@@ -167,11 +197,46 @@ def item_approved(root, ref, at=None):
     return bool(approving_slug(root, ref, at))
 
 
+def _mission_on_branch(root):
+    """True when a mission with status active (valid or not) has its branch checked out. Internal errors raise (hook fails open)."""
+    mod = _mission_mod()
+    m = mod.active(root) if mod else None
+    if not m:
+        return False
+    p = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, capture_output=True, text=True, timeout=20)
+    return p.returncode == 0 and p.stdout.strip() == m["branch"]
+
+
+MISSION_TESTS_BLOCK = ("tests not admitted for %s: mission work at rigor L2+ (unknown rigor counts as L2) may not write product code "
+                       "until the acceptance tests for every in-progress by-mission PRD are admitted. Keep an item `[ ]` until its "
+                       "tests are admitted (tests/acceptance/** stays writable for the test-writer), then mark it `[~]`. Run the "
+                       "test-writer, then `python3 scripts/acceptance.py admit <slug> ...`; if admissible tests cannot be written, "
+                       "park the item `[!]` with a reason (`parked: <why>`) and take the next one")
+
+
+def _active_mission_on_branch(root):
+    """The active mission when its branch is checked out, else None. Internal errors raise (hook fails open)."""
+    mod = _mission_mod()
+    m = mod.active(root) if mod else None
+    return m if m and _mission_on_branch(root) else None
+
+
+def _unadmitted_mission_specs(root, m, slugs):
+    """By-mission PRDs among `slugs` (all in-progress) with no admitted tests (MISSION-7), else []. Applies only at rigor L2+
+    (unknown counts as L2) while mission `m` is active on its branch."""
+    mod = _mission_mod()
+    if not m or mod.mission_rigor(root) < 2:
+        return []
+    return [s for s in slugs if prd_mission(root, s) == m["slug"] and not mod.admitted(root, s)]
+
+
 def decide(root, rel, phase, template, today=None):
     """(allowed, reason, via): via is 'free', 'prd:<slug>' or 'exemption:<kind>'; reason says what is missing when blocked."""
+    if mission_protected(rel, root) and _mission_on_branch(root):  # before backlog and exemptions: neither can open the controls
+        return False, MISSION_BLOCK % rel, "mission-protected"
+    ex = active_exemptions(root, today)
     if not is_product_path(rel):
         return True, "", "free"
-    ex = active_exemptions(root, today)
     spike = next((x for x in ex if x["kind"] == "spike"), None)
     if not template and phase in PRE_BUILD_PHASES:
         if spike:
@@ -179,7 +244,13 @@ def decide(root, rel, phase, template, today=None):
         return False, ("phase is '%s', not 'build': product code can't be written yet (finish the brainstorm / operating-model "
                        "steps, or claim a `spike` exemption if the user asked for a throwaway prototype)" % phase), ""
     slugs = in_progress_approved(root)
+    live = _active_mission_on_branch(root)
+    if live:  # during a mission only its own by-mission PRDs approve product writes; a `[~]` item with a user PRD does not
+        slugs = [s for s in slugs if prd_mission(root, s) == live["slug"]]
     if slugs:
+        miss = [] if ex else _unadmitted_mission_specs(root, live, slugs)
+        if miss:
+            return False, MISSION_TESTS_BLOCK % ", ".join(miss), "mission-tests"
         return True, "", "prd:" + slugs[0]
     if ex:
         return True, "", "exemption:" + ex[0]["kind"]

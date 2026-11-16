@@ -69,6 +69,14 @@ def cmd_run(a, root):
         raise Refuse("autonomy.max_attempts must be a whole number of at least 1 (got %r)" % (cfg["max_attempts"],))
     if not a.issue and not a.next:
         raise Refuse("give --issue ISS-n or --next")
+    try:  # MISSION-12: one budget, one driver. Fails open if the mission module is missing.
+        sys.path.insert(0, os.path.join(root, ".claude", "hooks"))
+        import _mission
+        live = _mission.active(root)
+    except Exception:  # noqa: BLE001
+        live = None
+    if live:
+        raise Refuse("a mission is active (%s); the fixer runner does not run during a mission" % live["slug"])
     sched, par = bool(getattr(a, "scheduled", False)), getattr(a, "parallel", 1)
     if sched and cfg.get("schedule_ok") is not True:
         raise Refuse("--scheduled needs your standing go: set factory.json autonomy.schedule_ok to true (it is false by default; docs/policies/runner.md)")

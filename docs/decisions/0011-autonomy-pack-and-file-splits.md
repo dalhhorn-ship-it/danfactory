@@ -42,3 +42,4 @@ Split runner.py (inside the pack's file list), acceptance.py, gate.py, dashboard
 
 ## Consequences
 A new project starts about 4,500 lines lighter. The cost is one network fetch from a pinned commit when autonomy is chosen. Pack versions follow the template's commits; there is no separate versioning.
+Mission mode (ADR 0012) is base, not part of the autonomy pack: it stays in every project.

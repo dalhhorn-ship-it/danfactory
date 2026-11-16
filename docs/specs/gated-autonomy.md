@@ -69,7 +69,7 @@ Autonomy mode is opt-in. It is chosen in choose-path through a decision-tree que
 
 ## Non-goals
 - Hundreds of agents or thousands of issues a day. The target is 2 to 4 fixers.
-- Removing the PRD gate. Scope and acceptance criteria stay with the user.
+- Removing the PRD gate. Scope and acceptance criteria stay with the user. (Relaxed for one approved mission by ADR 0012.)
 - Autonomy for work with no executable acceptance tests (documents, research, spikes).
 - Evals in CI. They stay manual, per docs/policies/evals.md.
 - A custom orchestration platform. Use headless `claude -p`, git worktrees and CI.
@@ -141,5 +141,5 @@ Recommendation: approve steps 1 and 2 first as slice A, run the risk 1 spike at 
 3. Daily budget for unattended runs: 5 USD.
 4. Merges go to a staging branch first; the user promotes to main.
 5. Pilot on both: the `evals/base` textkit fixture (inside this template, as the risk 1 spike) and a small library-style project downstream (danfactory is a template, so that pilot runs in its own repo once slice A has landed).
-6. Control stays with the user: the user approves every PRD, decides which builds start, and is the only one who pushes or promotes to main. No runner, gate or agent pushes to the production branch.
+6. Control stays with the user: the user approves every PRD, decides which builds start, and is the only one who pushes or promotes to main. No runner, gate or agent pushes to the production branch. (Relaxed for PRD approval, for one approved mission, by ADR 0012; pushing stays the user's.)
 7. Dashboard: every step adds visibility for what it measures (gate verdicts, acceptance coverage, and later issues, rework and cost).

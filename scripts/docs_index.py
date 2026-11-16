@@ -165,7 +165,7 @@ def render(docs, curated):
             text = d["title"]
         summary = cell(text, 48)  # DOCS-1: the index must stay under the doc budget as docs grow
         if d["tokens"] > limit:
-            secs = ", ".join("%s:%d" % (cell(t, 22), n) for n, lvl, t in d["headings"] if lvl == 2)
+            secs = ", ".join("%s:%d" % (cell(t, 18), n) for n, lvl, t in d["headings"] if lvl == 2)
             summary += " — sections: " + secs
         out.append("| %s | %d | %s |" % (d["file"], d["lines"], summary))
     return "\n".join(out) + "\n"

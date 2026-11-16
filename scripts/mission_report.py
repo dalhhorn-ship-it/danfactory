@@ -5,8 +5,8 @@
 
 `write(root, slug, reason)` writes docs/missions/<slug>-report.md and returns its absolute path. The report is derived from
 the mission file, the backlog, .factory/mission-state.json, git and metrics/gate.local.jsonl, so it can be regenerated at
-any time (reason '' = take it from the state file, else infer it from the backlog). Setting the mission status is done
-through `_mission.set_status`: `done` when the work is finished, `stopped` otherwise.
+any time (reason '' = take it from the state file, else infer it from the backlog). `write` sets the mission status (`done` or
+`stopped`) only for the Stop hook and `mission.py stop`; this CLI and `mission.py report` never change the status.
 """
 import datetime
 import json
@@ -108,9 +108,14 @@ def build(root, m, reason, now=None):
     start = m["started_at"]
     hours = max(0.0, (end - start).total_seconds() / 3600.0)
     caps = m["caps"]
+    ceil = _mission.settings(root)["ceilings"]
 
     L = ["# Mission report: %s" % m["slug"], "", verdict(reason, parked_n), "",
          "Go words recorded in the mission file (check them against the chat; the agent wrote them): %s" % (m.get("go") or "?"),
+         "", "Caps in force: usd %g, hours %g, continuations %d, features %s; checked against the ceilings usd %g, hours %g, "
+         "continuations %d, features %d (factory.json mission.ceilings). Check these against the brief." % (
+             caps["usd"], caps["hours"], caps["continuations"], m.get("features"),
+             ceil["usd"], ceil["hours"], ceil["continuations"], ceil["features"]),
          "", "Mission: %s (milestone %s, branch `%s`)." % (m.get("title") or m["slug"], m.get("milestone") or "?",
                                                          m.get("branch") or "?"), ""]
 
@@ -156,8 +161,9 @@ def build(root, m, reason, now=None):
     return "\n".join(L) + "\n", reason
 
 
-def write(root, slug, reason=""):
-    """Write docs/missions/<slug>-report.md, set the mission status (done or stopped), return the report's path."""
+def write(root, slug, reason="", set_status=True):
+    """Write docs/missions/<slug>-report.md, return the report's path. set_status (the Stop hook, `mission.py stop`): also set
+    the mission status (done or stopped); False (regenerating a report) leaves the status alone."""
     m = _mission.load(root, slug)
     if m is None:
         raise ValueError("no such mission: %s" % slug)
@@ -168,7 +174,8 @@ def write(root, slug, reason=""):
     with open(tmp, "w", encoding="utf-8") as fh:
         fh.write(text)
     os.replace(tmp, path)
-    _mission.set_status(root, slug, "done" if reason == "done" else "stopped")
+    if set_status:
+        _mission.set_status(root, slug, "done" if reason == "done" else "stopped")
     return path
 
 
@@ -183,7 +190,7 @@ def main(argv=None, root=ROOT):
         print(__doc__)
         return 2
     try:
-        print(os.path.relpath(write(root, a[0], reason), root))
+        print(os.path.relpath(write(root, a[0], reason, set_status=False), root))
     except ValueError as ex:
         print(ex, file=sys.stderr)
         return 1

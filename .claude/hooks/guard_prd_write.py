@@ -62,9 +62,9 @@ def main():
             raw = next((ti[k] for k in TOOL_KEYS if isinstance(ti.get(k), str) and ti[k]), "")
             rels = [_prd.rel_path(raw, ROOT, ev.get("cwd"))]
         factory = load_factory()
-        ok, why, rel = True, "", ""
+        ok, why, rel, via = True, "", "", ""
         for rel in rels:
-            ok, why, _via = _prd.decide(ROOT, rel, str(factory.get("phase") or ""), template_mode(factory=factory))
+            ok, why, via = _prd.decide(ROOT, rel, str(factory.get("phase") or ""), template_mode(factory=factory))
             if not ok:
                 break
     except Exception as ex:  # noqa: BLE001 - our own bug must not stop the user's work
@@ -72,6 +72,8 @@ def main():
         return
     if not ok:
         record(rel, why, ev.get("agent_id"))
+        if via in ("mission-protected", "mission-tests"):
+            block("BLOCKED: " + why)
         block(MSG.format(path=rel, why=why, today=datetime.date.today().isoformat()))
 
 

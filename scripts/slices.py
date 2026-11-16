@@ -147,6 +147,21 @@ def protected_branches(root):
     return _gitmission.protected(root)
 
 
+def _keep_gate_rows(wt, root):
+    """The gate ran in a throwaway worktree: copy its verdict rows to the root checkout before the worktree is deleted
+    (the morning report reads metrics/gate.local.jsonl there)."""
+    src = os.path.join(wt, "metrics", "gate.local.jsonl")
+    if not os.path.isfile(src):
+        return
+    try:
+        rows = open(src, encoding="utf-8").read()
+        os.makedirs(os.path.join(root, "metrics"), exist_ok=True)
+        with open(os.path.join(root, "metrics", "gate.local.jsonl"), "a", encoding="utf-8") as fh:
+            fh.write(rows if rows.endswith("\n") or not rows else rows + "\n")
+    except OSError:
+        pass
+
+
 def land(root, branch, slice_, into, gate_cmd=None, say=print, allow_protected=False):
     """Land one slice. Returns (ok, reason). Never leaves a worktree behind. Landing into a protected branch
     (main, master, production, base) needs `allow_protected` and is refused while a mission is active."""
@@ -189,9 +204,11 @@ def land(root, branch, slice_, into, gate_cmd=None, say=print, allow_protected=F
                     return False, "index commit failed: " + out
         cmd = shlex.split(gate_cmd) if gate_cmd else [sys.executable, "scripts/gate.py", "--base", into]
         g = subprocess.run(cmd, cwd=wt, capture_output=True, text=True)
+        _keep_gate_rows(wt, root)
         if g.returncode != 0:
-            tail = (g.stdout + g.stderr).strip().splitlines()[-8:]
-            return False, "gate failed (exit %d): %s" % (g.returncode, " | ".join(tail))
+            lines = (g.stdout + g.stderr).strip().splitlines()
+            keep = [ln for ln in lines if ln.startswith("gate:") or re.match(r"\s+fail\s", ln)]
+            return False, "gate failed (exit %d): %s" % (g.returncode, " | ".join(keep or lines[-8:]))
         _, sha = git(wt, "rev-parse", "HEAD")
         rc, out = git(root, "merge", "--ff-only", sha)
         if rc != 0:

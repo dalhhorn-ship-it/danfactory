@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Mission CLI (ADR 0012, docs/policies/mission.md): start | status | stop | report.
+"""Mission CLI (ADR 0012, docs/policies/mission.md): start | approve | status | stop | report.
 
-  mission.py start <slug> --go "<user words>" --title T --scope-in S --scope-out S --milestone M5 [--features N --usd X --hours H --continuations N]
+  mission.py start <slug> --go "<user words>" --title T --scope-in S --scope-out S --milestone M5
+                     [--brief TEXT|FILE] [--branch NAME] [--features N --usd X --hours H --continuations N]
+                 needs phase build and a clean tree; creates and switches to branch mission/<slug>, writes the file (commit it next)
+  mission.py approve <slug> <spec-slug>   lists a by-mission PRD in the Decision log (`- DATE Approved PRD: <spec-slug>`): needs the
+                 slug prefix, a live backlog item under the milestone linking it, and room under the feature cap (live items only)
   mission.py status [<slug>]     validity, caps used, next item, parked items
-  mission.py stop <slug>         sets status: stopped (the hook then lets the agent finish)
-  mission.py report <slug>       (re)writes docs/missions/<slug>-report.md
+  mission.py stop <slug>         sets status: stopped and writes the report (the hook then lets the agent finish)
+  mission.py report <slug>       (re)writes docs/missions/<slug>-report.md; never changes the status
 Stdlib only."""
 import argparse
 import datetime
+import json
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,6 +31,52 @@ def _quote(words):
     return words if re.match(r'^["“].*["”]$', words, re.S) else '"%s"' % words
 
 
+def _git(root, *args):
+    p = subprocess.run(["git", "-C", root] + list(args), capture_output=True, text=True, timeout=30, check=False)
+    return p.returncode, (p.stdout + p.stderr).strip()
+
+
+def _prepare_branch(a, root):
+    """Refuse on a dirty tree or a protected branch, then create and switch to the mission branch (never destructive).
+    Returns (branch, error)."""
+    import _gitmission
+    import _common
+    try:
+        with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
+            factory = json.load(fh)
+    except (OSError, ValueError):
+        factory = {}
+    phase = str(factory.get("phase") or "")
+    if phase != "build" and not _common.template_mode(root, factory):
+        return "", ("factory.json phase is '%s', not 'build': product work is not allowed yet. Finish the brainstorm and "
+                    "operating-model steps first; a mission starts in the build phase" % (phase or "unset"))
+    rc, head = _git(root, "rev-parse", "--abbrev-ref", "HEAD")
+    if rc != 0:
+        return "", "not a git repository with at least one commit (the mission file must be committed on a branch)"
+    rc, dirty = _git(root, "status", "--porcelain")
+    if dirty:
+        return "", "the working tree has uncommitted changes: commit or stash them first (start never switches branches over them)"
+    explicit = bool(a.branch)
+    branch = a.branch or "mission/" + a.slug
+    if branch in _gitmission.protected(root):
+        return "", "%s is a protected branch: a mission must run on its own branch (default mission/%s)" % (branch, a.slug)
+    if branch == head:
+        return branch, ""
+    exists = _git(root, "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)[0] == 0
+    if exists and not explicit:
+        return "", "branch %s already exists: pick another slug, or pass --branch %s to reuse it" % (branch, branch)
+    rc, out = _git(root, "switch", branch) if exists else _git(root, "switch", "-c", branch)
+    if rc != 0:
+        return "", "could not switch to %s: %s" % (branch, out)
+    return branch, ""
+
+
+def _brief(text):
+    if text and "\n" not in text and os.path.isfile(text):
+        return M._read(text).strip()
+    return text
+
+
 def cmd_start(a, root):
     if not M.SLUG_RE.fullmatch(a.slug) or a.slug.endswith("-report"):
         return "bad slug: use [a-z0-9][a-z0-9-]* and not a name ending in -report"
@@ -34,17 +86,27 @@ def cmd_start(a, root):
     path = os.path.join(root, M.MISSIONS_DIR, a.slug + ".md")
     if os.path.exists(path):
         return "docs/missions/%s.md already exists" % a.slug
+    over = M.over_ceilings(root, {"caps": {"usd": a.usd, "hours": a.hours, "continuations": a.continuations}, "features": a.features})
+    if over:
+        return "refusing to start: " + over
+    rig = M.rigor_level(root)
+    if rig < 0:
+        return "refusing to start: rigor is unknown (set factory.json rigor to L0..L3; choose-path writes it)"
+    print("rigor L%d will apply%s" % (rig, "" if rig >= 2 else " (tests-before-code check is off below L2)"))
     go = _quote(a.go)
     if not M.go_valid(go):
         return 'the go must quote the user\'s words and give a clear yes (go, ok, yes, approve, build it)'
+    branch, err = _prepare_branch(a, root)
+    if err:
+        return "refusing to start: " + err
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     lines = ["slug: " + a.slug, "status: active", "go: " + go, "date: " + now.date().isoformat(),
-             "started_at: " + now.isoformat().replace("+00:00", "Z"), "branch: mission/" + a.slug,
+             "started_at: " + now.isoformat().replace("+00:00", "Z"), "branch: " + branch,
              "milestone: " + a.milestone, "features: %d" % a.features,
              "caps: usd=%g hours=%g continuations=%d" % (a.usd, a.hours, a.continuations),
              "scope_in: " + a.scope_in, "scope_out: " + a.scope_out]
     text = "# Mission: %s\n\n%s\n%s\n%s\n\n## Brief\n%s\n\n## Decision log\n" % (
-        a.title, M.START, "\n".join(lines), M.END, a.brief or BRIEF)
+        a.title, M.START, "\n".join(lines), M.END, _brief(a.brief) or BRIEF)
     M._write_atomic(path, text)
     backlog = os.path.join(root, "docs", "BACKLOG.md")
     cur = M._read(backlog)
@@ -54,7 +116,41 @@ def cmd_start(a, root):
     if not re.search(r"(?m)^##\s+Milestone:\s*%s(?![\w-])" % re.escape(a.milestone), cur):
         M._write_atomic(backlog, cur + "\n" + heading + "\n")
     print("mission %s written to docs/missions/%s.md; commit it now (the header is frozen from its first commit) and "
-          "work on branch mission/%s." % (a.slug, a.slug, a.slug))
+          "work on branch %s (you are on it now)." % (a.slug, a.slug, branch))
+    return ""
+
+
+def cmd_approve(a, root):
+    """List a PRD as approved by the mission (MISSION-10). Refuses what in_scope would later refuse, plus the live feature cap."""
+    m = M.load(root, a.slug)
+    if not m:
+        return "no mission " + a.slug
+    bad = M.validate(root, m)
+    if bad:
+        return "mission %s is not valid: %s" % (a.slug, bad)
+    hit = M.cap_hit(m, M.load_state(root, m["slug"]))
+    if hit:
+        return "mission %s is not live (%s)" % (a.slug, hit)
+    spec = a.spec
+    if not re.fullmatch(r"[\w.-]+", spec) or not spec.startswith(m["slug"] + "-"):
+        return "%s must be prefixed %s-" % (spec, m["slug"])
+    if not os.path.isfile(os.path.join(root, "docs", "specs", spec + ".md")):
+        return "no PRD at docs/specs/%s.md" % spec
+    if spec not in M._scoped_slugs(root, m, live_only=True):
+        return "%s is not linked from a live item ([ ], [~], [x]) under milestone %s in docs/BACKLOG.md" % (spec, m["milestone"])
+    if spec in M.approved_specs(root, m):
+        print("%s is already listed for mission %s" % (spec, a.slug))
+        return ""
+    live = M.live_approved(root, m)
+    if len(live) >= m["features"]:
+        return "feature cap reached: %d live approved PRD(s) (%s), cap %d; park or drop an item first" % (len(live), ", ".join(live), m["features"])
+    text = M._read(m["path"])
+    if "## Decision log" not in text:
+        text = text.rstrip("\n") + "\n\n## Decision log\n"
+    elif not text.endswith("\n"):
+        text += "\n"
+    M._write_atomic(m["path"], text + "- %s Approved PRD: %s\n" % (datetime.date.today().isoformat(), spec))
+    print("mission %s: listed %s as approved (%d/%d live)" % (a.slug, spec, len(live) + 1, m["features"]))
     return ""
 
 
@@ -70,6 +166,10 @@ def cmd_status(a, root):
     print("caps used: $%.2f/%g, %d/%d continuations, until %s (%g h)" % (
         M.spent(st), caps["usd"], st["continuations"], caps["continuations"],
         M.expires_at(m).strftime("%Y-%m-%dT%H:%MZ") if m["started_at"] else "?", caps["hours"]))
+    head = _git(root, "rev-parse", "--abbrev-ref", "HEAD")[1]
+    if head != m["branch"]:
+        print("HEAD is %s, not the mission branch %s: the Stop hook will not continue the mission here "
+              "(git switch %s)" % (head or "unknown", m["branch"], m["branch"]))
     hit = M.cap_hit(m, st)
     if hit:
         print("cap hit: " + hit)
@@ -86,6 +186,11 @@ def cmd_stop(a, root):
         return "no mission " + a.slug
     M.set_status(root, a.slug, "stopped")
     print("mission %s set to stopped" % a.slug)
+    try:
+        import mission_report
+        print("report: " + os.path.relpath(mission_report.write(root, a.slug, "stopped", set_status=False), root))
+    except Exception as ex:  # noqa: BLE001 - the stop itself worked; the report can be regenerated
+        print("mission: stopped, but the report failed (%s); run `mission.py report %s`" % (ex, a.slug), file=sys.stderr)
     return ""
 
 
@@ -94,7 +199,7 @@ def cmd_report(a, root):
         import mission_report
     except ImportError:
         return "scripts/mission_report.py is not installed yet"
-    print(mission_report.write(root, a.slug, a.reason))
+    print(mission_report.write(root, a.slug, a.reason, set_status=False))  # read-only on status
     return ""
 
 
@@ -107,20 +212,28 @@ def main(argv=None, root=ROOT):
     s.add_argument("--title", required=True)
     s.add_argument("--scope-in", required=True)
     s.add_argument("--scope-out", required=True)
-    s.add_argument("--milestone", required=True)
-    s.add_argument("--features", type=int, default=M.DEFAULTS["features"])
-    s.add_argument("--usd", type=float, default=M.DEFAULTS["usd"])
-    s.add_argument("--hours", type=float, default=M.DEFAULTS["hours"])
-    s.add_argument("--continuations", type=int, default=M.DEFAULTS["continuations"])
-    s.add_argument("--brief", default="")
+    s.add_argument("--milestone", required=True, help="the BACKLOG.md milestone the mission works through, e.g. M5; "
+                   "its items (## Milestone: M5 ...) are the mission's work list and scope")
+    d = M.settings(root)["defaults"]  # factory.json `mission.defaults`; start refuses anything above `mission.ceilings`
+    s.add_argument("--features", type=int, default=d["features"])
+    s.add_argument("--usd", type=float, default=d["usd"])
+    s.add_argument("--hours", type=float, default=d["hours"])
+    s.add_argument("--continuations", type=int, default=d["continuations"])
+    s.add_argument("--brief", default="", help="the brief as posted in chat: the text itself, or a path to a file holding it "
+                   "(default: a placeholder line to fill in)")
+    s.add_argument("--branch", default="", help="use this branch (created if missing, or the current one) instead of "
+                   "creating mission/<slug>; recorded in the header")
+    s = sub.add_parser("approve")
+    s.add_argument("slug")
+    s.add_argument("spec")
     s = sub.add_parser("status")
     s.add_argument("slug", nargs="?")
     sub.add_parser("stop").add_argument("slug")
     s = sub.add_parser("report")
     s.add_argument("slug")
-    s.add_argument("--reason", default="manual")
+    s.add_argument("--reason", default="", help="why it ended (done|stopped|wall-clock|budget|continuations); default: inferred")
     a = ap.parse_args(argv)
-    err = {"start": cmd_start, "status": cmd_status, "stop": cmd_stop, "report": cmd_report}[a.cmd](a, root)
+    err = {"start": cmd_start, "approve": cmd_approve, "status": cmd_status, "stop": cmd_stop, "report": cmd_report}[a.cmd](a, root)
     if err:
         print("mission: " + err, file=sys.stderr)
         return 1

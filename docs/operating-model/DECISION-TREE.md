@@ -55,6 +55,8 @@ Pick the roster and verification ladder in AGENT-ROUTING.md (docs/operating-mode
 
 ## Q12: autonomy mode? (rigor L2+ only)
 
+Not the same as a mission: autonomy mode is the fixer runner on issues (optional pack); a mission is one approval for a multi-feature build and is always installed (docs/policies/mission.md), so it is not a choice here.
+
 Offer it only when rigor is L2 or L3 and an approved executable spec (a PRD with acceptance tests) exists or is planned. Yes: run `python3 scripts/pack.py add autonomy` (the autonomy pack is not in a new project, ADR 0011) and set `factory.json` `autonomy.enabled` to true. No: leave the pack out; every other feature works without it.
 
 ## Path summary

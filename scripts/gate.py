@@ -156,25 +156,40 @@ def commits(root, base, *paths):
     return res
 
 
-def approved_slugs(root):
-    try:
-        from obs import sources
-        return {p["slug"] for p in sources.prds(root) if p["status"] == "approved"}
-    except Exception:  # noqa: BLE001 - fall back to a plain header parse
-        import glob
-        res = set()
-        for p in glob.glob(os.path.join(root, "docs", "specs", "*.md")):
-            with open(p, encoding="utf-8", errors="replace") as fh:
-                m = re.search(r"(?m)^>\s*Status:\s*([\w-]+)", fh.read())
-            if m and m.group(1).lower() == "approved" and not os.path.basename(p).startswith("_"):
-                res.add(os.path.basename(p)[:-3])
-        return res
+def approved_slugs(root, at=None):
+    """Slugs of PRDs that are approved. A `by mission <m>` approval counts only while mission m is valid and the spec is
+    in its scope (`at=None`: live now; a datetime: valid at that commit time). Without the shared rules (.claude/hooks/_prd.py)
+    a by-mission Status is never approved (fail closed)."""
+    import glob
+    from gate_checks import _prd_rules
+    rules = _prd_rules(root)
+    res = set()
+    for p in sorted(glob.glob(os.path.join(root, "docs", "specs", "*.md"))):
+        base = os.path.basename(p)
+        if base.startswith("_"):
+            continue
+        slug = base[:-3]
+        if rules:
+            if rules.prd_status(root, slug, at) == "approved":
+                res.add(slug)
+            continue
+        with open(p, encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+        m = re.search(r"(?m)^>\s*Status:.*$", text)
+        if re.search(r"(?m)^#\s+PRD:", text) and m and "by mission" not in m.group(0) \
+                and re.match(r">\s*Status:\s*approved\b", m.group(0), re.I):
+            res.add(slug)
+    return res
 
 
-def valid_acceptance_change(root, tr):
+def valid_acceptance_change(root, tr, sha=None):
     """True when a commit's trailers hold `Acceptance-Change: <slug>` for an approved PRD (and, once a manifest
-    exists, a slug the manifest knows)."""
-    slugs = approved_slugs(root)
+    exists, a slug the manifest knows). `sha`: the commit, so a by-mission approval is judged at its commit time."""
+    at = None
+    if sha:
+        from gate_checks import _commit_time
+        at = _commit_time(root, sha)
+    slugs = approved_slugs(root, at)
     manifest = read_json(os.path.join(root, MANIFEST))
     known = set((manifest or {}).get("prds") or {}) if isinstance(manifest, dict) else None
     for slug in tr.get("acceptance-change", []):
@@ -362,7 +377,7 @@ def c_protected(ctx):
     for p in hit:
         dirty = (git(root, "status", "--porcelain", "--", p) or "").strip()
         cs = commits(root, base, p)
-        if dirty or not cs or not all(valid_acceptance_change(root, c["trailers"]) for c in cs):
+        if dirty or not cs or not all(valid_acceptance_change(root, c["trailers"], c["sha"]) for c in cs):
             bad.append(p)
     codes, bits = [], []
     if bad:
@@ -379,7 +394,7 @@ def c_protected(ctx):
         if was - now:
             cs = commits(root, base, BASELINE)
             dirty = (git(root, "status", "--porcelain", "--", BASELINE) or "").strip()
-            if dirty or not cs or not all(valid_acceptance_change(root, c["trailers"]) for c in cs):
+            if dirty or not cs or not all(valid_acceptance_change(root, c["trailers"], c["sha"]) for c in cs):
                 codes.append("baseline-shrunk")
                 bits.append("baseline lost %d id(s)" % len(was - now))
     return ("fail" if codes else "pass"), codes, "; ".join(bits) or ("%d protected path(s) changed with trailer" % len(hit) if hit else "no protected path changed")

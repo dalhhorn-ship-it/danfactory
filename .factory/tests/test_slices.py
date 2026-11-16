@@ -137,6 +137,28 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(r.root, "src/b/x.py")))
         self.assertEqual(r.g("worktree", "list").count("\n"), 0)  # temp worktree removed
 
+    def test_gate_rows_are_copied_to_the_root_checkout(self):
+        r = self.repo()
+        r.branch("sb", {"src/b/x.py": "1"})
+        r.write("fakegate.py", "import os\nos.makedirs('metrics', exist_ok=True)\n"
+                "open('metrics/gate.local.jsonl', 'a').write('{\"verdict\": \"pass\"}\\n')\n")
+        rc, out = r.run("land", "sb", "--map", "design.md", "--slice", "B", "--into", "main",
+                        "--gate-cmd", "python3 %s" % os.path.join(r.root, "fakegate.py"))  # runs with cwd = the throwaway worktree
+        self.assertEqual(rc, 0, out)
+        rows = open(os.path.join(r.root, "metrics", "gate.local.jsonl")).read().splitlines()
+        self.assertEqual([json.loads(x)["verdict"] for x in rows], ["pass"])
+
+    def test_failure_reason_names_the_failing_check(self):
+        r = self.repo()
+        r.branch("sb", {"src/b/x.py": "1"})
+        r.write("fakegate.py", "print('gate: FAIL (1s)')\n[print('  pass c%d 0.1s ok' % i) for i in range(10)]\n"
+                "print('  fail tests 1.0s [T1] boom')\n[print('  pass d%d 0.1s ok' % i) for i in range(9)]\nraise SystemExit(1)\n")
+        rc, out = r.run("land", "sb", "--map", "design.md", "--slice", "B", "--into", "main",
+                        "--gate-cmd", "python3 %s" % os.path.join(r.root, "fakegate.py"))
+        self.assertEqual(rc, 1)
+        self.assertIn("gate: FAIL", out)
+        self.assertIn("fail tests", out)
+
     def test_failing_gate_does_not_merge(self):
         r = self.repo()
         r.branch("sb", {"src/b/x.py": "1"})

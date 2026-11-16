@@ -47,6 +47,6 @@ Rules:
 1. Commit the note (with the finished work, or alone as `chore: handoff`).
 2. **Keep working** on the next step. Do not ask the user to `/clear`: no hook, skill or model can run `/clear` or `/compact`, and none is needed.
 3. Auto-compaction does the reset when the context fills up. `pre_compact.py` tells the summary what to keep and points at the note; `session_start.py` reloads the note after it with "Context was compacted automatically; continue the task from this note; user gates still apply."
-4. User gates still apply after a compaction: anything that needed the user's approval before still needs it.
+4. User gates still apply after a compaction: anything that needed the user's approval before still needs it. During an active mission the note records the mission slug and the next item, and "user gates still apply" does not mean stopping to ask for PRD approval (docs/policies/mission.md).
 
 `/clear` stays an optional manual way to restart from the note (the user types it; the note reloads the same way). A user who wants to keep more history can type `/compact`.
