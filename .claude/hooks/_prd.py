@@ -73,13 +73,48 @@ def active_exemptions(root, today=None):
     return [x for x in exemptions(root, today) if x["active"]]
 
 
-def prd_status(root, slug):
-    """Lower-case Status word of docs/specs/<slug>.md ('' when missing or not a PRD)."""
+_MISSION = []
+
+
+def _mission_mod():
+    """The sibling _mission.py, loaded by path (callers may have removed the hooks dir from sys.path); None when absent."""
+    if not _MISSION:
+        mod = None
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_mission.py")
+        if os.path.isfile(path):
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("_mission", path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        _MISSION.append(mod)
+    return _MISSION[0]
+
+
+def prd_mission(root, slug):
+    """Mission slug named by `by mission <m>` on the PRD's Status line ('' for a user approval or no such PRD)."""
+    if not re.fullmatch(r"[\w.-]+", slug or ""):
+        return ""
+    m = re.search(r"(?m)^>\s*Status:.*$", read(root, "docs/specs/%s.md" % slug))
+    if not m or "by mission" not in m.group(0):
+        return ""
+    mod = _mission_mod()
+    return mod.mission_of(m.group(0)) if mod else ""
+
+
+def prd_status(root, slug, at=None):
+    """Lower-case Status word of docs/specs/<slug>.md ('' when missing or not a PRD). A PRD approved `by mission <m>`
+    reads 'unapproved' unless _mission.approval says yes (at=None: live now; a datetime: valid at that commit time)."""
     if not re.fullmatch(r"[\w.-]+", slug or ""):
         return ""
     text = read(root, "docs/specs/%s.md" % slug)
     m = re.search(r"(?m)^>\s*Status:\s*([\w-]+)", text) if re.search(r"(?m)^#\s+PRD:", text) else None
-    return m.group(1).lower() if m else ""
+    word = m.group(1).lower() if m else ""
+    if word == "approved" and "by mission" in text[m.start():].split("\n", 1)[0]:
+        mod = _mission_mod()
+        mission = prd_mission(root, slug)
+        if not (mod and mission and mod.approval(root, mission, slug, at)[0]):
+            return "unapproved"
+    return word
 
 
 def backlog_items(root):
@@ -98,16 +133,18 @@ def in_progress_approved(root):
     return [s for it in backlog_items(root) if it["state"] == "~" for s in it["slugs"] if prd_status(root, s) == "approved"]
 
 
-def item_approved(root, ref):
-    """True when `ref` (backlog id, PRD slug or ISS-n) leads to an approved PRD."""
+def approving_slug(root, ref, at=None):
+    """Slug of the approved PRD that `ref` (backlog id, PRD slug or ISS-n) leads to, or ''."""
     ref = ref.strip().strip(",;")
     if not ref:
-        return False
-    if prd_status(root, ref) == "approved":
-        return True
+        return ""
+    if prd_status(root, ref, at) == "approved":
+        return ref
     for it in backlog_items(root):
-        if it["id"] == ref and any(prd_status(root, s) == "approved" for s in it["slugs"]):
-            return True
+        if it["id"] == ref:
+            for s in it["slugs"]:
+                if prd_status(root, s, at) == "approved":
+                    return s
     m = re.fullmatch(r"ISS-0*(\d+)", ref)
     if m:
         n = int(m.group(1))
@@ -120,9 +157,14 @@ def item_approved(root, ref):
                 fm = re.match(r"^ISS-(\d+)-", name)
                 if fm and int(fm.group(1)) == n:
                     hm = re.search(r"(?m)^>.*?PRD:\s*([\w.-]+)", read(root, "issues/%s/%s" % (sub, name)))
-                    if hm and prd_status(root, hm.group(1)) == "approved":
-                        return True
-    return False
+                    if hm and prd_status(root, hm.group(1), at) == "approved":
+                        return hm.group(1)
+    return ""
+
+
+def item_approved(root, ref, at=None):
+    """True when `ref` (backlog id, PRD slug or ISS-n) leads to an approved PRD (`at`: commit time for mission approvals)."""
+    return bool(approving_slug(root, ref, at))
 
 
 def decide(root, rel, phase, template, today=None):

@@ -3,6 +3,7 @@ Split from scripts/gate.py (SIZE-3); gate re-exports these names, so `gate.c_siz
 
 The helpers that run commands (git, changes, commits, matches) are looked up in `gate` at call time, never copied:
 `gate.WRAP` (the sandbox wrapper) and in-process patches of gate globals must stay in effect for these checks."""
+import datetime
 import os
 import re
 import sys
@@ -198,7 +199,12 @@ def _c_prd(ctx):
             len(act), " (" + ", ".join(act) + ")" if act else "", len(ex) - len(act))
     if not ctx["base"]:
         return "skip", [], "no base to diff against" + note
-    bad, used, product = [], 0, 0
+    bad, used, product, by_mission = [], 0, 0, {}
+    times = {}  # commit time per sha, so a mission approval is judged at the time of the commit (ADR 0012)
+    for ln in (git(root, "log", "--no-merges", "--format=%H %ct", "%s..HEAD" % ctx["base"]) or "").splitlines():
+        sha, _, ct = ln.partition(" ")
+        if ct.strip().isdigit():
+            times[sha] = datetime.datetime.fromtimestamp(int(ct), datetime.timezone.utc)
     for c in commits(root, ctx["base"]):
         files = [f for f in (git(root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "-z", c["sha"]) or "").split("\0") if f]
         if not any(rules.is_product_path(f) for f in files):
@@ -209,8 +215,15 @@ def _c_prd(ctx):
             used += 1
             continue
         refs = [r for v in tr.get("refs", []) for r in re.split(r"[,\s]+", v) if r]
-        if not any(rules.item_approved(root, r) for r in refs):
+        at = times.get(c["sha"])
+        ok = next((s for s in (rules.approving_slug(root, r, at) for r in refs) if s), "")
+        if not ok:
             bad.append(c["sha"][:7])
+        elif rules.prd_mission(root, ok):
+            by_mission[rules.prd_mission(root, ok)] = ok
+    for ms in sorted(by_mission):
+        mm = rules._mission_mod().load(root, ms)
+        note += " [covered by mission %s (go: %s)]" % (ms, (mm or {}).get("go", "")[:80])
     if not bad:
         return "pass", [], "%d product-code commit(s) in range, all covered (%d by PRD-Exempt)%s" % (product, used, note)
     msg = "%d product-code commit(s) without Refs to an approved PRD or PRD-Exempt: %s%s" % (
