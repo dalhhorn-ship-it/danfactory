@@ -16,6 +16,7 @@
 | Adopt an existing build | in the other repo: `/danfactory:adopt` | bulk-reader (scan questions), karen (does it run?), product-manager (as-built backlog), software-architect (L2+) | mixed |
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
 | Plan | after choose-path; milestone start; backlog messy; after every slice (re-propose the build sequence before the dashboard refresh) | `product-manager` | sonnet |
+| Mission (one approval for a whole build) | the user wants a large ask built unattended / overnight: post the mission brief, wait for a clear yes, `python3 scripts/mission.py start`, then PRDs by mission, design, parallel build, morning report (docs/policies/mission.md) | main agent coordinates; `product-manager`, `software-architect`, `test-writer`, `developer` ×N, `reviewer` | mixed |
 | PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
 | Acceptance tests | after PRD approval at L2+ and in autonomy mode, before build: the test-writer writes and maps the tests, a separate fresh agent writes a throwaway implementation from the PRD alone into a scratch dir (the second reading), the coordinator runs `acceptance.py admit <slug> --reference-dir DIR`; ambiguities go back to the user as PRD questions | `test-writer`, then a fresh `developer` (scratch dir) or general-purpose agent | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
@@ -84,7 +85,7 @@ Milestone end (L2+): `karen` always; `jenny` when GOAL.md or a spec has more tha
 ## Parallel build
 Works in every build mode, and for missions (docs/decisions/0012-mission-autopilot.md). Use it when a design has independent slices.
 1. **Slice table.** For multi-slice work the `software-architect` ends the design with `| Slice | Owns | Wave | Depends on |` (Owns: backticked paths or globs; extra columns are ignored).
-2. **Run.** The coordinator starts up to `build.max_parallel` developers per wave (factory.json, default 3, hard cap 4), each with Agent `isolation: "worktree"`, one branch and one slice. `python3 scripts/slices.py plan --map <design.md>` prints the batches.
+2. **Run.** The coordinator starts up to `build.max_parallel` developers per wave (factory.json, default 3, hard cap 4), each with Agent `isolation: "worktree"`, one branch and one slice. Agent worktrees start from the default branch, so the brief tells each developer to `git reset --hard <integration branch>` first. `python3 scripts/slices.py plan --map <design.md>` prints the batches.
 3. **Own your files.** A developer edits only its Owns paths and replies `PARTIAL — cross-slice request: <path>: <change>` for anything else. Slices never commit docs/INDEX.md or docs/knowledge-graph.json.
 4. **Land one at a time.** `python3 scripts/slices.py land <branch> --map <design.md> --slice <id> --into <integration>`: ownership check, rebase if the base moved, regenerate the index, gate, `merge --ff-only`. A failure means not merged; fix the slice or hand the cross-slice request to its owner.
 5. PRDs and acceptance tests for independent features parallelise the same way.

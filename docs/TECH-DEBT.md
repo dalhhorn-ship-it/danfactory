@@ -5,6 +5,8 @@
 Format: `- [ ] TD-NNN Title — impact: high|medium|low · effort: S|M|L · area: <area>` under **Open**; move to **Resolved** with `[x]` when paid down. A table with the header `Id | Severity | Item | Where | Size | Source | Status` is read too (severity major counts as high; a status starting with done/resolved/fixed/closed/dropped/wontfix/paid is closed; use `\|` or a code span for a literal pipe).
 
 ## Open
+- [ ] TD-024 Mission budget cap is an estimate: the Stop hook prices the live transcript with a small built-in table (scripts not fed real billing); if it is off by more than 30% the continuation cap is the only hard limit — impact: medium · effort: S · area: mission — compare with real cost on the first overnight mission (spike S2, ADR 0012)
+- [ ] TD-025 Mission Stop hook not yet exercised in a real unattended cloud session next to the environment's own Stop hook ("uncommitted changes" check) and its tracked state file — impact: medium · effort: S · area: mission — run a small real mission (spike S1, ADR 0012) before MISSION-6
 - [ ] TD-023 docs/TECH-DEBT.md itself is over the doc budget (about 3.6k tokens, mostly Resolved entries) and the specs over it are records; it is not split because the dashboard parses this one file — impact: low · effort: S · area: docs — archive old Resolved items to a second file the dashboard also reads
 
 ## Resolved

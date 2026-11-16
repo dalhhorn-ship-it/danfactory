@@ -9,6 +9,8 @@
 
 **PRD gate (docs/policies/prd-approval.md):** every feature or behaviour change needs a PRD from `product-manager` in docs/specs/, shown to the user in chat and explicitly approved, before any code. Present it, then stop and wait. No approval, no build.
 
+**Mission mode (docs/policies/mission.md, ADR 0012):** for "build it all overnight" asks, post one mission brief (plan of attack, scope, caps), stop and wait; a clear yes is recorded in `docs/missions/<slug>.md` and approves its in-scope PRDs (`by mission <slug>`). Then never stop to ask: write assumptions, park blocked items; the Stop hook keeps you going until done or a cap. Never push or merge to main.
+
 Don't skip ahead: no code before GOAL.md is confirmed and an operating model is chosen (except an explicit prototype-spike).
 
 ## Token economy (docs/policies/token-economy.md)

@@ -20,6 +20,7 @@
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
 | How to bring in an existing build? | docs/operating-model/paths/adopt-existing.md |
 | Where did we stop? | .factory/HANDOFF.md (handoff skill) |
+| How do I let it build overnight on one approval? | docs/policies/mission.md |
 | How do I run the evals? | docs/policies/evals.md (`python3 scripts/evals.py`) |
 <!-- curated:end -->
 
@@ -27,11 +28,11 @@
 
 | File | Lines | Summary |
 |---|---:|---|
-| CLAUDE.md | 40 | Always-loaded instructions. Keep short and… |
+| CLAUDE.md | 42 | Always-loaded instructions. Keep short and… |
 | docs/BACKLOG.md | 77 | Milestones and work items; the dashboard reads… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:49 |
 | docs/GOAL.md | 30 | The agreed goal for this project. Written by… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s),… |
-| docs/TECH-DEBT.md | 32 | Known shortcuts and their cost; the dashboard… — sections: Open:7, Resolved:10 |
+| docs/TECH-DEBT.md | 34 | Known shortcuts and their cost; the dashboard… — sections: Open:7, Resolved:12 |
 | docs/decisions/0000-template.md | 15 | NNNN — Title |
 | docs/decisions/0001-use-danfactory-template.md | 12 | 0001 — Start from the danfactory template |
 | docs/decisions/0002-prd-approval-gate.md | 16 | 0002 — PRD approval gate before any build |
@@ -46,7 +47,7 @@
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 44 | 0011 — Autonomy as an optional pack; split… |
 | docs/decisions/0012-mission-autopilot.md | 94 | 0012 — Mission autopilot: one approved… — sections: Context:5, Options:8, Decision:16, Consequences:87 |
 | docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with `python3… |
-| docs/operating-model/AGENT-ROUTING.md | 98 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:44, Tie-breakers…:55, Path rosters…:68, Parallel build:84, Changelog:92 |
+| docs/operating-model/AGENT-ROUTING.md | 99 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:85, Changelog:93 |
 | docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version… |
 | docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry… — sections: Entries:14 |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0,… |
