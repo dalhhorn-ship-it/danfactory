@@ -160,6 +160,8 @@ def validate(root, m):
     if m["date"] != m["started_at"].astimezone(datetime.timezone.utc).date().isoformat():
         return "date is not the date of started_at"
     rel = "%s/%s.md" % (MISSIONS_DIR, m["slug"])
+    if (_git(root, "rev-parse", "--is-shallow-repository") or "").strip() == "true":
+        return "shallow clone: the frozen header cannot be proven without history (fetch full history: git fetch --unshallow)"
     first = _first_commit_header(root, rel)
     if first is None:
         return "the mission file is not committed yet"

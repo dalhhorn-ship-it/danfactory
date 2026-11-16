@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Stop hook: keep an active mission going until its work is done or a cap is hit (ADR 0012, MISSION-2).
 
-No active mission, HEAD not on the mission branch, or `state.ended` already set: exit 0, no output, no writes.
+No active mission, or `state.ended` already set: exit 0, no output, no writes. HEAD not on the mission branch: allow the stop
+with a systemMessage saying so (no writes).
 Otherwise: re-sum this session's spend from the transcript, check the caps (stopped, wall-clock, budget,
 continuations, in that order), then the remaining work. A cap or an empty work list ends the mission (state,
 report) and allows the stop; anything else blocks the stop with the next item. `stop_hook_active` is ignored on
@@ -78,7 +79,12 @@ def run():
     ev = read_event()
     root = ROOT
     m = mm.active(root)
-    if not m or head_branch(root) != m.get("branch"):
+    if not m:
+        return
+    head = head_branch(root)
+    if head != m.get("branch"):
+        print(json.dumps({"systemMessage": "mission %s is active on %s, you are on %s: not continuing"
+                          % (m["slug"], m.get("branch") or "?", head or "unknown")}))
         return
     bad = mm.validate(root, m)
     if bad:  # caps and go come from the first commit; an invalid mission is treated as stopped

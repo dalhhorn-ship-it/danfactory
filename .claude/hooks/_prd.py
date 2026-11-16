@@ -19,6 +19,28 @@ FREE_PREFIXES = ("docs/", "issues/", "tests/acceptance/", "metrics/", ".factory/
 FREE_FILES = ("factory.json",)  # written by choose-path / phase changes before any PRD can exist
 
 
+# While a mission's approval is what opens writes, the factory's own controls stay closed: a mission cannot change the
+# gate, the runner, the hooks or its own caps. Mirrors scripts/runner_core.py RUNNER_PROTECTED (which cannot be imported
+# cheaply from a hook) plus the mission machinery; docs/missions/<slug>.md needs no entry here, _mission.validate freezes
+# its header from the first commit (only `status` may change, which `mission.py stop` does).
+MISSION_PROTECTED = ("factory.json", ".claude/**", ".github/**", "scripts/gate*.py", "scripts/mission*.py", "scripts/slices.py",
+                     "scripts/acceptance*.py", "scripts/runner*.py", "scripts/sandbox.py", "scripts/check.sh",
+                     ".factory/prd-exemption", ".factory/mission-state.json")
+MISSION_BLOCK = ("mission work cannot change the factory's own controls (%s): park the item and tell the user "
+                 "(docs/policies/mission.md)")
+
+
+def mission_protected(rel):
+    import fnmatch
+    for pat in MISSION_PROTECTED:
+        if pat.endswith("/**"):
+            if rel == pat[:-3] or rel.startswith(pat[:-2]):
+                return True
+        elif fnmatch.fnmatchcase(rel, pat):
+            return True
+    return False
+
+
 def rel_path(path, root, cwd=None):
     """Repo-relative posix path, or '' when the path is outside the repo (not ours to guard)."""
     if not path:
@@ -169,9 +191,13 @@ def item_approved(root, ref, at=None):
 
 def decide(root, rel, phase, template, today=None):
     """(allowed, reason, via): via is 'free', 'prd:<slug>' or 'exemption:<kind>'; reason says what is missing when blocked."""
+    ex = active_exemptions(root, today)
+    if mission_protected(rel) and not ex:
+        slugs = in_progress_approved(root)
+        if slugs and all(prd_mission(root, s) for s in slugs):  # only a mission's approval would open this write
+            return False, MISSION_BLOCK % rel, "mission-protected"
     if not is_product_path(rel):
         return True, "", "free"
-    ex = active_exemptions(root, today)
     spike = next((x for x in ex if x["kind"] == "spike"), None)
     if not template and phase in PRE_BUILD_PHASES:
         if spike:

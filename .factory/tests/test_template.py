@@ -18,7 +18,8 @@ template_only = unittest.skipUnless(IS_TEMPLATE, "only meaningful in the un-boot
 
 def hook(name, event, env=None):
     e = {k: v for k, v in os.environ.items() if k != "FACTORY_ALLOW_LARGE_READ"}
-    e.update(CLAUDE_PROJECT_DIR=ROOT, **(env or {}))
+    e["CLAUDE_PROJECT_DIR"] = ROOT
+    e.update(env or {})
     return subprocess.run([sys.executable, os.path.join(HOOKS, name)], input=json.dumps(event),
                           capture_output=True, text=True, env=e)
 
@@ -77,7 +78,11 @@ class GuardLargeRead(unittest.TestCase):
 
 class BashPolicy(unittest.TestCase):
     def check(self, cmd):
-        return hook("guard_bash_policy.py", {"tool_name": "Bash", "tool_input": {"command": cmd}}).returncode
+        # run against an empty project root so a real active mission in this repo cannot change the verdict
+        proj = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, proj, True)
+        return hook("guard_bash_policy.py", {"tool_name": "Bash", "tool_input": {"command": cmd}},
+                    env={"CLAUDE_PROJECT_DIR": proj}).returncode
 
     def test_blocks_deploy_bypasses(self):
         w = "wrangler " + "deploy"

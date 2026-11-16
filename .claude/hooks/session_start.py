@@ -24,17 +24,39 @@ COMPACTED = ("[danfactory] Context was compacted automatically; continue the tas
              "user gates still apply.")
 
 
-def handoff_note(source):
+GATES_MISSION = "PRD approval is by mission; pushes to main still need the user"
+
+
+def mission_line():
+    """One line about a valid active mission, else ''. Fails open on any error."""
+    try:
+        import _mission as mm
+        m = mm.active(ROOT)
+        if not m or mm.validate(ROOT, m):
+            return ""
+        st = mm.load_state(ROOT, m["slug"])
+        nxt = mm.next_item(ROOT, m)
+        return ("[danfactory] MISSION %s active on branch %s: continuations %d/%d, next: %s. Do not stop to ask "
+                "(docs/policies/mission.md); %s." % (
+                    m["slug"], m["branch"], int(st.get("continuations") or 0), m["caps"]["continuations"],
+                    ("%s %s" % (nxt["id"], nxt.get("title", ""))).strip() if nxt else "nothing left (finish and report)",
+                    GATES_MISSION))
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def handoff_note(source, mission=False):
     """After /clear or a compaction (and on startup/resume) restart from task + note, not full history."""
+    compacted = COMPACTED.replace("user gates still apply", GATES_MISSION) if mission else COMPACTED
     if not os.path.isfile(HANDOFF):
         if source == "compact":
-            return ["", COMPACTED.replace("from this note", "from the compaction summary (no handoff note yet)")]
+            return ["", compacted.replace("from this note", "from the compaction summary (no handoff note yet)")]
         return []
     with open(HANDOFF, encoding="utf-8") as fh:
         lines = fh.read().splitlines()
     if len(lines) > HANDOFF_MAX_LINES:
         lines = lines[:HANDOFF_MAX_LINES] + ["… (truncated: keep the note under 40 lines)"]
-    head = ["", COMPACTED] if source == "compact" else [""]
+    head = ["", compacted] if source == "compact" else [""]
     return head + ["[danfactory] Handoff note (.factory/HANDOFF.md, loaded on %s). Continue from it; "
             "verify facts against the repo before relying on them:" % source] + lines
 
@@ -42,13 +64,14 @@ def handoff_note(source):
 def main():
     ev = read_event()
     f = load_factory()
+    ml = mission_line()
     if template_mode(factory=f):
         print("\n".join([
             "[danfactory] TEMPLATE repo: maintain the template; do not start or build a project here. "
             "Next: open tech debt (docs/TECH-DEBT.md), then the template backlog (docs/BACKLOG.md, Unplanned).",
             "[danfactory] docs: read docs/INDEX.md first, then targeted reads (offset/limit). Never read whole large files.",
             "[danfactory] test: python3 scripts/metrics.py test (runs .factory/tests).",
-        ] + handoff_note(ev.get("source", "startup"))))
+        ] + handoff_note(ev.get("source", "startup"), bool(ml)) + ([ml] if ml else [])))
         return
     phase = f.get("phase", "brainstorm")
     paths = f.get("paths", {})
@@ -74,7 +97,7 @@ def main():
             alerts = [l.strip() for l in fh if l.startswith("- ALERT")]
         if alerts:
             out.append("[danfactory] metric alerts (%d): %s" % (len(alerts), " | ".join(a[8:] for a in alerts[:3])))
-    out += handoff_note(ev.get("source", "startup"))
+    out += handoff_note(ev.get("source", "startup"), bool(ml)) + ([ml] if ml else [])
     print("\n".join(out))
 
 
