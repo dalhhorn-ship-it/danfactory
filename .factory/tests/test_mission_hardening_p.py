@@ -258,3 +258,12 @@ class Settings(TA.Base):  # criterion 6
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_parked_lines_cannot_raise_the_bound_past_the_ceiling_or_for_unlisted_specs(self):
+        bl = "# Backlog\n\n## Milestone: M5 — Night (mission: night)\n" + "".join(
+            "- [!] NIGHT-%d X (docs/specs/night-x%d.md)\n" % (i, i) for i in range(20))
+        p = self.proj(backlog=bl, features="1", approved=("night-one", "night-two", "night-three"))
+        self.assertEqual(M.approved_specs(p.root, M.load(p.root, "night")), ["night-one"])  # unlisted parked items free nothing
+        listed = tuple("night-x%d" % i for i in range(20))
+        p = self.proj(backlog=bl, features="1", approved=listed)
+        self.assertEqual(len(M.approved_specs(p.root, M.load(p.root, "night"))), M.settings(p.root)["ceilings"]["features"])

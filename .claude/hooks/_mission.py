@@ -390,15 +390,16 @@ def _scoped_slugs(root, m, live_only=False):
 
 def approved_specs(root, m):
     """Spec slugs listed as `- YYYY-MM-DD Approved PRD: <slug>` in the mission's Decision log (written by
-    `mission.py approve`), in order, without repeats, at most the mission's own `features` plus the places parked or dropped items freed. The log is outside the frozen header."""
+    `mission.py approve`), in order, without repeats, at most the mission's own `features` plus the places freed by listed specs whose item was parked or dropped, never more than `ceilings.features`. The log is outside the frozen header."""
     text = _read(m["path"])
     log = text.split("## Decision log", 1)[1] if "## Decision log" in text else ""
     seen = []
     for s in APPROVED_RE.findall(log):
         if s not in seen:
             seen.append(s)
-    freed = [s for s in _scoped_slugs(root, m) if s not in _scoped_slugs(root, m, live_only=True)]
-    return seen[:m["features"] + len(freed)]  # the mission's own cap, plus the places freed by parked or dropped items
+    live = _scoped_slugs(root, m, live_only=True)
+    freed = [s for s in _scoped_slugs(root, m) if s not in live and s in seen]  # listed specs whose item was parked or dropped
+    return seen[:min(m["features"] + len(freed), settings(root)["ceilings"]["features"])]
 
 
 def live_approved(root, m):

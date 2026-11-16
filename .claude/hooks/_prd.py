@@ -26,7 +26,7 @@ FREE_FILES = ("factory.json",)  # written by choose-path / phase changes before 
 # its header from the first commit (only `status` may change, which `mission.py stop` does).
 MISSION_PROTECTED = ("factory.json", ".claude/**", ".github/**", "scripts/gate*.py", "scripts/mission*.py", "scripts/slices.py",
                      "scripts/acceptance*.py", "scripts/runner*.py", "scripts/sandbox.py", "scripts/check.sh",
-                     ".factory/prd-exemption", ".factory/mission-state.json")
+                     ".factory/prd-exemption", ".factory/mission-state.json", "docs/OPERATING-MODEL.md")
 MISSION_BLOCK = ("mission work cannot change the factory's own controls (%s): park the item and tell the user "
                  "(docs/policies/mission.md). Protection ends when the user stops the mission: "
                  "`python3 scripts/mission.py stop <slug>`, or sets `status: stopped` in docs/missions/<slug>.md, which stays editable")

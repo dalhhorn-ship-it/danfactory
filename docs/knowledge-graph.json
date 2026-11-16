@@ -220,6 +220,7 @@
   {"from": "docs/policies/merge-gate.md", "to": "docs/policies/mission.md"},
   {"from": "docs/policies/merge-gate.md", "to": "docs/policies/runner.md"},
   {"from": "docs/policies/merge-gate.md", "to": "docs/policies/testing-and-metrics.md"},
+  {"from": "docs/policies/mission.md", "to": "docs/OPERATING-MODEL.md"},
   {"from": "docs/policies/mission.md", "to": "docs/operating-model/AGENT-ROUTING.md"},
   {"from": "docs/policies/mission.md", "to": "docs/policies/prd-approval.md"},
   {"from": "docs/policies/mission.md", "to": "docs/policies/security.md"},
