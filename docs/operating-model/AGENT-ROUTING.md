@@ -16,7 +16,7 @@
 | Adopt an existing build | in the other repo: `/danfactory:adopt` | bulk-reader (scan questions), karen (does it run?), product-manager (as-built backlog), software-architect (L2+) | mixed |
 | Goal | phase `brainstorm` | main agent + `brainstorm` skill (needs the user live) | – |
 | Plan | after choose-path; milestone start; backlog messy; after every slice (re-propose the build sequence before the dashboard refresh) | `product-manager` | sonnet |
-| Mission (one approval for a whole build) | the user wants a large ask built unattended / overnight: post the mission brief, wait for a clear yes, `python3 scripts/mission.py start`, then PRDs by mission, design, parallel build, `reviewer` per feature, morning report (docs/policies/mission.md); `mission.py start <slug> --go "<words>" --title T --scope-in S --scope-out S --milestone M<n>` | main agent coordinates; `product-manager`, `software-architect`, `test-writer`, `developer` ×N, `reviewer`, `karen` and `jenny` at the end (L2+) | mixed |
+| Mission (one approval for a whole build) | the user wants a large ask built unattended / overnight: post the mission brief, wait for a clear yes, `python3 scripts/mission.py start`, then PRDs by mission (the PM runs `mission.py approve <slug> <spec>` after each), design, parallel build, `reviewer` per feature, morning report (docs/policies/mission.md); `mission.py start <slug> --go "<words>" --title T --scope-in S --scope-out S --milestone M<n>` | main agent coordinates; `product-manager`, `software-architect`, `test-writer`, `developer` ×N, `reviewer`, `karen` and `jenny` at the end (L2+) | mixed |
 | PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
 | Acceptance tests | after PRD approval at L2+ and in autonomy mode, before build: the test-writer writes and maps the tests, a separate fresh agent writes a throwaway implementation from the PRD alone into a scratch dir (the second reading), the coordinator runs `acceptance.py admit <slug> --reference-dir DIR`; ambiguities go back to the user as PRD questions | `test-writer`, then a fresh `developer` (scratch dir) or general-purpose agent | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
@@ -91,8 +91,10 @@ Works in every build mode, and for missions (docs/policies/mission.md; design: A
 3. **Own your files.** A developer edits only its Owns paths and replies `PARTIAL — cross-slice request: <path>: <change>` for anything else. Slices never commit docs/INDEX.md or docs/knowledge-graph.json.
 4. **Land one at a time.** `python3 scripts/slices.py land <branch> --map <design.md> --slice <id> --into <integration>`: ownership check, rebase if the base moved, regenerate the index, gate, `merge --ff-only`. A failure means not merged; fix the slice or hand the cross-slice request to its owner.
 5. PRDs and acceptance tests for independent features parallelise the same way.
+6. **Missions.** At L2+ `test-writer` admits a by-mission PRD's tests before any developer starts; if none can be admitted the item is parked `[!]`. Slices out in worktrees make the Stop hook wait: land finished slices and remove their worktrees, or the wait continues (docs/policies/mission.md, Stop hook and waits).
 
 ## Changelog
+- 1.5.0 — Missions: `mission.py approve` after each mission PRD, tests admitted before build at L2+, wait-or-land for slices (MISSION-7..12).
 - 1.4.0 — Parallel build section and `build.max_parallel` (MISSION-5).
 - 1.3.1 — every agent file carries the `Finding things` index-first line (DOCS-1).
 - 1.3.0 — 20 agents: `finder` (issue ledger, ADR 0008) for software-product and library-cli (AUTO-3).

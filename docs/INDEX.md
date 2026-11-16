@@ -45,9 +45,9 @@
 | docs/decisions/0009-fixer-runner.md | 82 | 0009 — Fixer runner: one issue, one sandboxed… — sections: Context:5, Decision:12, Consequences:59, Implementation notes…:62, Hardening after…:72 |
 | docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | 0010 — Release train, parallel fixers,… |
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 45 | 0011 — Autonomy as an optional pack; split… |
-| docs/decisions/0012-mission-autopilot.md | 96 | 0012 — Mission autopilot: one approved… — sections: Context:5, Options:8, Decision:16, Consequences:87 |
+| docs/decisions/0012-mission-autopilot.md | 97 | 0012 — Mission autopilot: one approved… — sections: Context:5, Options:8, Decision:16, Consequences:87 |
 | docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with `python3… |
-| docs/operating-model/AGENT-ROUTING.md | 101 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:87, Changelog:95 |
+| docs/operating-model/AGENT-ROUTING.md | 103 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:87, Changelog:96 |
 | docs/operating-model/DECISION-TREE.md | 80 | Picks the operating model for a goal. Version… |
 | docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry… — sections: Entries:14 |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0,… |
@@ -65,7 +65,7 @@
 | docs/policies/evals.md | 38 | Behavioural evals for the factory: a fixed… — sections: Why:5, How to run:8, Rules:27 |
 | docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become… |
 | docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes,… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:47, Security scan notes:56, Issue ledger:61, Honest limits:64 |
-| docs/policies/mission.md | 48 | One approved brief lets the agent build… |
+| docs/policies/mission.md | 67 | One approved brief lets the agent build… — sections: What a mission changes:7, The brief:10, Start:21, Approval and scope:24, Flow per feature:30, Tests before code…:35, Stop hook and waits:40, Window, budget and…:44, Rules:48, Checks:54, Honest limits:57 |
 | docs/policies/prd-approval.md | 31 | No feature work starts until the… — sections: When it applies:5, Flow:14, Enforcement:22 |
 | docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How you… |
 | docs/policies/runner-safety.md | 19 | Part of the autonomy pack (ADR 0011). The… |
