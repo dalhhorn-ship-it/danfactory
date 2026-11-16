@@ -224,4 +224,4 @@ def written_paths(cmd, root, cwd=None):
 
 def product_writes(cmd, root, cwd=None):
     import _prd
-    return [r for r in written_paths(cmd, root, cwd) if _prd.is_product_path(r) or _prd.mission_protected(r)]
+    return [r for r in written_paths(cmd, root, cwd) if _prd.is_product_path(r) or _prd.mission_protected(r, root)]

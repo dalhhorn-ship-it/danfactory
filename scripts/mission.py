@@ -89,6 +89,10 @@ def cmd_start(a, root):
     over = M.over_ceilings(root, {"caps": {"usd": a.usd, "hours": a.hours, "continuations": a.continuations}, "features": a.features})
     if over:
         return "refusing to start: " + over
+    rig = M.rigor_level(root)
+    if rig < 0:
+        return "refusing to start: rigor is unknown (set factory.json rigor to L0..L3; choose-path writes it)"
+    print("rigor L%d will apply%s" % (rig, "" if rig >= 2 else " (tests-before-code check is off below L2)"))
     go = _quote(a.go)
     if not M.go_valid(go):
         return 'the go must quote the user\'s words and give a clear yes (go, ok, yes, approve, build it)'

@@ -116,21 +116,48 @@ def rigor_level(root):
     return int(mm.group(1)) if mm else -1
 
 
-def admitted(root, spec, sha=None):
-    """True when the acceptance manifest (tests/acceptance/manifest.json, dir from factory.json `acceptance.dir`) lists an
-    admitted test for PRD `spec`; with `sha`, the manifest as committed in that commit. Read directly (hooks stay standalone)."""
+def mission_rigor(root):
+    """Rigor the mission checks apply: an UNKNOWN rigor counts as L2 (fail closed: tests required); only an explicit L0 or
+    L1 turns the tests-before-code check off."""
+    r = rigor_level(root)
+    return 2 if r < 0 else r
+
+
+def acceptance_dir(root):
     try:
         with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
             d = ((json.load(fh) or {}).get("acceptance") or {}).get("dir") or "tests/acceptance"
     except (OSError, ValueError, AttributeError):
         d = "tests/acceptance"
-    rel = str(d).strip("/") + "/manifest.json"
+    return str(d).strip("/") or "tests/acceptance"
+
+
+def _test_file_exists(root, d, tid, sha):
+    """True when the file of manifest test id `tid` (`path.py::Class::test`, or a dotted module) exists (in commit `sha` if given)."""
+    mod = str(tid).split("::")[0]
+    cands = [mod, d + "/" + mod, mod.replace(".", "/") + ".py", d + "/" + mod.replace(".", "/") + ".py"]
+    for c in cands:
+        if sha:
+            if _git(root, "cat-file", "-e", "%s:%s" % (sha, c)) is not None:
+                return True
+        elif os.path.isfile(os.path.join(root, c)):
+            return True
+    return False
+
+
+def admitted(root, spec, sha=None):
+    """True when the acceptance manifest (tests/acceptance/manifest.json, dir from factory.json `acceptance.dir`) lists an
+    admitted test for PRD `spec` whose test file exists; with `sha`, the manifest and files as committed in that commit. The
+    manifest records a git sha per test, not a file hash, so content is not compared. Read directly (hooks stay standalone)."""
+    d = acceptance_dir(root)
+    rel = d + "/manifest.json"
     text = (_git(root, "show", "%s:%s" % (sha, rel)) or "") if sha else _read(os.path.join(root, rel))
     try:
         adm = json.loads(text).get("admitted")
     except (ValueError, AttributeError):
         return False
-    return isinstance(adm, dict) and any(isinstance(v, dict) and v.get("prd") == spec for v in adm.values())
+    return isinstance(adm, dict) and any(isinstance(v, dict) and v.get("prd") == spec and _test_file_exists(root, d, k, sha)
+                                         for k, v in adm.items())
 
 
 def parse_header(text):
@@ -210,6 +237,17 @@ def _first_commit_header(root, rel):
     if not shas:
         return None
     return parse_header(_git(root, "show", "%s:%s" % (shas[-1], rel)) or "")
+
+
+def first_commit_mission(root, slug):
+    """The mission as parsed from the first commit of docs/missions/<slug>.md, or None (never committed or git error)."""
+    rel = "%s/%s.md" % (MISSIONS_DIR, slug)
+    shas = (_git(root, "log", "--diff-filter=A", "--format=%H", "--", rel) or "").split()
+    if not shas:
+        return None
+    text = _git(root, "show", "%s:%s" % (shas[-1], rel)) or ""
+    raw = parse_header(text)
+    return _build(raw, os.path.join(root, rel), text) if raw else None
 
 
 def validate(root, m):
@@ -352,14 +390,15 @@ def _scoped_slugs(root, m, live_only=False):
 
 def approved_specs(root, m):
     """Spec slugs listed as `- YYYY-MM-DD Approved PRD: <slug>` in the mission's Decision log (written by
-    `mission.py approve`), in order, without repeats, at most the ceiling for features. The log is outside the frozen header."""
+    `mission.py approve`), in order, without repeats, at most the mission's own `features` plus the places parked or dropped items freed. The log is outside the frozen header."""
     text = _read(m["path"])
     log = text.split("## Decision log", 1)[1] if "## Decision log" in text else ""
     seen = []
     for s in APPROVED_RE.findall(log):
         if s not in seen:
             seen.append(s)
-    return seen[:settings(root)["ceilings"]["features"]]
+    freed = [s for s in _scoped_slugs(root, m) if s not in _scoped_slugs(root, m, live_only=True)]
+    return seen[:m["features"] + len(freed)]  # the mission's own cap, plus the places freed by parked or dropped items
 
 
 def live_approved(root, m):

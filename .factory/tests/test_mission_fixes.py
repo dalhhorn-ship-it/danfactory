@@ -173,7 +173,7 @@ class StartJourney(Base):  # X4, X5
         self.assertIn("uncommitted", e)
         self.assertIsNone(M.load(p.root, "run1"))
         p.commit("wip")
-        p.write("factory.json", json.dumps({"phase": "brainstorm"}))
+        p.write("factory.json", json.dumps({"phase": "brainstorm", "rigor": "L2"}))
         p.commit("phase")
         rc, _o, e = self.run_cli(p, "start", "run1", *START)
         self.assertEqual((rc, head(p)), (1, before))

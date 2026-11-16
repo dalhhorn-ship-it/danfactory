@@ -90,19 +90,54 @@ def second_reading_usd(root, started, end=None):
     return total
 
 
+def _history_slugs(root):
+    """(slugs of docs/missions/*.md ever added on HEAD's history, ok). ok is False on a git error."""
+    p = subprocess.run(["git", "-C", root, "log", "--diff-filter=A", "--name-only", "--format=", "--", "docs/missions/"],
+                       capture_output=True, text=True, timeout=20, check=False)
+    if p.returncode != 0:
+        return [], False
+    out = []
+    for ln in p.stdout.splitlines():
+        ln = ln.strip()
+        if ln.startswith("docs/missions/") and ln.endswith(".md") and "/" not in ln[14:]:
+            s = ln[14:-3]
+            if s not in out and not s.endswith("-report"):
+                out.append(s)
+    return out, True
+
+
 def window(root, mm=None):
     """(mission, end) when branch safety applies: an active mission, or a done/stopped one still inside its time
-    window (started_at + hours cap). The latest end wins. None otherwise (MISSION-9)."""
+    window (started_at + hours cap). The latest end wins. None otherwise (MISSION-9). `started_at` and the hours cap come from
+    the mission file's FIRST commit and missions are enumerated from git history, so editing or deleting the file (or its
+    header) neither shortens nor removes the window; a deleted or header-less file counts as stopped. On a git error with a
+    mission file present the window is open (fail closed)."""
     if mm is None:
         import _mission as mm
     now, best = _now(), None
+    far = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(days=1)
+    hist, ok = _history_slugs(root)
+    slugs = list(hist)
     for m in mm.all_missions(root):
-        if not m.get("started_at"):
+        if m["slug"] not in slugs:
+            slugs.append(m["slug"])
+    for slug in slugs:
+        cur = mm.load(root, slug)
+        m = dict(cur) if cur else None
+        first = mm.first_commit_mission(root, slug) if ok else None
+        if first is None and m is None:
             continue
-        end = mm.expires_at(m)
-        if m["status"] == "active" or (m["status"] in ("done", "stopped") and now < end):
+        base = dict(first or m)
+        base["status"] = cur["status"] if cur else "stopped"
+        if first is None and not ok and cur:
+            end = far  # git error: fail closed
+        else:
+            if not base.get("started_at"):
+                continue
+            end = mm.expires_at(base)
+        if base["status"] == "active" or (base["status"] in ("done", "stopped") and now < end):
             if best is None or end > best[1]:
-                best = (m, end)
+                best = (base, end)
     return best
 
 

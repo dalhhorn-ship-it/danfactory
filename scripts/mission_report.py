@@ -108,9 +108,14 @@ def build(root, m, reason, now=None):
     start = m["started_at"]
     hours = max(0.0, (end - start).total_seconds() / 3600.0)
     caps = m["caps"]
+    ceil = _mission.settings(root)["ceilings"]
 
     L = ["# Mission report: %s" % m["slug"], "", verdict(reason, parked_n), "",
          "Go words recorded in the mission file (check them against the chat; the agent wrote them): %s" % (m.get("go") or "?"),
+         "", "Caps in force: usd %g, hours %g, continuations %d, features %s; checked against the ceilings usd %g, hours %g, "
+         "continuations %d, features %d (factory.json mission.ceilings). Check these against the brief." % (
+             caps["usd"], caps["hours"], caps["continuations"], m.get("features"),
+             ceil["usd"], ceil["hours"], ceil["continuations"], ceil["features"]),
          "", "Mission: %s (milestone %s, branch `%s`)." % (m.get("title") or m["slug"], m.get("milestone") or "?",
                                                          m.get("branch") or "?"), ""]
 

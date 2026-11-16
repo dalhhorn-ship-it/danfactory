@@ -208,7 +208,7 @@ def _c_prd(ctx):
         return "skip", [], "no base to diff against" + note
     bad, used, product, by_mission, untested = [], 0, 0, {}, []
     mmod = rules._mission_mod()
-    l2 = bool(mmod) and mmod.rigor_level(root) >= 2
+    l2 = bool(mmod) and mmod.mission_rigor(root) >= 2
     times = {}  # commit time per sha, so a mission approval is judged at the time of the commit (ADR 0012)
     for ln in (git(root, "log", "--no-merges", "--format=%H %ct", "%s..HEAD" % ctx["base"]) or "").splitlines():
         sha, _, ct = ln.partition(" ")

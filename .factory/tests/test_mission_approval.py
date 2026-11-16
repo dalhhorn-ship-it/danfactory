@@ -45,7 +45,7 @@ class Proj:
 
     def __init__(self, mission=True, backlog=None, approved=("night-one", "night-two"), **hk):
         self.root = tempfile.mkdtemp()
-        self.write("factory.json", json.dumps({"phase": "build", "gate": {}}))
+        self.write("factory.json", json.dumps({"phase": "build", "gate": {}, "rigor": "L1"}))
         self.write("docs/BACKLOG.md", backlog if backlog is not None else (
             "# Backlog\n\n## Milestone: M5 — Night (mission: night)\n"
             "- [~] NIGHT-1 One (docs/specs/night-one.md)\n- [ ] NIGHT-2 Two (docs/specs/night-two.md)\n"
@@ -74,6 +74,10 @@ class Proj:
         self.g("add", "-A")
         env = dict(os.environ, GIT_AUTHOR_DATE=iso(when), GIT_COMMITTER_DATE=iso(when)) if when else None
         self.g("commit", "-q", "--allow-empty", "-m", msg + ("\n\n" + trailer if trailer else ""), env=env)
+
+    def read(self, rel):
+        with open(os.path.join(self.root, rel), encoding="utf-8") as fh:
+            return fh.read()
 
     def edit(self, rel):
         ev = {"tool_name": "Edit", "tool_input": {"file_path": os.path.join(self.root, rel)}, "cwd": self.root}

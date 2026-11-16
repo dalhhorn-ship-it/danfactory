@@ -107,10 +107,6 @@ class SecondReading(TS.Base):
 
 
 class Window(TB.Base):
-    def set_start(self, p, hours_ago, status):
-        started = iso(NOW - datetime.timedelta(hours=hours_ago))
-        p.write("docs/missions/demo.md", TB.MISSION.format(status=status, date=started[:10], started=started))
-
     def test_done_and_stopped_inside_window_still_block(self):
         for status in ("done", "stopped"):
             p = self.proj(status=status, head="main")
@@ -124,10 +120,36 @@ class Window(TB.Base):
             self.assertAllowed(p, "git push origin mission/demo")
 
     def test_after_the_window_it_is_allowed(self):
-        p = self.proj(status="done", head="main")
-        self.set_start(p, 11, "done")  # 10h cap
+        p = self.proj(status="done", head="main", hours_ago=11)  # 10h cap
         for cmd in ("git push origin main", "git push origin staging", "gh pr merge 3", "git commit -m x"):
             self.assertAllowed(p, cmd)
+
+    @staticmethod
+    def put(path, text):
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+
+    def test_editing_or_deleting_the_mission_file_does_not_shorten_the_window(self):
+        for how in ("edit-start", "edit-hours", "delete", "strip-header"):
+            p = self.proj(status="done", head="main")  # started 1h ago, 10h cap
+            path = os.path.join(p.root, "docs/missions/demo.md")
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+            if how == "edit-start":
+                old = (NOW - datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                text = text.replace(old, (NOW - datetime.timedelta(hours=40)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+            elif how == "edit-hours":
+                text = text.replace("hours=10", "hours=0.01")
+            if how == "delete":
+                os.remove(path)
+            elif how == "strip-header":
+                self.put(path, "# gone\n")
+            else:
+                self.put(path, text)
+            with self.subTest(how=how):
+                r = p.bash("git push origin main")
+                self.assertEqual(r.returncode, 2, r.stdout)
+                self.assertIn("mission window ends at", r.stderr)
 
     def test_active_mission_blocks_staging(self):
         self.assertBlocked(self.proj(), "git push origin staging")
