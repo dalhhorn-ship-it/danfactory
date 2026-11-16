@@ -14,3 +14,5 @@ Option 2, requested by the user. Policy in docs/policies/prd-approval.md; templa
 
 ## Consequences
 Every feature costs one review turn before code. Approved PRDs become the acceptance source for verifiers. Measure at retro: PRD revisions per feature and rework after approval.
+
+Relaxed for one approved mission by ADR 0012 (in-scope PRDs only, approved once by the user's quoted go).

@@ -83,10 +83,14 @@ On-demand skills (`factory.json → integrations.skills`) install with `bash scr
 
 ## Guard rails, in plain words
 
-- **No approved PRD, no product code.** A PRD is a short written spec you approve in chat. A hook (`guard_prd_write.py`) blocks edits to product files, including writes made through shell commands, until `docs/BACKLOG.md` has an in-progress item linked to an approved PRD. The merge gate repeats the check on every commit (`prd`). Only `bugfix` and `chore` claims are honoured without you; a `waiver` must quote your own words (docs/policies/prd-approval.md).
-- **Small by budget.** `factory.json` `budgets.size` sets limits and the dashboard Size block flags them as warnings, never failures: code files over 400 lines (warn) or 700 (max), CLAUDE.md plus the start note over 2,500 tokens, more than 20 agents, code growth over 25% in 30 days, docs over 3,000 tokens (policies get split by topic; specs and ADRs are records and stay whole, with indexed sections).
+- **No approved PRD, no product code.** A PRD is a short written spec you approve in chat. A hook (`guard_prd_write.py`) blocks edits to product files, including writes made through shell commands, until `docs/BACKLOG.md` has an in-progress item linked to an approved PRD. The merge gate repeats the check on every commit. `bugfix` and `chore` claims are honoured without you; a `waiver` must quote your words (docs/policies/prd-approval.md).
+- **Small by budget.** `factory.json` `budgets.size` sets limits and the dashboard Size block flags them as warnings, never failures: code files over 400 lines (warn) or 700 (max), always-loaded text over 2,500 tokens, more than 20 agents, code growth over 25% in 30 days, docs over 3,000 tokens (policies get split by topic; specs and ADRs stay whole).
 - **Index first.** Every agent starts from `docs/INDEX.md`, which lists each doc and, for docs over 1,500 tokens, its sections with start lines, so agents read one section, not the whole file. A hook blocks whole reads of files over 350 lines.
 - **Fast checks.** `bash scripts/check.sh` runs the template's tests in parallel worker processes inside the 120 s budget (`budgets.test_seconds`); CI runs the full set. While working, `python3 scripts/metrics.py test --affected` runs only the tests a change touches (30 s budget).
+
+## Missions
+
+A mission is one approval for a multi-feature build. At phase `build`, ask for one: the agent posts a brief (scope, feature cap, caps) and waits; a clear "go" starts it with `python3 scripts/mission.py start <slug> --go "<your words>" --title T --scope-in S --scope-out S --milestone M<n>` on a `mission/<slug>` branch. It writes in-scope PRDs itself, builds in gated slices and leaves a report. It never pushes or merges to main; set `status: stopped` in `docs/missions/<slug>.md` to end it. See docs/policies/mission.md.
 
 ## Autonomy pack
 
@@ -101,12 +105,12 @@ python3 scripts/pack.py remove autonomy # delete them again
 `add` fetches exactly the manifest's files with git from `template.source_repo` at `template.ref` in factory.json (a commit SHA bootstrap records or `add` finds itself; if it is wrong, `python3 scripts/pack.py add --ref SHA autonomy`). It verifies the SHA. In the template repo itself the files stay in the tree and `check.sh` tests them.
 
 How it works, in plain words (docs/policies/runner.md):
-- **Fix.** `python3 scripts/runner.py run --next` takes the oldest open issue whose PRD is approved. A sandboxed agent tries a fix, a second agent reviews it, and the gate decides. Up to 3 attempts and 5 USD a day by default; `--parallel N` works several issues at once (`autonomy.max_parallel`, default 1, cap 4); `--scheduled` needs your standing go (`autonomy.schedule_ok`). Fixes merge to a `staging` branch only; a failed issue is parked in `issues/blocked/`.
-- **Release.** `python3 scripts/release.py verify` runs the full gate on the staging batch, `report` explains it and prints the exact promote commands, and you run them. Nothing reaches main by itself; `smoke-failed <sha>` after a bad deploy makes a `revert/<sha>` branch and an issue (docs/policies/runner-release.md).
-- **Learn.** `python3 scripts/learn.py report` (the `retro` skill runs it) turns repeated failure codes (3 times in 14 days) into candidate rules in `metrics/LEARN.md`. They are only suggestions: a rule still needs a PRD.
+- **Fix.** `python3 scripts/runner.py run --next` takes the oldest open issue whose PRD is approved. A sandboxed agent fixes, a second reviews, the gate decides. Up to 3 attempts and 5 USD a day by default; `--parallel N` (`autonomy.max_parallel`, default 1, cap 4); `--scheduled` needs your standing go. Fixes merge to a `staging` branch only; a failed issue is parked in `issues/blocked/`.
+- **Release.** `python3 scripts/release.py verify` runs the full gate on the staging batch, `report` explains it and prints the exact promote commands, and you run them. Nothing reaches main by itself (docs/policies/runner-release.md).
+- **Learn.** `python3 scripts/learn.py report` (the `retro` skill runs it) turns repeated failure codes (3 times in 14 days) into candidate rules in `metrics/LEARN.md`.
 - Limits and what the sandbox does not cover: docs/policies/runner-safety.md.
 
-**Pilot evidence** (evals/spikes/pilot-semverlite): a library project made from the template, built from a 10-criterion PRD of the Semantic Versioning spec. Acceptance tests were written and admitted, then the runner fixed the one issue on attempt 1 and merged to staging: 11 of 11 tests pass, main untouched. The fix cost 0.22 USD; 2.72 USD went on six runs that failed for template reasons, each since fixed with a test.
+**Pilot evidence** (evals/spikes/pilot-semverlite): a library project made from the template, built from a 10-criterion PRD of the Semantic Versioning spec. Acceptance tests were written and admitted, then the runner fixed the one issue on attempt 1 (11 of 11 tests pass, main untouched).
 
 ## Commands
 
@@ -127,7 +131,7 @@ Requirements: git and python3 (stdlib only); Node/npm only for codegraph and wra
 
 ## Maintaining the template
 
-A checkout whose git `origin` is `template.source_repo` in factory.json is the template itself (session start says "TEMPLATE repo", tests are `.factory/tests`); any other origin is a project. Learnings that apply to every project flow back with `python3 scripts/upstream_learnings.py --template ../danfactory`. Details: docs/policies/template-maintenance.md.
+A checkout whose git `origin` is `template.source_repo` in factory.json is the template itself (session start says "TEMPLATE repo", tests are `.factory/tests`); any other origin is a project. Details: docs/policies/template-maintenance.md.
 
 ## License
 

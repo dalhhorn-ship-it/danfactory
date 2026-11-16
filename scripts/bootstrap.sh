@@ -39,6 +39,7 @@ f["template"]["ref"] = sys.argv[3]
 f.setdefault("packs", {})["autonomy"] = sys.argv[4] == "1"
 f["project"]["name"], f["project"]["one_liner"] = sys.argv[1], sys.argv[2]
 f["phase"] = "brainstorm"
+f.setdefault("gate", {})["prd"] = "required"  # the template itself stays advisory; a new project gets the documented default
 json.dump(f, open("factory.json", "w"), indent=2)
 open("factory.json", "a").write("\n")
 PY
@@ -73,6 +74,9 @@ for f in glob.glob("docs/decisions/00*.md"):
     if os.path.basename(f) not in ("0000-template.md", "0001-use-danfactory-template.md"):
         os.remove(f)
 PY
+# Template state a new project must not inherit: the handoff note, today's PRD exemption, any mission and its counters.
+rm -f .factory/HANDOFF.md .factory/prd-exemption .factory/mission-state.json
+find docs/missions -maxdepth 1 -type f ! -name _TEMPLATE.md -delete 2>/dev/null || true
 # Optional packs: remove the autonomy pack's files unless --with-autonomy (they come back with `pack.py add autonomy`).
 [ "$AUTONOMY" = 1 ] || python3 scripts/pack.py remove autonomy
 # The template's own new-project smoke test (NEW-3) is not the project's.
