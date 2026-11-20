@@ -71,6 +71,20 @@ class Gather(Project):
         self.assertEqual(len(rf.gather(self.d, threshold=2)), 1)
 
 
+class BadConfig(Project):
+    def test_bad_settings_fall_back_to_defaults(self):
+        self.jsonl("metrics/guard.local.jsonl", [{"ts": ts(), "path": "a.py", "why": "w"}] * 3)
+        for raw in ('{"autonomy": {"learn_threshold": "2", "learn_window_days": null}}', '[1, 2]',
+                    '{"autonomy": [1]}', '{bad', '{"autonomy": {"learn_threshold": null}}'):
+            with open(os.path.join(self.d, "factory.json"), "w", encoding="utf-8") as fh:
+                fh.write(raw)
+            self.assertEqual([i["kind"] for i in rf.gather(self.d)], ["guard"], raw)
+
+    def test_guard_detail_truncated_to_90(self):
+        self.jsonl("metrics/guard.local.jsonl", [{"ts": ts(), "path": "a.py", "why": "w" * 200}] * 3)
+        self.assertEqual(len(rf.gather(self.d)[0]["detail"]), 90)
+
+
 class SkillText(unittest.TestCase):
     def test_c14_c15_c16_retro_step(self):
         t = read(".claude/skills/retro/SKILL.md")

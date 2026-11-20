@@ -1,1 +1,2 @@
 2026-11-14 bugfix: docs_index counted git-ignored generated files as link targets, so the index differed between local and CI (lpdan main CI failure)
+2026-11-20 bugfix: review findings on FISH-5/6/7 (teach-agents-to-fish criteria 5, 7, 11, 16)

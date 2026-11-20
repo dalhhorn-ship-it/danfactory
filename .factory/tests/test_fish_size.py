@@ -113,6 +113,32 @@ class GateSize(Repo):
             self.assertEqual(gate.c_size({"root": self.root, "factory": factory, "gate": g, "base": "x"})[0], "warn")
 
 
+class SizeUnavailable(Repo):
+    def run_it(self, mode):
+        self.write("factory.json", json.dumps({"commands": {}, "gate": {"size": mode}}))
+        base = self.commit()
+        factory, g = gate.config(self.root)
+        import obs
+        saved = obs.size
+        del obs.size
+        self.addCleanup(setattr, obs, "size", saved)
+        with mock.patch.dict(sys.modules, {"obs.size": None}):
+            return gate.c_size({"root": self.root, "factory": factory, "gate": g, "base": base})
+
+    def test_size_module_missing_fails_in_fail_mode(self):
+        st, codes, detail = self.run_it("fail")
+        self.assertEqual((st, codes), ("fail", ["size-check-unavailable"]))
+        self.assertIn("size.py", detail)
+
+    def test_size_module_missing_skips_in_warn_mode(self):
+        self.assertEqual(self.run_it("warn")[:2], ("skip", []))
+
+    def test_no_base_stays_skip_in_fail_mode(self):
+        self.write("factory.json", json.dumps({"commands": {}, "gate": {"size": "fail"}}))
+        factory, g = gate.config(self.root)
+        self.assertEqual(gate.c_size({"root": self.root, "factory": factory, "gate": g, "base": None})[:2], ("skip", []))
+
+
 class RunnerGate(Repo):
     def test_c7_runner_gate_runs_use_fail_whatever_factory_json_says(self):
         self.write("factory.json", json.dumps({"commands": {}, "gate": {"size": "warn"}}))

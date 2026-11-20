@@ -97,6 +97,16 @@ class FrameworkGate(test_gate.Base):
             self.change(r, trailer)
             self.assertEqual(r.check("protected")["status"], "pass" if ok else "fail", trailer)
 
+    def test_string_framework_is_a_one_item_list(self):
+        r = self.repo(dict(FACTORY, gate={"framework": FW}))
+        self.change(r)
+        self.assertEqual(r.check("protected")["codes"], ["protected-path"])
+
+    def test_string_protected_is_a_one_item_list(self):
+        r = self.repo(dict(FACTORY, gate={"protected": "tests/acceptance/**"}))
+        self.change(r, path="tests/acceptance/t.py")
+        self.assertEqual(r.check("protected")["codes"], ["protected-path"])
+
     def test_default_empty_list_changes_nothing(self):
         r = self.repo({"commands": {}, "budgets": {"test_seconds": 120}})
         self.change(r)

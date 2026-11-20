@@ -80,22 +80,28 @@ def guard_blocks(root, threshold, window, now):
     for r in rows(root, GUARD):
         if r.get("path") and recent(r, window, now):
             per.setdefault(str(r["path"]), []).append(r)
-    return [{"kind": "guard", "subject": p, "count": len(v), "detail": str(v[-1].get("why") or "")}
+    return [{"kind": "guard", "subject": p, "count": len(v), "detail": str(v[-1].get("why") or "")[:90]}
             for p, v in sorted(per.items(), key=lambda kv: (-len(kv[1]), kv[0])) if len(v) >= threshold]
 
 
 def settings(root):
     try:
         with open(os.path.join(root, "factory.json"), encoding="utf-8") as fh:
-            return json.load(fh).get("autonomy") or {}
-    except (OSError, ValueError):
+            cfg = json.load(fh).get("autonomy")
+        return cfg if isinstance(cfg, dict) else {}
+    except (OSError, ValueError, AttributeError):
         return {}
+
+
+def num(v, default):
+    """A positive int setting, else the default (a bad config must not crash retro)."""
+    return v if isinstance(v, int) and not isinstance(v, bool) and v > 0 else default
 
 
 def gather(root, threshold=None, window=None):
     cfg = settings(root)
-    th = int(threshold if threshold is not None else cfg.get("learn_threshold", 3))
-    wd = int(window if window is not None else cfg.get("learn_window_days", 14))
+    th = threshold if threshold is not None else num(cfg.get("learn_threshold"), 3)
+    wd = window if window is not None else num(cfg.get("learn_window_days"), 14)
     now = datetime.datetime.now(datetime.timezone.utc)
     return blocked(root) + gate_codes(root, th, wd, now) + guard_blocks(root, th, wd, now)
 

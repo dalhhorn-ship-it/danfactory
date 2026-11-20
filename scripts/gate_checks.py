@@ -250,6 +250,8 @@ def c_size(ctx):
         mode = "warn"
     if mode == "fail" and "file-over-size" in codes:
         return "fail", codes, detail
+    if "size-check-unavailable" in codes:
+        return ("fail" if mode == "fail" else "skip"), ([] if mode != "fail" else codes), detail
     return status, codes, detail
 
 
@@ -257,8 +259,8 @@ def _c_size(ctx):
     """A product file over file_lines_max that the change range grew, or 30-day code growth over budget (warn)."""
     try:
         from obs import size
-    except ImportError:
-        return "skip", [], "scripts/obs/size.py is missing (copy it from the template to enable this check)"
+    except Exception:  # missing or unimportable: fails under gate.size: fail, see c_size
+        return "skip", ["size-check-unavailable"], "scripts/obs/size.py is missing or cannot be imported (copy it from the template to enable this check)"
     root = ctx["root"]
     b = size.budgets(ctx["factory"])
     if not ctx["base"]:
@@ -299,9 +301,14 @@ def _c_size(ctx):
     return "warn", codes, "; ".join(notes[:6]) + (" ..." if len(notes) > 6 else "")
 
 
+def as_list(v):
+    """A glob setting given as one string counts as a one-item list (iterating it would match nothing)."""
+    return [v] if isinstance(v, str) else (v or [])
+
+
 def framework_hit(ctx):
     """Sorted changed paths (against the base) that match `gate.framework`."""
-    pats = ctx["gate"].get("framework") or []
+    pats = as_list(ctx["gate"].get("framework"))
     if not pats or not ctx["base"]:
         return []
     return sorted({p for _s, p in changes(ctx["root"], ctx["base"]) if matches(p, pats)})

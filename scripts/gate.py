@@ -355,7 +355,7 @@ def c_protected(ctx):
     root, base = ctx["root"], ctx["base"]
     if not base:
         return "skip", [], "no base to diff against"
-    pats = ctx["gate"].get("protected") or []
+    pats = as_list(ctx["gate"].get("protected"))
     chg = changes(root, base)
     hit = sorted({p for _s, p in chg if matches(p, pats)})
     bad = []
@@ -413,7 +413,7 @@ def c_review(ctx):
     return "pass", [], "advisory: no review on %d product commit(s)" % n
 
 
-from gate_checks import added_lines, c_prd, framework_bad, framework_hit, c_security, c_size, scan  # noqa: E402,F401  (after the helpers: gate_checks reads them lazily)
+from gate_checks import added_lines, as_list, c_prd, framework_bad, framework_hit, c_security, c_size, scan  # noqa: E402,F401  (after the helpers: gate_checks reads them lazily)
 
 CHECKS = (("structure", c_structure), ("build", c_build), ("lint", c_lint), ("tests", c_tests),
           ("coverage", c_coverage), ("acceptance", c_acceptance), ("protected", c_protected),
