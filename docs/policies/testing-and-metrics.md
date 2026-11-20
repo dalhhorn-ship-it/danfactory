@@ -8,6 +8,7 @@
 3. Budgets (factory.json): full ≤ `test_seconds`, affected ≤ `affected_test_seconds`, coverage ≥ `min_coverage_pct`, max drop `max_coverage_drop_pct`, deploy ≤ `deploy_seconds`.
 4. Record deploys (`metrics.py deploy`). Track failure rate.
 5. Run `metrics.py report` at milestones and in `retro`; alerts appear at session start.
+   `retro` also runs `scripts/retro_failures.py`: recurring failures (blocked issues, repeated gate fail codes, guard blocks) each get one class, context, tool or guardrail, and a proposed backlog item the user accepts or drops; accepted ones go to the backlog, every choice to LEARNINGS.md. Works without the autonomy pack (no blocked issues then).
 6. Never skip, delete or weaken a test to get green. Flaky → reproduce and fix.
 
 6b. The merge gate (`python3 scripts/gate.py`, CI job `gate`) wraps these runs with the protected-path, review and security checks and gives one verdict with reason codes: docs/policies/merge-gate.md.

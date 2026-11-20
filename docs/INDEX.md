@@ -49,7 +49,7 @@
 | docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with `python3… |
 | docs/operating-model/AGENT-ROUTING.md | 100 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:85, Changelog:93 |
 | docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version… |
-| docs/operating-model/LEARNINGS.md | 59 | Append-only log written by `retro`. Each entry… — sections: Entries:14 |
+| docs/operating-model/LEARNINGS.md | 61 | Append-only log written by `retro`. Each entry… — sections: Entries:16 |
 | docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0,… |
 | docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots,… |
 | docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models,… |
@@ -72,7 +72,7 @@
 | docs/policies/runner.md | 42 | Part of the autonomy pack (ADR 0011). A new… — sections: Start a run:7, What a run does:15, Parallel fixers and…:26, Caps:39 |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known… |
 | docs/policies/template-maintenance.md | 11 | How a checkout is recognised as the template… |
-| docs/policies/testing-and-metrics.md | 28 | Fast feedback is a feature. Measure test time,… |
+| docs/policies/testing-and-metrics.md | 29 | Fast feedback is a feature. Measure test time,… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving… |
 | docs/specs/_TEMPLATE.md | 37 | PRD: <feature name> |
 | docs/specs/agent-eval-harness.md | 104 | PRD: Agent eval harness (behavioural evals for… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:41, Acceptance criteria:50, UX / behaviour notes:65, Risks and assumptions:71, Effort and sequencing:80, Open questions:86, Decisions (user,…:94, Spike findings…:98 |

@@ -9,6 +9,8 @@ Entry format:
 What happened (1–2 lines, with metric if any). What we changed (file). Expected effect.
 ```
 
+Fix-the-machine choices from retro (FISH-7) use the title `Fix the machine: <context|tool|guardrail>, <item> (accepted|dropped)` and `[tooling]`.
+
 Types: `[practice]` `[tree-gap]` `[budget]` `[tooling]` `[anti-pattern]` `[security]` `[deploy]`
 
 ## Entries
