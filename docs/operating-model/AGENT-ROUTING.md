@@ -18,7 +18,7 @@
 | Plan | after choose-path; milestone start; backlog messy; after every slice (re-propose the build sequence before the dashboard refresh) | `product-manager` | sonnet |
 | Mission (one approval for a whole build) | the user wants a large ask built unattended / overnight: post the mission brief, wait for a clear yes, `python3 scripts/mission.py start`, then PRDs by mission, design, parallel build, morning report (docs/policies/mission.md) | main agent coordinates; `product-manager`, `software-architect`, `test-writer`, `developer` ×N, `reviewer` | mixed |
 | PRD (gate) | any feature or behaviour change, before design or build; user approves in chat (docs/policies/prd-approval.md) | `product-manager`, then main agent presents and waits | sonnet |
-| Acceptance tests | after PRD approval at L2+ and in autonomy mode, before build: the test-writer writes and maps the tests, a separate fresh agent writes a throwaway implementation from the PRD alone into a scratch dir (the second reading), the coordinator runs `acceptance.py admit <slug> --reference-dir DIR`; ambiguities go back to the user as PRD questions | `test-writer`, then a fresh `developer` (scratch dir) or general-purpose agent | sonnet |
+| Acceptance tests | after PRD approval at L2+ and in autonomy mode, before build: the test-writer writes and maps the tests, a separate fresh agent writes a throwaway implementation from the PRD alone (plus its Reference sources, if any) into a scratch dir (the second reading), the coordinator runs `acceptance.py admit <slug> --reference-dir DIR`; ambiguities go back to the user as PRD questions | `test-writer`, then a fresh `developer` (scratch dir) or general-purpose agent | sonnet |
 | Design (software) | software-product / library-cli / infra-ops at L2+, or a risky or large feature at any level | `software-architect` | opus |
 | Design (spreadsheet/data) | data-spreadsheet path; restructuring a model | `spreadsheet-architect` | sonnet |
 | Build: small change (< ~50 lines, one area) | – | main agent | – |
@@ -91,6 +91,7 @@ Works in every build mode, and for missions (docs/decisions/0012-mission-autopil
 5. PRDs and acceptance tests for independent features parallelise the same way.
 
 ## Changelog
+- 1.4.1 — test-writer and the second reader get the PRD's optional Reference sources (FISH-2).
 - 1.4.0 — Parallel build section and `build.max_parallel` (MISSION-5).
 - 1.3.1 — every agent file carries the `Finding things` index-first line (DOCS-1).
 - 1.3.0 — 20 agents: `finder` (issue ledger, ADR 0008) for software-product and library-cli (AUTO-3).

@@ -17,6 +17,10 @@ _What's in. Thin vertical slice first._
 ## Non-goals
 _What we're deliberately not doing, and why._
 
+## Reference sources (optional)
+_Files in this repo the test-writer must read first (for example an API doc saved under docs/references/). One path per bullet, a short note on what to take from it. Delete the section if there are none; a URL is not a source (save the page into the repo first)._
+- <path/in/repo> — <what it settles>
+
 ## Acceptance criteria
 1. Given <context>, when <action>, then <observable result>.
 

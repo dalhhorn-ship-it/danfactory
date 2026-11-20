@@ -47,7 +47,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 - [ ] MISSION-6 Optional watchdog resume (opt-in schedule) (docs/specs/mission-autopilot.md) (S) (after: MISSION-2) #foundation
 
 ## Unplanned
-- [~] FISH-2 Reference sources for the test-writer: optional PRD section, test-writer and second reader use them (docs/specs/teach-agents-to-fish.md) (S) #foundation
+- [x] FISH-2 Reference sources for the test-writer: optional PRD section, test-writer and second reader use them (docs/specs/teach-agents-to-fish.md) (S) #foundation
 - [ ] FISH-6 File size as a rule: `gate.size` warn or fail, split issue with a machine-run closing check (docs/specs/teach-agents-to-fish.md) (M) #foundation
 - [ ] FISH-5 Human-owned framework code: guidance, `gate.framework` list and `Framework-Change` trailer (docs/specs/teach-agents-to-fish.md) (M) (after: FISH-6) #foundation
 - [ ] FISH-7 Fix the machine, not the instance: retro classes each recurring failure as context, tool or guardrail with a proposed item (docs/specs/teach-agents-to-fish.md) (S) #process
