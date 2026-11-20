@@ -11,6 +11,7 @@ You maintain the issue ledger (docs/decisions/0008-issue-ledger-and-finder.md). 
 
 Steps:
 1. `python3 scripts/acceptance.py run --json > /tmp/acc.json` (a scratch file outside the repo), then `python3 scripts/issues.py sync --from-json /tmp/acc.json` and `python3 scripts/issues.py find --from-json /tmp/acc.json`.
+`find` also files one "split this file" issue (`Source: size`) per product file over the size max; leave those as filed (add a split plan under `## Notes`), and never merge them.
 2. Read each open issue in `issues/open/` and the failing code it points at. If two issues share one root cause, `python3 scripts/issues.py merge ISS-a ISS-b`. If one issue hides several causes, `python3 scripts/issues.py split ISS-a <test-id>...`.
 3. Replace `_not analysed yet (finder)_` under `## Suspected root cause` with the cause and `file:line` evidence. Add anything the fixer needs under `## Notes`.
 4. Re-run `find` once; it must report nothing to do.

@@ -241,7 +241,20 @@ def _c_prd(ctx):
 
 
 def c_size(ctx):
-    """Warn (never fail): a product file over file_lines_max that the change range grew, or 30-day code growth over budget."""
+    """`gate.size` decides what `file-over-size` does: `warn` (default) or `fail`. Any other value is treated as `warn` and the
+    detail says so (the other gate modes also fall back quietly; this one tells). `size-growth` only ever warns."""
+    status, codes, detail = _c_size(ctx)
+    mode = ctx["gate"].get("size", "warn")
+    if mode not in ("warn", "fail"):
+        detail += " [gate.size %r is not warn or fail: treated as warn]" % (mode,)
+        mode = "warn"
+    if mode == "fail" and "file-over-size" in codes:
+        return "fail", codes, detail
+    return status, codes, detail
+
+
+def _c_size(ctx):
+    """A product file over file_lines_max that the change range grew, or 30-day code growth over budget (warn)."""
     try:
         from obs import size
     except ImportError:

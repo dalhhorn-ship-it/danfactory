@@ -11,16 +11,16 @@
 | How do we work on this project? | docs/OPERATING-MODEL.md |
 | Which path fits a new goal? | docs/operating-model/DECISION-TREE.md |
 | How do I save tokens? | docs/policies/token-economy.md |
-| What are the test/deploy budgets? | factory.json -> budgets |
-| Where are we / project status? | `python3 scripts/dashboard.py --print` |
+| Test/deploy budgets? | factory.json -> budgets |
+| Project status? | `python3 scripts/dashboard.py --print` |
 | What's planned / in progress? | docs/BACKLOG.md |
-| Can I start building this feature? | only with an approved PRD: docs/policies/prd-approval.md |
+| Can I start building? | only with an approved PRD: docs/policies/prd-approval.md |
 | What shortcuts are we carrying? | docs/TECH-DEBT.md |
-| How not to wait on deploys? | docs/policies/async-delivery.md |
+| Not wait on deploys? | docs/policies/async-delivery.md |
 | Which agent should do this? | docs/operating-model/AGENT-ROUTING.md |
-| How to bring in an existing build? | docs/operating-model/paths/adopt-existing.md |
+| Bring in an existing build? | docs/operating-model/paths/adopt-existing.md |
 | Where did we stop? | .factory/HANDOFF.md (handoff skill) |
-| How do I let it build overnight on one approval? | docs/policies/mission.md |
+| Build overnight on one approval? | docs/policies/mission.md |
 | How do I run the evals? | docs/policies/evals.md (`python3 scripts/evals.py`) |
 <!-- curated:end -->
 
@@ -46,6 +46,7 @@
 | docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | 0010 — Release train, parallel fixers,… |
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 44 | 0011 — Autonomy as an optional pack; split… |
 | docs/decisions/0012-mission-autopilot.md | 94 | 0012 — Mission autopilot: one approved… — sections: Context:5, Options:8, Decision:16, Consequences:87 |
+| docs/decisions/0013-size-issues.md | 19 | 0013 — Size issues |
 | docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with `python3… |
 | docs/operating-model/AGENT-ROUTING.md | 100 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:85, Changelog:93 |
 | docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version… |
@@ -63,8 +64,8 @@
 | docs/policies/documentation.md | 12 | Docs are part of done. Small, true, linked —… |
 | docs/policies/evals-visualizations.md | 10 | Hook evidence, proof strength per task, the… |
 | docs/policies/evals.md | 38 | Behavioural evals for the factory: a fixed… — sections: Why:5, How to run:8, Rules:27 |
-| docs/policies/issue-ledger.md | 24 | Failing admitted acceptance tests become… |
-| docs/policies/merge-gate.md | 68 | One command, one verdict with reason codes,… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:47, Security scan notes:56, Issue ledger:61, Honest limits:64 |
+| docs/policies/issue-ledger.md | 27 | Failing admitted acceptance tests become… |
+| docs/policies/merge-gate.md | 69 | One command, one verdict with reason codes,… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:47, Security scan notes:57, Issue ledger:62, Honest limits:65 |
 | docs/policies/mission.md | 37 | One approved brief lets the agent build… |
 | docs/policies/prd-approval.md | 31 | No feature work starts until the… — sections: When it applies:5, Flow:14, Enforcement:22 |
 | docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How you… |

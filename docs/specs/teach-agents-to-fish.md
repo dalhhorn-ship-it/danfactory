@@ -73,7 +73,7 @@ Plain words in every message. Without the pack there is no ledger, so the FISH-6
 ## Effort and sequencing
 Sizes: FISH-2 S, FISH-6 M, FISH-5 M, FISH-7 S. About 8 days at the dashboard's S=1, M=3. All technical foundation.
 Build order: 1) FISH-2 (small, independent). 2) FISH-6 (sets the non-test issue design). 3) FISH-5 (after FISH-6: both edit the gate). 4) FISH-7 (last, reads the others' data).
-Build status: FISH-2 and FISH-7 done (retro step, `scripts/retro_failures.py`, structure and helper tests); FISH-5, FISH-6 not started
+Build status: FISH-2 and FISH-7 done (retro step, `scripts/retro_failures.py`, structure and helper tests); FISH-6 done (`gate.size`, runner `fail`, size issues in `scripts/issues_size.py`, ADR 0013, `.factory/tests/test_fish_size.py`); FISH-5 not started
 
 ## Decisions (user, 2026-11-20)
 1. Framework changes pass the gate with a second trailer `Framework-Change: <reason>`, valid only on paths in a new `gate.framework` list, never written by fixers or the runner.

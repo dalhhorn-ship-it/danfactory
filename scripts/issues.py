@@ -29,7 +29,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 FAILING = ("fail", "error")
 STATES = ("open", "fixed", "blocked")
 HEADER_RE = re.compile(r"^>\s*Status:\s*(\w+)\s*·\s*PRD:\s*(.*?)\s*·\s*Item:\s*(.*?)\s*·\s*Fingerprint:\s*(\w*)\s*·\s*Opened:\s*(.*?)\s*·"
-                       r"\s*Updated:\s*(.*?)\s*·\s*Fixed:\s*(.*?)\s*$")
+                       r"\s*Updated:\s*(.*?)\s*·\s*Fixed:\s*(.*?)(?:\s*·\s*Source:\s*(\w+)\s*·\s*File:\s*(.*?))?\s*$")
 FILE_RE = re.compile(r"^ISS-(\d{4,})-(.*)\.md$")
 TEST_LINE_RE = re.compile(r"^-\s+`([^`]+)`(?::\s*(.*))?$")
 SECTIONS = ("Failing tests", "Repro", "Suspected root cause", "Notes")
@@ -104,7 +104,8 @@ def parse(text):
     for ln in lines:
         m = HEADER_RE.match(ln)
         if m:
-            meta = dict(zip(("status", "prd", "item", "fp", "opened", "updated", "fixed"), m.groups()))
+            meta = dict(zip(("status", "prd", "item", "fp", "opened", "updated", "fixed", "source", "file"), m.groups()))
+            meta["source"], meta["file"] = meta["source"] or "test", meta["file"] or ""  # old files have no source: they are test issues
             break
     secs, cur = {}, None
     for ln in lines:
@@ -151,10 +152,14 @@ def render(iss):
     meta, secs = iss["meta"], iss["sections"]
     tests = "\n".join("- `%s`: %s" % (t, (m or "").replace("\n", " ")) for t, m in sorted(iss["tests"].items()))
     repro = "```\npython3 scripts/acceptance.py run --ids %s\n```" % " ".join(sorted(iss["tests"]))
+    if meta.get("source") == "size":  # a size issue has no tests: its text is written by issues_size.py and kept as is
+        tests, repro = secs.get("Failing tests", ""), secs.get("Repro", "")
     body = {"Failing tests": tests, "Repro": repro, "Suspected root cause": secs.get("Suspected root cause", ""),
             "Notes": secs.get("Notes", "")}
     head = "> Status: %s · PRD: %s · Item: %s · Fingerprint: %s · Opened: %s · Updated: %s · Fixed: %s" % (
         meta["status"], meta["prd"], meta["item"], meta["fp"], meta["opened"], meta["updated"], meta["fixed"])
+    if meta.get("source") == "size":
+        head += " · Source: size · File: %s" % meta["file"]
     out = ["# %s: %s" % (iss["id"], iss["title"]), "", head, ""]
     for k in SECTIONS:
         out += ["## " + k, "", body[k].strip("\n"), ""]
@@ -234,6 +239,11 @@ def _apply(issue, group):
     issue["meta"]["updated"] = _today()
 
 
+def _size_part(which, root):
+    import issues_size
+    return getattr(issues_size, which)(root, load(root))
+
+
 def cmd_find(root, tests, admitted):
     issues = load(root)
     fail = _failing(tests, admitted)
@@ -293,8 +303,9 @@ def cmd_find(root, tests, admitted):
             updated.append(iid)
     for iss in new_issues:
         save(root, iss)
-    return {"created": created, "updated": [i for i in updated if i not in reopen_list], "reopened": reopen_list,
-            "_failing": len(fail)}
+    sz = _size_part("find", root)  # FISH-6: one split issue per product file over the max (pack module issues_size.py)
+    return {"created": created + sz["created"], "updated": [i for i in updated if i not in reopen_list],
+            "reopened": reopen_list + sz["reopened"], "_failing": len(fail)}
 
 
 def cmd_sync(root, tests, admitted):
@@ -321,7 +332,8 @@ def cmd_sync(root, tests, admitted):
                 _note(iss, "Reopened %s at %s: regression, %s failing again." % (_today(), sha, ", ".join(back)))
                 save(root, iss)
                 reopened.append(iss["id"])
-    return {"fixed": fixed, "reopened": reopened}
+    sz = _size_part("sync", root)  # size issues close on their own check (the file is at or under the max)
+    return {"fixed": fixed + sz["fixed"], "reopened": reopened + sz["reopened"]}
 
 
 def _get(issues, ref):
@@ -368,6 +380,8 @@ def cmd_merge(root, a_ref, b_ref):
         raise Usage("cannot merge an issue into itself")
     if a["state"] != "open" or b["state"] != "open":
         raise Usage("both issues must be open")
+    if "size" in (a["meta"]["source"], b["meta"]["source"]):
+        raise Usage("a size issue names one file and cannot be merged")
     a["tests"].update(b["tests"])
     for k in ("Suspected root cause", "Notes"):
         extra = b["sections"].get(k, "").strip()

@@ -32,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-DEFAULTS = {"base_branch": "main", "protected": ["tests/acceptance/**"], "review": "advisory", "prd": "required",
+DEFAULTS = {"base_branch": "main", "protected": ["tests/acceptance/**"], "review": "advisory", "prd": "required", "size": "warn",
             "security_ignore": [".factory/tests/**", "evals/**"]}
 TRAILER_RE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*):[ \t]*(.+?)[ \t]*$")
 BASELINE = "metrics/acceptance-baseline.json"

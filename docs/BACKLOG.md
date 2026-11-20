@@ -48,7 +48,7 @@ Roadmap tab: item order here is the proposed sequence (numbered 1..N across both
 
 ## Unplanned
 - [x] FISH-2 Reference sources for the test-writer: optional PRD section, test-writer and second reader use them (docs/specs/teach-agents-to-fish.md) (S) #foundation
-- [ ] FISH-6 File size as a rule: `gate.size` warn or fail, split issue with a machine-run closing check (docs/specs/teach-agents-to-fish.md) (M) #foundation
+- [x] FISH-6 File size as a rule: `gate.size` warn or fail, split issue with a machine-run closing check (docs/specs/teach-agents-to-fish.md) (M) #foundation
 - [ ] FISH-5 Human-owned framework code: guidance, `gate.framework` list and `Framework-Change` trailer (docs/specs/teach-agents-to-fish.md) (M) (after: FISH-6) #foundation
 - [x] FISH-7 Fix the machine, not the instance: retro classes each recurring failure as context, tool or guardrail with a proposed item (docs/specs/teach-agents-to-fish.md) (S) #process
 - [x] GATE-2 Gate warnings that mean something: Refs anywhere, auto-Refs hook, no review needed for docs/merges, advisory review is info (docs/specs/gate-warning-noise.md) (S) #quality

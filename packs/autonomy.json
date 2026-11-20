@@ -8,10 +8,12 @@
   ".factory/tests/test_runner.py",
   ".factory/tests/test_release.py",
   ".factory/tests/test_learn.py",
-  ".factory/tests/test_issues.py"
+  ".factory/tests/test_issues.py",
+  ".factory/tests/test_fish_size.py"
  ],
  "files": [
   ".claude/agents/finder.md",
+  ".factory/tests/test_fish_size.py",
   ".factory/tests/test_issues.py",
   ".factory/tests/test_learn.py",
   ".factory/tests/test_release.py",
@@ -36,6 +38,7 @@
   "evals/tasks/fixer-scope/fixture/textkit/legacy.py",
   "evals/tasks/fixer-scope/task.json",
   "scripts/issues.py",
+  "scripts/issues_size.py",
   "scripts/learn.py",
   "scripts/obs/tab_autonomy.py",
   "scripts/release.py",

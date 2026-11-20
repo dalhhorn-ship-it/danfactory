@@ -61,6 +61,7 @@
     "protected": ["tests/acceptance/**"],
     "review": "advisory",
     "prd": "advisory",
+    "size": "warn",
     "security_ignore": [".factory/tests/**", "evals/**"]
   },
   "acceptance": {

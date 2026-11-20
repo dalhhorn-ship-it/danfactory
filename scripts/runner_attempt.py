@@ -20,14 +20,14 @@ from runner_agent import call_claude, fixer_prompt, parse_verdict, review_prompt
 DIFF_MAX = 40000
 
 def gate_verdict(path, base):
-    """gate.py in-process with review forced to required, in a fresh checkout; the gate module is the runner's own, not the
+    """gate.py in-process with review forced to required and size to fail (FISH-6), in a fresh checkout; the gate module is the runner's own, not the
     fixer's copy, and everything it executes from the checkout runs in the tree sandbox (no network, scrubbed environment)."""
     with GATE_LOCK, S.TreeSandbox(path) as ts:  # the lock: the patched module globals are shared by the parallel fixers
         orig = gate.config
 
         def cfg(root):
             f, g = orig(root)
-            return f, dict(g, review="required")
+            return f, dict(g, review="required", size="fail")
         gate.config, gate.WRAP = cfg, ts.gate_wrap
         try:
             return gate.run_gate(path, base)

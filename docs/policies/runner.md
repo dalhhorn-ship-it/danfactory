@@ -6,8 +6,8 @@
 
 ## Start a run
 1. Set `factory.json` `autonomy.enabled` to `true` (it is `false` by default: nothing here runs, and no gate check changes, until you do). Settings: `staging_branch` (staging), `max_attempts` (3), `daily_budget_usd` (5), `run_budget_usd` (2), `model` and `review_model` (sonnet), `max_turns` (40), `attempt_estimate_usd` (0.5, the cost guess before any attempt exists). On Linux the Bash sandbox needs `bwrap` and `socat` (same as evals).
-2. Have a clean working tree, an approved PRD for the issue, and the issue in `issues/open/` (`python3 scripts/issues.py find`; commit it).
-3. `python3 scripts/runner.py run --next` (lowest open issue whose PRD is approved) or `--issue ISS-0007`. Add `--dry-run` to see the choice and the budget without spending. `--model haiku` and `--max-attempts 2` override the settings for one run. You start every run; nothing starts one for you.
+2. Size issues (`Source: size`, ADR 0013) are not picked: they have no PRD and no tests, so they are filed and closed by the ledger but fixed by a person. Have a clean working tree, an approved PRD for the issue, and the issue in `issues/open/` (`python3 scripts/issues.py find`; commit it).
+3. `python3 scripts/runner.py run --next` (lowest open issue whose PRD is approved) or `--issue ISS-0007`. Add `--dry-run` to see the choice and the budget without spending. `--model haiku` and `--max-attempts 2` override the settings for one run. You start every run; nothing starts one for you. The runner gates every attempt with `review: required` and `size: fail` whatever `factory.json` says, so a fixer cannot grow a product file past the max (FISH-6).
 4. `python3 scripts/runner.py status` (or the dashboard Autonomy tab) shows runs, attempts, first-try pass rate, rework per fixed issue, cost per fixed issue, spend today against the cap, parked issues with their last codes, and how far staging is ahead of main.
 
 Exit codes: 0 fixed and merged (or nothing to do), 1 parked, 2 refused or usage error, 3 stopped by a budget cap.
