@@ -93,5 +93,6 @@
 | docs/specs/roadmap-view-options.md | 90 | PRD: Roadmap view options (6-month timeline,… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
 | docs/specs/security-hardening-audit-1.md | 82 | PRD: Security hardening after audit run-1 — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:30, Acceptance criteria:37, UX / behaviour notes:53, Risks and assumptions:58, Effort and sequencing:65, Decisions at…:68, Open questions:76 |
 | docs/specs/size-monitoring.md | 49 | PRD: Size monitoring (is the template still… |
+| docs/specs/teach-agents-to-fish.md | 92 | PRD: Teach agents to fish (five lessons for… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:31, Acceptance criteria:37, UX / behaviour notes:71, Risks and assumptions:74, Effort and sequencing:84, Open questions:88 |
 | docs/specs/template-mode.md | 62 | PRD: Template mode (the template repo knows it… |
 | docs/specs/upstream-from-lpdan-2026-11.md | 24 | PRD: Upstream from lpdan: two lost security… |
