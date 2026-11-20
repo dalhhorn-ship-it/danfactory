@@ -33,7 +33,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 DEFAULTS = {"base_branch": "main", "protected": ["tests/acceptance/**"], "review": "advisory", "prd": "required", "size": "warn",
-            "security_ignore": [".factory/tests/**", "evals/**"]}
+            "framework": [], "security_ignore": [".factory/tests/**", "evals/**"]}
 TRAILER_RE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*):[ \t]*(.+?)[ \t]*$")
 BASELINE = "metrics/acceptance-baseline.json"
 MANIFEST = "tests/acceptance/manifest.json"
@@ -367,8 +367,13 @@ def c_protected(ctx):
     codes, bits = [], []
     if bad:
         codes.append("protected-path")
-        bits.append("protected paths changed without a valid Acceptance-Change trailer: " + ", ".join(bad[:5])
+        bits.append("protected paths (gate.protected) changed without a valid Acceptance-Change trailer (Framework-Change does not count here): " + ", ".join(bad[:5])
                     + (" ..." if len(bad) > 5 else ""))
+    fw = framework_bad(ctx)
+    if fw:
+        codes.append("protected-path")
+        bits.append("framework paths (gate.framework) changed without a Framework-Change: <reason> trailer"
+                    " (Acceptance-Change does not count here): " + ", ".join(fw[:5]) + (" ..." if len(fw) > 5 else ""))
     old = (git(root, "show", "%s:%s" % (base, BASELINE)))
     if old is not None:
         try:
@@ -382,7 +387,8 @@ def c_protected(ctx):
             if dirty or not cs or not all(valid_acceptance_change(root, c["trailers"]) for c in cs):
                 codes.append("baseline-shrunk")
                 bits.append("baseline lost %d id(s)" % len(was - now))
-    return ("fail" if codes else "pass"), codes, "; ".join(bits) or ("%d protected path(s) changed with trailer" % len(hit) if hit else "no protected path changed")
+    n = len(hit) + len(framework_hit(ctx))
+    return ("fail" if codes else "pass"), codes, "; ".join(bits) or ("%d protected path(s) changed with trailer" % n if n else "no protected path changed")
 
 
 def c_review(ctx):
@@ -407,7 +413,7 @@ def c_review(ctx):
     return "pass", [], "advisory: no review on %d product commit(s)" % n
 
 
-from gate_checks import added_lines, c_prd, c_security, c_size, scan  # noqa: E402,F401  (after the helpers: gate_checks reads them lazily)
+from gate_checks import added_lines, c_prd, framework_bad, framework_hit, c_security, c_size, scan  # noqa: E402,F401  (after the helpers: gate_checks reads them lazily)
 
 CHECKS = (("structure", c_structure), ("build", c_build), ("lint", c_lint), ("tests", c_tests),
           ("coverage", c_coverage), ("acceptance", c_acceptance), ("protected", c_protected),

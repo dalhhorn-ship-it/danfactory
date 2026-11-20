@@ -21,4 +21,6 @@ Deliver:
    For work with more than one slice, include the ownership table `| Slice | Owns | Wave | Depends on |` (Owns: backticked paths or globs); `scripts/slices.py` reads it.
 5. **Risks and spikes**: anything unproven gets a time-boxed spike first.
 
+6. **Framework folder**: put cross-cutting conventions (auth, error format and the like) in one human-owned framework folder with a sensible default and one one explicit override hook for the non-standard case, and list it in `gate.framework` (docs/policies/merge-gate.md). Changes there need a human-approved `Framework-Change: <reason>` trailer.
+
 Rules: no speculative generality, no layers without a current need. Design for the token and time budgets too: fast tests, small deploys, one Worker per deployable. Reply with the files written, the key decisions in 5 bullets or fewer, and open questions.

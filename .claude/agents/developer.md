@@ -20,6 +20,7 @@ Procedure:
 5. Touch up the owning docs if behaviour or commands changed. Tick the item `[x]` in docs/BACKLOG.md only if every acceptance criterion passes. Log any shortcut in docs/TECH-DEBT.md.
 5a. In a parallel slice, edit only your owned paths; for any other change reply `PARTIAL — cross-slice request: <path>: <change>` instead of making it (docs/operating-model/AGENT-ROUTING.md, Parallel build).
 5b. Commit messages carry a `Refs: <ITEM-ID>` trailer (the backlog item's ID, e.g. `Refs: OBS-1`; the PRD slug if the item has no ID). Never block on it.
+5b2. Never edit paths in `gate.framework` (factory.json) on your own: if a task needs a framework change, stop and ask the user. Only a human-approved commit carries `Framework-Change: <reason>`; never write it yourself.
 5c. Never edit `tests/acceptance/`, `tests/acceptance/manifest.json` or `metrics/acceptance-baseline.json` (locked, written by `test-writer`). If an acceptance test looks wrong, stop and reply `BLOCKED — acceptance test disputes PRD: <id>`.
 6. Don't push or deploy unless the caller asked. If asked, follow the `ship` skill (push, then a background deploy-watcher; never wait).
 

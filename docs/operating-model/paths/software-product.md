@@ -25,6 +25,7 @@ Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. S
 - Stack: whatever GOAL.md constrains; otherwise TypeScript on Cloudflare Workers (+ D1/KV/R2 as needed) keeps deploy-via-git trivial.
 - Commands to set in factory.json: test, test_affected, coverage, lint, build.
 - Budgets: full tests ≤ 120s, affected ≤ 30s, coverage ≥ 80% on domain code, push-to-live ≤ 180s.
+- Cross-cutting conventions (auth, error format and the like) live in one human-owned framework folder (e.g. `src/framework/`) with a sensible default and one explicit override hook for the non-standard case. List the folder in `gate.framework` (factory.json): a change there needs a human-approved `Framework-Change: <reason>` trailer (docs/policies/merge-gate.md), so agents take the easy right path and ask before bending it.
 - Deploys are asynchronous: push → background `deploy-watcher` → keep working (docs/policies/async-delivery.md).
 
 ## Quality gates

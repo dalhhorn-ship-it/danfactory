@@ -132,7 +132,8 @@ def attempt(root, cfg, iss, prd, run_id, k, prev, model, review_model, staging, 
         w.g(["reset", "-q", "--soft", base], check=False)
         drop_sandbox_artifacts(w)
         files = changed_files(w)
-        pats = list(gate.config(root)[1].get("protected") or []) + RUNNER_PROTECTED
+        gcfg = gate.config(root)[1]  # gate.framework too: a framework change needs a human-approved Framework-Change trailer (FISH-5)
+        pats = list(gcfg.get("protected") or []) + list(gcfg.get("framework") or []) + RUNNER_PROTECTED
         hit = sorted(set([p for p in files if gate.matches(p, pats)] + hidden_protected(w, files, pats)))
         if hit:
             revert(w, hit)

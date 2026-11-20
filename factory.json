@@ -59,6 +59,7 @@
   "gate": {
     "base_branch": "main",
     "protected": ["tests/acceptance/**"],
+    "framework": [],
     "review": "advisory",
     "prd": "advisory",
     "size": "warn",

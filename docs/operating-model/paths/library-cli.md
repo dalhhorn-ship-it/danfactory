@@ -19,6 +19,7 @@ Default roster and verification ladder: docs/operating-model/AGENT-ROUTING.md. S
 
 ## Defaults
 - Coverage ≥ 90% on public API modules; full tests ≤ 60s.
+- Cross-cutting conventions (auth, error format and the like) live in one human-owned framework folder (e.g. `src/framework/`) with a sensible default and one explicit override hook for the non-standard case. List the folder in `gate.framework` (factory.json): a change there needs a human-approved `Framework-Change: <reason>` trailer (docs/policies/merge-gate.md), so agents take the easy right path and ask before bending it.
 - Matrix CI across supported runtimes only when users need it (cost).
 
 ## Quality gates

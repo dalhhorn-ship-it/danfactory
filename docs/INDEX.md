@@ -29,61 +29,62 @@
 | File | Lines | Summary |
 |---|---:|---|
 | CLAUDE.md | 42 | Always-loaded instructions. Keep short and… |
-| docs/BACKLOG.md | 81 | Milestones and work items; the dashboard reads… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:49 |
-| docs/GOAL.md | 30 | The agreed goal for this project. Written by… |
+| docs/BACKLOG.md | 81 | Milestones and work items; the dashboard… — sections: Milestone: M0 —…:10, Milestone: M1 —…:15, Milestone: M2 —…:22, Milestone: M3 —…:30, Milestone: M4 —…:40, Unplanned:49 |
+| docs/GOAL.md | 30 | The agreed goal for this project. Written… |
 | docs/OPERATING-MODEL.md | 35 | How this project is built: chosen path(s),… |
-| docs/TECH-DEBT.md | 34 | Known shortcuts and their cost; the dashboard… — sections: Open:7, Resolved:12 |
+| docs/TECH-DEBT.md | 34 | Known shortcuts and their cost; the… — sections: Open:7, Resolved:12 |
 | docs/decisions/0000-template.md | 15 | NNNN — Title |
 | docs/decisions/0001-use-danfactory-template.md | 12 | 0001 — Start from the danfactory template |
 | docs/decisions/0002-prd-approval-gate.md | 16 | 0002 — PRD approval gate before any build |
 | docs/decisions/0003-deploy-credential-scoping.md | 17 | 0003 — Deploy credential scoping |
 | docs/decisions/0004-dashboard-observability-design.md | 45 | 0004 — Dashboard observability: design and… |
-| docs/decisions/0005-auto-compact-handoff-loop.md | 22 | 0005 — Automatic handoff, compact, continue loop |
+| docs/decisions/0005-auto-compact-handoff-loop.md | 22 | 0005 — Automatic handoff, compact, continue… |
 | docs/decisions/0006-agent-eval-harness.md | 22 | 0006 — Agent eval harness: headless runner,… |
 | docs/decisions/0007-merge-gate-and-acceptance-suite.md | 60 | 0007 — Merge gate and locked acceptance suite — sections: Context:5, Options:8, Decision:13, Consequences:56 |
 | docs/decisions/0008-issue-ledger-and-finder.md | 33 | 0008 — Issue ledger and finder |
-| docs/decisions/0009-fixer-runner.md | 82 | 0009 — Fixer runner: one issue, one sandboxed… — sections: Context:5, Decision:12, Consequences:59, Implementation notes…:62, Hardening after…:72 |
+| docs/decisions/0009-fixer-runner.md | 82 | 0009 — Fixer runner: one issue, one… — sections: Context:5, Decision:12, Consequences:59, Implementation notes…:62, Hardening after…:72 |
 | docs/decisions/0010-release-train-parallel-fixers-learning.md | 38 | 0010 — Release train, parallel fixers,… |
 | docs/decisions/0011-autonomy-pack-and-file-splits.md | 44 | 0011 — Autonomy as an optional pack; split… |
 | docs/decisions/0012-mission-autopilot.md | 94 | 0012 — Mission autopilot: one approved… — sections: Context:5, Options:8, Decision:16, Consequences:87 |
 | docs/decisions/0013-size-issues.md | 19 | 0013 — Size issues |
-| docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with `python3… |
-| docs/operating-model/AGENT-ROUTING.md | 100 | Which agent gets involved when. The main agent… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:85, Changelog:93 |
-| docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal. Version… |
-| docs/operating-model/LEARNINGS.md | 61 | Append-only log written by `retro`. Each entry… — sections: Entries:16 |
-| docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt, v0,… |
-| docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs, bots,… |
+| docs/decisions/0014-framework-change-trailer.md | 17 | 0014 — Framework paths and the… |
+| docs/missions/_TEMPLATE.md | 23 | Copy to docs/missions/<slug>.md with… |
+| docs/operating-model/AGENT-ROUTING.md | 100 | Which agent gets involved when. The main… — sections: Principles:5, By moment:12, Verification ladder…:45, Tie-breakers…:56, Path rosters…:69, Parallel build:85, Changelog:93 |
+| docs/operating-model/DECISION-TREE.md | 78 | Picks the operating model for a goal.… |
+| docs/operating-model/LEARNINGS.md | 61 | Append-only log written by `retro`. Each… — sections: Entries:16 |
+| docs/operating-model/paths/adopt-existing.md | 59 | Bringing an existing build (Lovable, Bolt,… |
+| docs/operating-model/paths/automation-script.md | 25 | Glue code, integrations, scheduled jobs,… |
 | docs/operating-model/paths/data-spreadsheet.md | 32 | Spreadsheets, financial/data models,… |
 | docs/operating-model/paths/documents-content.md | 25 | Documents, decks, handbooks, proposals,… |
-| docs/operating-model/paths/infra-ops.md | 26 | Infrastructure as code, CI/CD pipelines, cloud… |
-| docs/operating-model/paths/library-cli.md | 30 | Packages, SDKs, CLIs that others import or… |
-| docs/operating-model/paths/prototype-spike.md | 20 | Throwaway code to learn or prove feasibility.… |
+| docs/operating-model/paths/infra-ops.md | 26 | Infrastructure as code, CI/CD pipelines,… |
+| docs/operating-model/paths/library-cli.md | 31 | Packages, SDKs, CLIs that others import or… |
+| docs/operating-model/paths/prototype-spike.md | 20 | Throwaway code to learn or prove… |
 | docs/operating-model/paths/research-analysis.md | 25 | Questions answered from sources or data:… |
-| docs/operating-model/paths/software-product.md | 40 | Apps, APIs, services with users. Default rigor… |
-| docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part of… |
-| docs/policies/documentation.md | 12 | Docs are part of done. Small, true, linked —… |
+| docs/operating-model/paths/software-product.md | 41 | Apps, APIs, services with users. Default… |
+| docs/policies/async-delivery.md | 23 | The agent's time is the most expensive part… |
+| docs/policies/documentation.md | 12 | Docs are part of done. Small, true, linked… |
 | docs/policies/evals-visualizations.md | 10 | Hook evidence, proof strength per task, the… |
 | docs/policies/evals.md | 38 | Behavioural evals for the factory: a fixed… — sections: Why:5, How to run:8, Rules:27 |
 | docs/policies/issue-ledger.md | 27 | Failing admitted acceptance tests become… |
-| docs/policies/merge-gate.md | 69 | One command, one verdict with reason codes,… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:47, Security scan notes:57, Issue ledger:62, Honest limits:65 |
+| docs/policies/merge-gate.md | 71 | One command, one verdict with reason codes,… — sections: Use:5, Checks, in order:11, Reading a verdict:30, Acceptance suite…:33, Trailers:42, Config (factory.json…:48, Security scan notes:59, Issue ledger:64, Honest limits:67 |
 | docs/policies/mission.md | 37 | One approved brief lets the agent build… |
 | docs/policies/prd-approval.md | 31 | No feature work starts until the… — sections: When it applies:5, Flow:14, Enforcement:22 |
-| docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How you… |
-| docs/policies/runner-safety.md | 19 | Part of the autonomy pack (ADR 0011). The… |
+| docs/policies/runner-release.md | 20 | Part of the autonomy pack (ADR 0011). How… |
+| docs/policies/runner-safety.md | 20 | Part of the autonomy pack (ADR 0011). The… |
 | docs/policies/runner.md | 42 | Part of the autonomy pack (ADR 0011). A new… — sections: Start a run:7, What a run does:15, Parallel fixers and…:26, Caps:39 |
 | docs/policies/security.md | 32 | Secure defaults always; guards block known… |
-| docs/policies/template-maintenance.md | 11 | How a checkout is recognised as the template… |
-| docs/policies/testing-and-metrics.md | 29 | Fast feedback is a feature. Measure test time,… |
+| docs/policies/template-maintenance.md | 11 | How a checkout is recognised as the… |
+| docs/policies/testing-and-metrics.md | 29 | Fast feedback is a feature. Measure test… |
 | docs/policies/token-economy.md | 35 | Spend tokens on decisions, not on moving… |
 | docs/specs/_TEMPLATE.md | 37 | PRD: <feature name> |
-| docs/specs/agent-eval-harness.md | 104 | PRD: Agent eval harness (behavioural evals for… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:41, Acceptance criteria:50, UX / behaviour notes:65, Risks and assumptions:71, Effort and sequencing:80, Open questions:86, Decisions (user,…:94, Spike findings…:98 |
-| docs/specs/auto-compact-handoff-loop.md | 76 | PRD: Automatic handoff, compact, continue loop… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:24, Acceptance criteria:30, UX / behaviour notes:44, Risks and assumptions:49, Effort and sequencing:55, Decisions (user,…:66, Open questions…:72 |
-| docs/specs/dashboard-carbon-design.md | 82 | PRD: Dashboard in the IBM Carbon design language — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:28, Acceptance criteria:36, UX / behaviour notes:51, Risks and assumptions:59, Effort and sequencing:68, Open questions:74, Decisions (user,…:80 |
-| docs/specs/dashboard-delivery-backflow.md | 89 | PRD: Dashboard delivery backflow (CI history… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:38, Acceptance criteria:45, UX / behaviour notes:58, Security notes…:63, Risks and assumptions:70, Effort and sequencing:76, Decisions (user,…:80, Open questions…:83 |
+| docs/specs/agent-eval-harness.md | 104 | PRD: Agent eval harness (behavioural evals… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:41, Acceptance criteria:50, UX / behaviour notes:65, Risks and assumptions:71, Effort and sequencing:80, Open questions:86, Decisions (user,…:94, Spike findings…:98 |
+| docs/specs/auto-compact-handoff-loop.md | 76 | PRD: Automatic handoff, compact, continue… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:24, Acceptance criteria:30, UX / behaviour notes:44, Risks and assumptions:49, Effort and sequencing:55, Decisions (user,…:66, Open questions…:72 |
+| docs/specs/dashboard-carbon-design.md | 82 | PRD: Dashboard in the IBM Carbon design… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:28, Acceptance criteria:36, UX / behaviour notes:51, Risks and assumptions:59, Effort and sequencing:68, Open questions:74, Decisions (user,…:80 |
+| docs/specs/dashboard-delivery-backflow.md | 89 | PRD: Dashboard delivery backflow (CI… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:38, Acceptance criteria:45, UX / behaviour notes:58, Security notes…:63, Risks and assumptions:70, Effort and sequencing:76, Decisions (user,…:80, Open questions…:83 |
 | docs/specs/dashboard-observability-design.md | 207 | Design: dashboard observability tabs — sections: Module layout:7, Model file:…:34, How each layer is…:50, SVG diagram…:79, Traceability keys…:88, data.json additions…:105, --print rows (one…:110, Empty states (AC2):114, Test strategy:118, Risks and spikes:134, Slice 1 build order…:142, Slice 2 as built:165, Slice 3 as built:171, Evals tab (EVAL-2):177, Evals tab views…:182, Evals tab: backlog…:187, Carbon look (DASH-3):191, Roadmap views (DASH-4):200 |
 | docs/specs/dashboard-observability-tabs.md | 78 | PRD: Dashboard observability tabs — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:16, Non-goals:35, Acceptance criteria:41, UX / behaviour notes:54, Risks and assumptions:59, Effort and sequencing:66, Open questions:73 |
 | docs/specs/dashboard-roadmap-v2.md | 76 | PRD: Dashboard roadmap v2 (global sequence,… — sections: Problem:5, Goal and success…:8, Users and user stories:12, Scope:18, Non-goals:28, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:56, Effort and sequencing:63, Open questions:69 |
-| docs/specs/docs-index-first.md | 16 | PRD: Docs index-first, doc size budget, docs… |
+| docs/specs/docs-index-first.md | 16 | PRD: Docs index-first, doc size budget,… |
 | docs/specs/eval-visualizations.md | 92 | PRD: Eval visualizations (eval library,… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:18, Non-goals:32, Acceptance criteria:44, UX / behaviour notes:61, Risks and assumptions:69, Effort and sequencing:77, Open questions:83, Decisions (user,…:90 |
 | docs/specs/fast-checks-and-guard-gaps.md | 29 | PRD: Fast template checks, PRD-guard gaps,… |
 | docs/specs/gate-warning-noise.md | 18 | PRD: Gate warnings that mean something |
@@ -91,9 +92,9 @@
 | docs/specs/mission-autopilot.md | 81 | PRD: Mission autopilot (one approval, then… — sections: Problem:5, Goal and success…:8, Users and user stories:13, Scope:19, Non-goals:29, Acceptance criteria:36, UX / behaviour notes:50, Risks and assumptions:55, Effort and sequencing:63, Open questions:73, Decisions (user,…:78 |
 | docs/specs/new-project-readiness.md | 30 | PRD: New-project readiness |
 | docs/specs/prd-write-guard.md | 39 | PRD: PRD write guard (enforce "no approved… |
-| docs/specs/roadmap-view-options.md | 90 | PRD: Roadmap view options (6-month timeline,… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
+| docs/specs/roadmap-view-options.md | 90 | PRD: Roadmap view options (6-month… — sections: Problem:5, Goal and success…:8, Relation to the…:12, Users and user stories:15, Scope:21, Non-goals:30, Acceptance criteria:39, UX / behaviour notes:58, Risks and assumptions:66, Effort and sequencing:74, Open questions:80, Decisions (user,…:89 |
 | docs/specs/security-hardening-audit-1.md | 82 | PRD: Security hardening after audit run-1 — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:30, Acceptance criteria:37, UX / behaviour notes:53, Risks and assumptions:58, Effort and sequencing:65, Decisions at…:68, Open questions:76 |
 | docs/specs/size-monitoring.md | 49 | PRD: Size monitoring (is the template still… |
 | docs/specs/teach-agents-to-fish.md | 83 | PRD: Teach agents to fish (four lessons for… — sections: Problem:5, Goal and success…:8, Users and user stories:11, Scope:17, Non-goals:28, Acceptance criteria:35, UX / behaviour notes:60, Risks and assumptions:63, Effort and sequencing:73, Decisions (user,…:78 |
-| docs/specs/template-mode.md | 62 | PRD: Template mode (the template repo knows it… |
+| docs/specs/template-mode.md | 62 | PRD: Template mode (the template repo knows… |
 | docs/specs/upstream-from-lpdan-2026-11.md | 24 | PRD: Upstream from lpdan: two lost security… |

@@ -297,3 +297,24 @@ def _c_size(ctx):
     if not codes:
         return "pass", [], "no product file over %d lines grew; code growth within budget" % b["file_lines_max"]
     return "warn", codes, "; ".join(notes[:6]) + (" ..." if len(notes) > 6 else "")
+
+
+def framework_hit(ctx):
+    """Sorted changed paths (against the base) that match `gate.framework`."""
+    pats = ctx["gate"].get("framework") or []
+    if not pats or not ctx["base"]:
+        return []
+    return sorted({p for _s, p in changes(ctx["root"], ctx["base"]) if matches(p, pats)})
+
+
+def framework_bad(ctx):
+    """Framework paths changed in a way the gate does not accept: uncommitted, or touched by a commit in range whose
+    last trailer block has no non-empty `Framework-Change: <reason>`. Only that trailer counts (FISH-5, ADR 0014)."""
+    root, base = ctx["root"], ctx["base"]
+    bad = []
+    for p in framework_hit(ctx):
+        dirty = (git(root, "status", "--porcelain", "--", p) or "").strip()
+        cs = commits(root, base, p)
+        if dirty or not cs or not all(any(v.strip() for v in c["trailers"].get("framework-change", [])) for c in cs):
+            bad.append(p)
+    return bad

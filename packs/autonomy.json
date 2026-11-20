@@ -9,10 +9,12 @@
   ".factory/tests/test_release.py",
   ".factory/tests/test_learn.py",
   ".factory/tests/test_issues.py",
-  ".factory/tests/test_fish_size.py"
+  ".factory/tests/test_fish_size.py",
+  ".factory/tests/test_fish_framework_runner.py"
  ],
  "files": [
   ".claude/agents/finder.md",
+  ".factory/tests/test_fish_framework_runner.py",
   ".factory/tests/test_fish_size.py",
   ".factory/tests/test_issues.py",
   ".factory/tests/test_learn.py",

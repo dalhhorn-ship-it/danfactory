@@ -17,7 +17,7 @@
 | tests | `python3 scripts/metrics.py test`; skipped in template mode (check.sh runs the suite) | `tests-failed`, `tests-over-budget` (warn), `tests-include-acceptance` (warn: `commands.test` would discover tests/acceptance) |
 | coverage | last full-run coverage against `budgets.min_coverage_pct` and `max_coverage_drop_pct` | `coverage-below-min`, `coverage-dropped` |
 | acceptance | `scripts/acceptance.py run --json` once the suite exists (AUTO-2), else skip | `acceptance-regression`, `test-not-admitted`, `acceptance-error` (also: the suite or script is gone while the baseline lists tests, a collection error, a runner error), `open-prd-questions` (warn), `acceptance-unmapped` (warn) |
-| protected | changed paths matching `gate.protected`; baseline ids removed | `protected-path`, `baseline-shrunk` |
+| protected | changed paths matching `gate.protected` (need `Acceptance-Change`) or `gate.framework` (need `Framework-Change`); baseline ids removed | `protected-path`, `baseline-shrunk` |
 | prd | product-code commits in range (any path outside `docs/`, `issues/`, `tests/acceptance/`, `metrics/`, `.factory/`, `factory.json`, root `*.md` except CLAUDE.md) need `Refs:` to an item or PRD slug with an approved PRD, `Refs: ISS-n` of an issue whose PRD is approved, or a `PRD-Exempt:` line (`Refs:`/`PRD-Exempt:` count on any line of the message; `.githooks/prepare-commit-msg` adds `Refs: <ID>` when exactly one `[~]` item exists); the detail lists active and expired `.factory/prd-exemption` lines; a PRD approved `by mission <slug>` counts only if the mission was valid and in scope at the commit time, and the detail then notes `covered by mission <slug> (go: "...")` (docs/policies/mission.md) | `no-approved-prd` (fail in `required`, warn in `advisory`), `prd-waiver-active` (warn in every verdict while a quoted `waiver` line dated today exists; a fail stays a fail) |
 | review | `Review:` trailers (last trailer block only) on the non-merge commits in range; commits touching only `docs/`, `metrics/`, root `*.md` or `.factory/HANDOFF.md` need none; advisory mode with unreviewed product commits is a pass ("advisory: no review on N product commit(s)"), required mode fails | `review-missing` (required mode only), `review-fix-first` |
 | security | added lines of the diff against base (tracked files, committed plus working tree), plus untracked files for path rules | `secret-in-diff`, `env-file-added`, `unpinned-action`, `pipe-to-shell` |
@@ -43,6 +43,7 @@ Tests live in `tests/acceptance/<slug>/` (protected path), test id `<slug>/<modu
 - `Review: ship` or `Review: fix-first`, added by the `reviewer` as a trailer on a commit in the range (an empty commit is fine). The newest one wins.
 - `PRD-Exempt: <reason>`: marks a product-code commit as covered by a policy exemption (bug fix restoring approved behaviour, chore, waiver, spike) instead of a `Refs:` to an approved item. Self-asserted and visible in the log; pair it with a dated line in `.factory/prd-exemption` for the write guard.
 - `Acceptance-Change: <slug>`: required on every commit that touches a `gate.protected` path or removes ids from `metrics/acceptance-baseline.json`. `<slug>` must be an approved PRD in docs/specs/ (and, once tests/acceptance/manifest.json exists, listed in its `prds`). Only the `test-writer` writes it; `developer` never edits protected paths.
+- `Framework-Change: <reason>`: required on every commit in range that touches a `gate.framework` path (non-empty reason, last trailer block). It never satisfies `gate.protected` paths and `Acceptance-Change` never satisfies framework paths; a path in both lists needs both. A human approves it: a `developer` who needs a framework change stops and asks the user; the runner never writes it. Self-asserted (TD-012).
 
 ## Config (factory.json -> gate)
 | Key | Default | Meaning |
@@ -51,6 +52,7 @@ Tests live in `tests/acceptance/<slug>/` (protected path), test id `<slug>/<modu
 | protected | `["tests/acceptance/**"]` | globs (`**` crosses folders) that need the trailer |
 | prd | required | `off`, `advisory` (an uncovered product commit warns) or `required` (it fails). This template's own factory.json sets `advisory`: it predates the rule, so older history would fail. Projects keep `required`. |
 | review | advisory | `off`, `advisory` (missing review warns) or `required` (missing review fails) |
+| framework | `[]` | globs (same rules as `protected`) for human-owned framework code (auth, error format, shared conventions); changes need `Framework-Change: <reason>` (FISH-5, ADR 0014). Empty means no framework paths. |
 | size | warn | `warn` (a grown product file over `budgets.size.file_lines_max` warns `file-over-size`) or `fail` (it fails). Any other value is treated as `warn` and the check detail says so. The fixer runner always gates with `fail`, whatever factory.json says (FISH-6). |
 | security_ignore | `[".factory/tests/**", "evals/**"]` | globs the security scan skips (fixtures) |
 
